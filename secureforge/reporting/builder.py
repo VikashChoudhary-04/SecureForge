@@ -1,21 +1,20 @@
-"""Build complete SecureForge security reports from domain results."""
+"""Build complete SecureForge security reports."""
 
 from **future** import annotations
 
-from collections.abc import Iterable
 from datetime import datetime, timezone
 from typing import Any
 
-from secureforge.core.findings import Finding
-from secureforge.core.policy import PolicyDecision
-from secureforge.core.release_gate import ReleaseGateDecision
-from secureforge.core.risk import RiskAssessment
+from secureforge.core.findings.models import Finding
+from secureforge.core.policy.models import PolicyDecision
+from secureforge.core.release_gate.models import ReleaseGateDecision
+from secureforge.core.risk.models import RiskAssessment
+from secureforge.regression import RegressionSuiteResult
 
 from .models import (
 DecisionReport,
 PolicyReport,
 RegressionReport,
-RegressionTestReport,
 ReleaseMetadata,
 RemediationReport,
 ReportFinding,
@@ -23,171 +22,171 @@ RiskReport,
 ScanMetadata,
 SecurityReport,
 )
-
-def utc_now() -> datetime:
-"""Return the current UTC timestamp."""
-return datetime.now(timezone.utc)
+from .regression import build_regression_report
 
 class SecurityReportBuilder:
-"""Build a report from normalized SecureForge security results."""
+"""Convert SecureForge domain results into a security report."""
 
 ```
 def build(
     self,
     *,
-    release_id: str,
-    application: str,
-    version: str,
-    environment: str,
-    profile: str,
-    scan_id: str,
-    scan_status: str,
-    integrations: Iterable[str],
-    findings: Iterable[Finding],
+    release: ReleaseMetadata,
+    scan: ScanMetadata,
+    findings: list[Finding],
     risk: RiskAssessment,
     policy: PolicyDecision,
-    release_gate: ReleaseGateDecision,
-    commit_sha: str | None = None,
-    started_at: datetime | None = None,
-    completed_at: datetime | None = None,
-    regression_results: Iterable[dict[str, Any]] | None = None,
-    metadata: dict[str, Any] | None = None,
+    decision: ReleaseGateDecision,
+    remediation: RemediationReport | None = None,
+    regression: RegressionSuiteResult | None = None,
+    generated_at: str | None = None,
 ) -> SecurityReport:
     """Build a complete security report."""
-    finding_list = list(findings)
-    regression_list = list(
-        regression_results or []
-    )
-
     report_findings = [
-        self._build_finding(finding)
-        for finding in finding_list
+        self._build_finding(
+            finding
+        )
+        for finding in findings
     ]
 
-    regression = self._build_regression_report(
-        regression_list
-    )
-
-    remediation = self._build_remediation_report(
-        finding_list
-    )
-
-    release = ReleaseMetadata(
-        release_id=release_id,
-        application=application,
-        version=version,
-        commit_sha=commit_sha,
-        environment=environment,
-        profile=profile,
-    )
-
-    scan = ScanMetadata(
-        scan_id=scan_id,
-        status=scan_status,
-        started_at=started_at,
-        completed_at=completed_at,
-        integrations=list(integrations),
-    )
-
-    risk_report = self._build_risk_report(risk)
-
-    policy_report = self._build_policy_report(policy)
-
-    decision = self._build_decision_report(
-        release_gate
+    regression_report = (
+        build_regression_report(
+            regression
+        )
+        if regression is not None
+        else RegressionReport(
+            suite_id="not-run",
+            suite_name="Regression Testing",
+            status="skipped",
+            total=0,
+            passed=0,
+            failed=0,
+            errors=0,
+            skipped=0,
+            tests=[],
+            started_at=None,
+            completed_at=None,
+            duration_seconds=0.0,
+        )
     )
 
     return SecurityReport(
         release=release,
         scan=scan,
         findings=report_findings,
-        risk=risk_report,
-        policy=policy_report,
-        remediation=remediation,
-        regression=regression,
-        decision=decision,
-        generated_at=utc_now(),
-        metadata=dict(metadata or {}),
+        risk=self._build_risk(
+            risk
+        ),
+        policy=self._build_policy(
+            policy
+        ),
+        remediation=(
+            remediation
+            if remediation is not None
+            else RemediationReport(
+                total=0,
+                open=0,
+                in_progress=0,
+                resolved=0,
+                verified=0,
+                items=[],
+            )
+        ),
+        regression=regression_report,
+        decision=self._build_decision(
+            decision
+        ),
+        generated_at=(
+            generated_at
+            if generated_at is not None
+            else datetime.now(
+                timezone.utc
+            ).isoformat()
+        ),
     )
 
 @staticmethod
 def _build_finding(
     finding: Finding,
 ) -> ReportFinding:
-    """Convert a domain finding into report data."""
+    """Convert a domain finding into a report finding."""
     return ReportFinding(
         finding_id=finding.finding_id,
         title=finding.title,
         source=finding.source,
-        source_finding_ids=(
-            [finding.source_finding_id]
-            if finding.source_finding_id
-            else []
-        ),
-        application=finding.application,
         asset=finding.asset,
+        application=finding.application,
         endpoint=finding.endpoint,
         parameter=finding.parameter,
-        cwe=finding.cwe,
-        owasp=finding.owasp,
-        security_requirement=(
-            finding.security_requirement
-        ),
         severity=finding.severity.value,
         confidence=finding.confidence.value,
-        description=finding.description,
-        impact=finding.impact,
-        remediation=finding.remediation,
         status=finding.status.value,
         validation_status=(
             finding.validation_status.value
         ),
-        regression_test=finding.regression_test,
-        evidence_count=len(finding.evidence),
+        cwe=finding.cwe,
+        owasp_mapping=finding.owasp_mapping,
+        security_requirement=(
+            finding.security_requirement
+        ),
+        description=finding.description,
+        impact=finding.impact,
+        remediation=finding.remediation,
+        evidence=[
+            evidence.model_dump()
+            for evidence in finding.evidence
+        ],
+        correlations=list(
+            finding.correlations
+        ),
+        regression_test=(
+            finding.regression_test
+        ),
     )
 
 @staticmethod
-def _build_risk_report(
+def _build_risk(
     risk: RiskAssessment,
 ) -> RiskReport:
-    """Convert a risk assessment into report data."""
+    """Convert a risk assessment into a report risk section."""
     return RiskReport(
-        overall_score=risk.score,
-        highest_severity=risk.highest_severity,
-        confirmed_critical=risk.confirmed_critical,
-        confirmed_high=risk.confirmed_high,
-        risk_factors=dict(
-            risk.factors
+        score=risk.score,
+        highest_severity=(
+            risk.highest_severity.value
         ),
+        confirmed_critical=(
+            risk.confirmed_critical
+        ),
+        confirmed_high=(
+            risk.confirmed_high
+        ),
+        factors=[
+            factor.model_dump()
+            if hasattr(
+                factor,
+                "model_dump",
+            )
+            else factor
+            for factor in risk.factors
+        ],
     )
 
 @staticmethod
-def _build_policy_report(
+def _build_policy(
     policy: PolicyDecision,
 ) -> PolicyReport:
-    """Convert a policy decision into report data."""
+    """Convert a policy decision into a report policy section."""
     return PolicyReport(
         policy_name=policy.policy_name,
-        critical_action=policy.actions.get(
-            "critical",
-            "block",
-        ),
-        high_action=policy.actions.get(
-            "high",
-            "block",
-        ),
-        medium_action=policy.actions.get(
-            "medium",
-            "review",
-        ),
-        low_action=policy.actions.get(
-            "low",
-            "pass",
-        ),
-        info_action=policy.actions.get(
-            "info",
-            "pass",
-        ),
+        actions=[
+            action.model_dump()
+            if hasattr(
+                action,
+                "model_dump",
+            )
+            else action
+            for action in policy.actions
+        ],
         tool_errors=list(
             policy.tool_errors
         ),
@@ -195,129 +194,24 @@ def _build_policy_report(
             policy.regression_failures
         ),
         exceptions=[
-            dict(exception)
+            exception.model_dump()
+            if hasattr(
+                exception,
+                "model_dump",
+            )
+            else exception
             for exception in policy.exceptions
         ],
     )
 
 @staticmethod
-def _build_decision_report(
-    release_gate: ReleaseGateDecision,
+def _build_decision(
+    decision: ReleaseGateDecision,
 ) -> DecisionReport:
-    """Convert a release-gate decision into report data."""
+    """Convert a release-gate decision into a report decision."""
     return DecisionReport(
-        status=release_gate.status.value,
-        reason=release_gate.reason,
-        release_allowed=release_gate.release_allowed,
-    )
-
-@staticmethod
-def _build_remediation_report(
-    findings: list[Finding],
-) -> RemediationReport:
-    """Summarize finding remediation state."""
-    open_findings = sum(
-        finding.status.value
-        in {
-            "open",
-            "in_progress",
-            "reopened",
-        }
-        for finding in findings
-    )
-
-    remediated_findings = sum(
-        finding.status.value == "remediated"
-        for finding in findings
-    )
-
-    verified_findings = sum(
-        finding.status.value == "verified"
-        for finding in findings
-    )
-
-    pending_retests = sum(
-        finding.status.value
-        in {
-            "remediated",
-            "reopened",
-        }
-        for finding in findings
-    )
-
-    return RemediationReport(
-        open_findings=open_findings,
-        remediated_findings=remediated_findings,
-        verified_findings=verified_findings,
-        pending_retests=pending_retests,
-    )
-
-@staticmethod
-def _build_regression_report(
-    results: list[dict[str, Any]],
-) -> RegressionReport:
-    """Build the regression-test summary."""
-    tests = [
-        RegressionTestReport(
-            test_id=str(
-                result.get(
-                    "test_id",
-                    "unknown",
-                )
-            ),
-            requirement=str(
-                result.get(
-                    "requirement",
-                    "",
-                )
-            ),
-            status=str(
-                result.get(
-                    "status",
-                    "unknown",
-                )
-            ),
-            expected_result=result.get(
-                "expected_result"
-            ),
-            actual_result=result.get(
-                "actual_result"
-            ),
-            message=result.get(
-                "message"
-            ),
-        )
-        for result in results
-    ]
-
-    passed = sum(
-        test.status.lower()
-        in {
-            "passed",
-            "pass",
-            "success",
-        }
-        for test in tests
-    )
-
-    failed = sum(
-        test.status.lower()
-        in {
-            "failed",
-            "fail",
-            "error",
-        }
-        for test in tests
-    )
-
-    return RegressionReport(
-        suite=(
-            "SecureCommerce Security "
-            "Regression Suite"
-        ),
-        tests_total=len(tests),
-        tests_passed=passed,
-        tests_failed=failed,
-        tests=tests,
+        status=decision.status.value,
+        reason=decision.reason,
+        release_allowed=decision.release_allowed,
     )
 ```
