@@ -1,0 +1,83 @@
+{
+"suite": "securecommerce-security-regression",
+"version": "1.0.0",
+"target": "SecureCommerce",
+"tests": [
+{
+"id": "BOLA-001",
+"name": "Order object authorization",
+"requirement": "SF-AUTHZ-001",
+"finding_reference": "API-BOLA-001",
+"method": "GET",
+"endpoint": "/api/orders/{order_id}",
+"description": "Verify that a user cannot retrieve another user's order.",
+"expected": {
+"unauthorized_object_access": false,
+"response_status": 403
+}
+},
+{
+"id": "SQLI-001",
+"name": "User search SQL injection",
+"requirement": "SF-INPUT-001",
+"finding_reference": "SAST-SQLI-001",
+"method": "GET",
+"endpoint": "/vulnerable/search-user",
+"parameter": "user_id",
+"description": "Verify that user-controlled input cannot alter the database query.",
+"expected": {
+"injection": false,
+"database_error": false
+}
+},
+{
+"id": "XSS-001",
+"name": "Search output encoding",
+"requirement": "SF-INPUT-001",
+"finding_reference": "DAST-XSS-001",
+"method": "GET",
+"endpoint": "/vulnerable/search",
+"parameter": "query",
+"description": "Verify that attacker-controlled search input is safely encoded before rendering.",
+"expected": {
+"script_execution": false,
+"raw_html_reflection": false
+}
+},
+{
+"id": "SECRET-001",
+"name": "Secret detection regression",
+"requirement": "SF-SECRET-001",
+"finding_reference": "SECRET-001",
+"description": "Verify that known laboratory secret patterns are not reintroduced into application source.",
+"expected": {
+"hardcoded_secret": false
+}
+},
+{
+"id": "AUTHZ-001",
+"name": "Administrative function authorization",
+"requirement": "SF-AUTHZ-002",
+"finding_reference": "ADMIN-FUNCTION-AUTHZ",
+"method": "POST",
+"endpoint": "/admin/products",
+"description": "Verify that non-administrative users cannot execute administrative functions.",
+"expected": {
+"normal_user_access": false,
+"response_status": 403
+}
+},
+{
+"id": "MISCONFIG-001",
+"name": "Secure infrastructure configuration",
+"requirement": "SF-IAC-001",
+"finding_reference": "IAC-001",
+"description": "Verify that remediated infrastructure does not restore the intentionally insecure network and permission settings.",
+"expected": {
+"public_application": false,
+"public_storage": false,
+"wildcard_permissions": false
+}
+}
+]
+}
