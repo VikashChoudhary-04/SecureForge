@@ -1,4 +1,4 @@
-```python id="r5v8nd"
+```python id="a9c4jw"
 """Tests for the SecureForge report CLI command."""
 
 from pathlib import Path
@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 
 from secureforge.cli.main import app
 from secureforge.reporting import (
+    ReportPaths,
     SecurityReportService,
 )
 
@@ -24,21 +25,17 @@ def test_report_command_regenerates_html(
         / "security-report.json"
     )
 
-    html_path = (
+    initial_html_path = (
         tmp_path
-        / "security-report.html"
+        / "initial.html"
     )
 
     SecurityReportService().generate(
         sample_security_report,
-        paths=type(
-            "ReportPaths",
-            (),
-            {
-                "json_path": json_path,
-                "html_path": html_path,
-            },
-        )(),
+        paths=ReportPaths(
+            json_path=json_path,
+            html_path=initial_html_path,
+        ),
     )
 
     regenerated_path = (
@@ -79,19 +76,17 @@ def test_report_command_uses_default_html_path(
         / "security-report.json"
     )
 
+    initial_html_path = (
+        tmp_path
+        / "initial.html"
+    )
+
     SecurityReportService().generate(
         sample_security_report,
-        paths=type(
-            "ReportPaths",
-            (),
-            {
-                "json_path": json_path,
-                "html_path": (
-                    tmp_path
-                    / "initial.html"
-                ),
-            },
-        )(),
+        paths=ReportPaths(
+            json_path=json_path,
+            html_path=initial_html_path,
+        ),
     )
 
     result = runner.invoke(
