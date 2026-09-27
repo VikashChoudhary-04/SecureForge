@@ -1,0 +1,58 @@
+policy_id: secureforge-default
+version: "1.0"
+
+rules:
+
+* rule_id: BLOCK-CRITICAL
+  name: Block Critical Findings
+  description: >
+  Critical-severity findings must block the release.
+  severity: critical
+  action: block
+  enabled: true
+
+* rule_id: BLOCK-HIGH
+  name: Block High Findings
+  description: >
+  High-severity findings must block the release.
+  severity: high
+  action: block
+  enabled: true
+
+* rule_id: REVIEW-MEDIUM
+  name: Review Medium Findings
+  description: >
+  Medium-severity findings require security review before release.
+  severity: medium
+  action: review
+  enabled: true
+
+* rule_id: PASS-LOW
+  name: Pass Low Findings
+  description: >
+  Low-severity findings do not independently prevent release.
+  severity: low
+  action: pass
+  enabled: true
+
+* rule_id: PASS-INFO
+  name: Pass Informational Findings
+  description: >
+  Informational findings do not independently prevent release.
+  severity: info
+  action: pass
+  enabled: true
+
+exceptions: []
+
+fail_on_tool_error: false
+
+fail_on_regression_failure: true
+
+metadata:
+description: >
+Default SecureForge release policy for controlled application
+security verification.
+intended_environment: lab
+policy_owner: SecureForge
+review_required_for_exceptions: true
