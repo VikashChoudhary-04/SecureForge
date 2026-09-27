@@ -9,7 +9,10 @@ from secureforge.core.findings.models import Finding
 from secureforge.core.policy.models import PolicyDecision
 from secureforge.core.release_gate.models import ReleaseGateDecision
 from secureforge.core.risk.models import RiskAssessment
-from secureforge.regression import RegressionSuiteResult
+from secureforge.regression import (
+RegressionGateDecision,
+RegressionSuiteResult,
+)
 
 from .builder import SecurityReportBuilder
 from .html import SecurityHTMLReportRenderer
@@ -70,6 +73,7 @@ def build_report(
     decision: ReleaseGateDecision,
     remediation: RemediationReport | None = None,
     regression: RegressionSuiteResult | None = None,
+    regression_gate: RegressionGateDecision | None = None,
     generated_at: str | None = None,
 ) -> SecurityReport:
     """Build a security report from domain results."""
@@ -82,6 +86,7 @@ def build_report(
         decision=decision,
         remediation=remediation,
         regression=regression,
+        regression_gate=regression_gate,
         generated_at=generated_at,
     )
 
@@ -115,6 +120,7 @@ def generate_from_results(
     paths: ReportPaths,
     remediation: RemediationReport | None = None,
     regression: RegressionSuiteResult | None = None,
+    regression_gate: RegressionGateDecision | None = None,
     generated_at: str | None = None,
 ) -> ReportPaths:
     """Build and write a complete security report."""
@@ -127,6 +133,7 @@ def generate_from_results(
         decision=decision,
         remediation=remediation,
         regression=regression,
+        regression_gate=regression_gate,
         generated_at=generated_at,
     )
 
