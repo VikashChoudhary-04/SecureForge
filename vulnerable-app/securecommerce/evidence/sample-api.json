@@ -1,0 +1,30 @@
+{
+"tool": "securecommerce-api-scanner-lab",
+"version": "1.0.0",
+"target": "http://localhost:5000",
+"findings": [
+{
+"id": "API-BOLA-001",
+"title": "Broken Object-Level Authorization in order endpoint",
+"severity": "high",
+"confidence": "confirmed",
+"category": "BOLA",
+"cwe": "CWE-639",
+"owasp": "API1:2023-Broken Object Level Authorization",
+"method": "GET",
+"endpoint": "/api/orders/{order_id}",
+"parameter": "order_id",
+"description": "An authenticated user can request an order identifier belonging to another user and receive the order details.",
+"impact": "An attacker may access another customer's order information, including shipping information and order data.",
+"remediation": "Verify that the authenticated user is authorized to access the requested order before returning the object.",
+"security_requirement": "SF-AUTHZ-001",
+"evidence": {
+"attacker_user_id": 2,
+"target_order_id": 2,
+"target_order_owner_id": 3,
+"response_status": 200,
+"authorization_check": "not_enforced"
+}
+}
+]
+}
