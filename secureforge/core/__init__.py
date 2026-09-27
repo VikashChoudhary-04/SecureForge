@@ -9,8 +9,11 @@ from .risk import RiskEngine
 from .scan import (
 ScanOrchestrator,
 ScanPlanner,
+ScanResultNormalizer,
 ScanRun,
 ScanRunFactory,
+ScanRunner,
+SecurityPipeline,
 ToolExecutor,
 )
 
@@ -22,8 +25,11 @@ ToolExecutor,
 "RiskEngine",
 "ScanOrchestrator",
 "ScanPlanner",
+"ScanResultNormalizer",
 "ScanRun",
 "ScanRunFactory",
+"ScanRunner",
+"SecurityPipeline",
 "SecurityRequirement",
 "ToolExecutor",
 ]
