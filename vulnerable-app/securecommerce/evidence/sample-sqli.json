@@ -1,0 +1,29 @@
+{
+"tool": "securecommerce-dast-lab",
+"version": "1.0.0",
+"target": "http://localhost:5000",
+"alerts": [
+{
+"id": "DAST-SQLI-001",
+"name": "SQL Injection",
+"severity": "high",
+"confidence": "confirmed",
+"cwe": "CWE-89",
+"owasp": "A03:2021-Injection",
+"method": "GET",
+"url": "http://localhost:5000/vulnerable/search-user?user_id=2",
+"endpoint": "/vulnerable/search-user",
+"parameter": "user_id",
+"description": "User-controlled input reaches a database query without parameterization.",
+"impact": "An attacker may manipulate database queries and access or modify data outside the intended application behavior.",
+"remediation": "Use parameterized queries or an ORM instead of concatenating untrusted input into SQL statements.",
+"security_requirement": "SF-INPUT-001",
+"evidence": {
+"parameter": "user_id",
+"injection_point": "SQL WHERE clause",
+"database": "SQLite",
+"validation": "controlled laboratory verification"
+}
+}
+]
+}
