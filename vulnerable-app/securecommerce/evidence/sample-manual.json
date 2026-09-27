@@ -1,0 +1,33 @@
+{
+"source": "burp",
+"tool": "Burp Suite Professional",
+"version": "2026.8",
+"target": "http://localhost:5000",
+"findings": [
+{
+"id": "BURP-BOLA-001",
+"title": "Confirmed BOLA through manual authorization testing",
+"severity": "high",
+"confidence": "confirmed",
+"cwe": "CWE-639",
+"owasp": "API1:2023-Broken Object Level Authorization",
+"method": "GET",
+"endpoint": "/api/orders/2",
+"parameter": "order_id",
+"description": "Manual request manipulation confirmed that one authenticated laboratory user can retrieve another user's order.",
+"impact": "An authenticated attacker may access order information belonging to another customer.",
+"remediation": "Enforce object-level authorization by verifying that the authenticated user owns or is explicitly permitted to access the requested order.",
+"security_requirement": "SF-AUTHZ-001",
+"manual_validation": true,
+"evidence": {
+"request_reference": "BURP-REQ-001",
+"authenticated_user": "alice",
+"authenticated_user_id": 2,
+"requested_order_id": 2,
+"order_owner_id": 3,
+"response_status": 200,
+"authorization_bypass_confirmed": true
+}
+}
+]
+}
