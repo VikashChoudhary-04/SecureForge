@@ -1,4 +1,4 @@
-"""Risk engine and contextual risk models."""
+"""Risk engine, scoring, and contextual risk models."""
 
 from .engine import RiskEngine
 from .models import (
@@ -8,6 +8,7 @@ RiskAssessment,
 RiskContext,
 RiskLevel,
 )
+from .scoring import RiskScorer
 
 **all** = [
 "AssetImportance",
@@ -16,4 +17,5 @@ RiskLevel,
 "RiskContext",
 "RiskEngine",
 "RiskLevel",
+"RiskScorer",
 ]
