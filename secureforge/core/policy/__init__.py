@@ -1,6 +1,7 @@
-"""Security policy engine, loader, and policy models."""
+"""Security policy engine, evaluator, loader, and policy models."""
 
 from .engine import PolicyEngine
+from .evaluator import PolicyEvaluator
 from .loader import PolicyLoader
 from .models import (
 PolicyAction,
@@ -18,6 +19,7 @@ PolicyRule,
 "PolicyEngine",
 "PolicyEvaluation",
 "PolicyException",
+"PolicyEvaluator",
 "PolicyLoader",
 "PolicyRule",
 ]
