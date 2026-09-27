@@ -1,0 +1,21 @@
+services:
+securecommerce:
+build:
+context: .
+dockerfile: Dockerfile
+container_name: securecommerce
+ports:
+- "5000:5000"
+environment:
+SECURECOMMERCE_HOST: "0.0.0.0"
+SECURECOMMERCE_PORT: "5000"
+SECURECOMMERCE_DEBUG: "false"
+SECURECOMMERCE_LAB_MODE: "true"
+volumes:
+- securecommerce-data:/app/instance
+- securecommerce-uploads:/app/uploads
+restart: unless-stopped
+
+volumes:
+securecommerce-data:
+securecommerce-uploads:
