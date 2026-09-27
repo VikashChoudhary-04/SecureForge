@@ -1,22 +1,21 @@
-"""Factories for constructing SecureForge integration registries."""
+"""Security-tool integration framework for SecureForge."""
 
-from **future** import annotations
+from .base import (
+IntegrationConfigurationError,
+IntegrationError,
+IntegrationParseError,
+SecurityIntegration,
+)
+from .defaults import build_default_registry
+from .registry import IntegrationRegistry
+from .registry_factory import build_registry
 
-from collections.abc import Iterable
-
-from secureforge.integrations.base import SecurityIntegration
-from secureforge.integrations.defaults import build_default_registry
-from secureforge.integrations.registry import IntegrationRegistry
-
-def build_registry(
-additional_integrations: Iterable[SecurityIntegration] | None = None,
-) -> IntegrationRegistry:
-"""Build the application integration registry."""
-registry = build_default_registry()
-
-```
-if additional_integrations:
-    registry.register_many(additional_integrations)
-
-return registry
-```
+**all** = [
+"IntegrationConfigurationError",
+"IntegrationError",
+"IntegrationParseError",
+"IntegrationRegistry",
+"SecurityIntegration",
+"build_default_registry",
+"build_registry",
+]
