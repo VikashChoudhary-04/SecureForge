@@ -1,4 +1,4 @@
-```python id="r3m8wk"
+```python id="k2m8xr"
 """Tests for SecureForge scan-result persistence."""
 
 from pathlib import Path
@@ -51,6 +51,54 @@ def test_scan_result_store_saves_complete_result(
     assert isinstance(
         payload["pipeline"],
         dict,
+    )
+
+
+def test_scan_result_store_persists_full_pipeline(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Persist risk, policy, and release-gate details."""
+    store = ScanResultStore(
+        directory=tmp_path
+    )
+
+    store.save(
+        sample_scan_result
+    )
+
+    payload = store.load(
+        sample_scan_result.execution.scan_id
+    )
+
+    pipeline = payload["pipeline"]
+
+    assert isinstance(
+        pipeline["findings"],
+        list,
+    )
+    assert isinstance(
+        pipeline["risk"],
+        dict,
+    )
+    assert isinstance(
+        pipeline["policy"],
+        dict,
+    )
+    assert isinstance(
+        pipeline["release_gate"],
+        dict,
+    )
+
+    assert (
+        pipeline["risk"]["score"]
+        == sample_scan_result.pipeline.risk.score
+    )
+
+    assert (
+        pipeline["policy"]["policy_name"]
+        == sample_scan_result.pipeline
+        .policy.policy_name
     )
 
 
@@ -237,6 +285,41 @@ def test_scan_result_store_rejects_incomplete_payload(
         )
 
 
+def test_scan_result_store_rejects_incomplete_pipeline(
+    tmp_path: Path,
+) -> None:
+    """Reject persisted data missing pipeline sections."""
+    store = ScanResultStore(
+        directory=tmp_path
+    )
+
+    path = (
+        tmp_path
+        / "incomplete-pipeline.json"
+    )
+
+    path.write_text(
+        """
+        {
+          "scan": {},
+          "findings": [],
+          "pipeline": {
+            "risk": {}
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ScanResultStoreError,
+        match="pipeline.*missing required",
+    ):
+        store.load(
+            "incomplete-pipeline"
+        )
+
+
 def test_scan_result_store_rejects_invalid_section_types(
     tmp_path: Path,
 ) -> None:
@@ -255,7 +338,7 @@ def test_scan_result_store_rejects_invalid_section_types(
         {
           "scan": [],
           "findings": {},
-          "pipeline": "invalid"
+          "pipeline": {}
         }
         """,
         encoding="utf-8",
