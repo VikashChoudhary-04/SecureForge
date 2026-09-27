@@ -1,0 +1,28 @@
+{
+"tool": "securecommerce-sast-lab",
+"version": "1.0.0",
+"target": "./vulnerable-app/securecommerce",
+"findings": [
+{
+"id": "SAST-SQLI-001",
+"title": "SQL query constructed from user-controlled input",
+"severity": "high",
+"confidence": "high",
+"cwe": "CWE-89",
+"owasp": "A03:2021-Injection",
+"file": "app/vulnerabilities.py",
+"line": 51,
+"column": 13,
+"parameter": "user_id",
+"description": "The application constructs a SQL statement by concatenating the user-controlled user_id value directly into the query.",
+"impact": "An attacker may manipulate the SQL statement and access or modify database information outside the intended application behavior.",
+"remediation": "Use parameterized queries or the application's ORM instead of concatenating untrusted input into SQL statements.",
+"security_requirement": "SF-INPUT-001",
+"evidence": {
+"code_reference": "app/vulnerabilities.py:51",
+"sink": "sqlite3.Connection.execute",
+"source": "request-controlled user_id"
+}
+}
+]
+}
