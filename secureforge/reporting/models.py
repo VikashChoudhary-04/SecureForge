@@ -1,199 +1,193 @@
-"""Models used to build SecureForge security reports."""
+"""Data models for SecureForge security reporting."""
 
 from **future** import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
-
-def utc_now() -> datetime:
-"""Return the current UTC timestamp."""
-return datetime.now(timezone.utc)
+from pydantic import BaseModel, Field
 
 class ReleaseMetadata(BaseModel):
-"""Metadata identifying the release being evaluated."""
+"""Metadata describing the release being evaluated."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
 release_id: str
 application: str
 version: str
-commit_sha: str | None = None
+commit_sha: str
 environment: str
-profile: str
-timestamp: datetime = Field(
-    default_factory=utc_now
-)
+timestamp: str
 ```
 
 class ScanMetadata(BaseModel):
-"""Metadata describing the security verification run."""
+"""Metadata describing the security scan."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
 scan_id: str
+profile: str
 status: str
-started_at: datetime | None = None
-completed_at: datetime | None = None
-integrations: list[str] = Field(
+tools: list[str] = Field(
     default_factory=list
 )
+started_at: str
+completed_at: str
+duration_seconds: float
 ```
 
 class ReportFinding(BaseModel):
-"""Finding representation included in a security report."""
+"""Finding representation used in security reports."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
 finding_id: str
 title: str
 source: str
-source_finding_ids: list[str] = Field(
-    default_factory=list
-)
-
-application: str
 asset: str
-
+application: str | None = None
 endpoint: str | None = None
 parameter: str | None = None
-
-cwe: str | None = None
-owasp: str | None = None
-security_requirement: str | None = None
-
 severity: str
 confidence: str
-
+status: str
+validation_status: str
+cwe: str | None = None
+owasp_mapping: str | None = None
+security_requirement: str | None = None
 description: str
 impact: str
 remediation: str
-
-status: str
-validation_status: str
-
+evidence: list[dict[str, Any]] = Field(
+    default_factory=list
+)
+correlations: list[str] = Field(
+    default_factory=list
+)
 regression_test: str | None = None
-evidence_count: int = 0
 ```
 
 class RiskReport(BaseModel):
-"""Risk evaluation included in a security report."""
+"""Risk assessment section of the report."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
-overall_score: float
+score: float
 highest_severity: str
-confirmed_critical: int = 0
-confirmed_high: int = 0
-risk_factors: dict[str, Any] = Field(
-    default_factory=dict
+confirmed_critical: int
+confirmed_high: int
+factors: list[Any] = Field(
+    default_factory=list
 )
 ```
 
 class PolicyReport(BaseModel):
-"""Release-policy evaluation included in a report."""
+"""Policy evaluation section of the report."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
 policy_name: str
-critical_action: str
-high_action: str
-medium_action: str
-low_action: str
-info_action: str = "pass"
+actions: list[Any] = Field(
+    default_factory=list
+)
 tool_errors: list[str] = Field(
     default_factory=list
 )
 regression_failures: list[str] = Field(
     default_factory=list
 )
-exceptions: list[dict[str, Any]] = Field(
+exceptions: list[Any] = Field(
     default_factory=list
 )
 ```
 
 class RemediationReport(BaseModel):
-"""Remediation lifecycle summary."""
+"""Remediation summary section."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
-open_findings: int = 0
-remediated_findings: int = 0
-verified_findings: int = 0
-pending_retests: int = 0
+total: int
+open: int
+in_progress: int
+resolved: int
+verified: int
+items: list[Any] = Field(
+    default_factory=list
+)
 ```
 
 class RegressionTestReport(BaseModel):
-"""Result of one security regression test."""
+"""Individual regression test result."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
 test_id: str
-requirement: str
 status: str
-expected_result: str | None = None
-actual_result: str | None = None
-message: str | None = None
+expected: str
+actual: str
+message: str
+evidence: dict[str, Any] = Field(
+    default_factory=dict
+)
 ```
 
 class RegressionReport(BaseModel):
-"""Security regression suite summary."""
+"""Regression testing section of the report."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
-suite: str
-tests_total: int = 0
-tests_passed: int = 0
-tests_failed: int = 0
+suite_id: str
+suite_name: str
+status: str
+total: int
+passed: int
+failed: int
+errors: int
+skipped: int
 tests: list[RegressionTestReport] = Field(
+    default_factory=list
+)
+started_at: str | None = None
+completed_at: str | None = None
+duration_seconds: float = 0.0
+```
+
+class RegressionGateReport(BaseModel):
+"""Regression-specific release-gate decision."""
+
+```
+allowed: bool
+blocked: bool
+status: str
+reason: str
+failed_tests: list[str] = Field(
+    default_factory=list
+)
+errored_tests: list[str] = Field(
+    default_factory=list
+)
+skipped_tests: list[str] = Field(
+    default_factory=list
+)
+failures: list[str] = Field(
     default_factory=list
 )
 ```
 
 class DecisionReport(BaseModel):
-"""Final release decision."""
+"""Final release-gate decision."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
 status: str
 reason: str
 release_allowed: bool
 ```
 
 class SecurityReport(BaseModel):
-"""Complete SecureForge security verification report."""
+"""Complete SecureForge security report."""
 
 ```
-model_config = ConfigDict(extra="allow")
-
 release: ReleaseMetadata
 scan: ScanMetadata
-
 findings: list[ReportFinding] = Field(
     default_factory=list
 )
-
 risk: RiskReport
 policy: PolicyReport
 remediation: RemediationReport
 regression: RegressionReport
+regression_gate: RegressionGateReport | None = None
 decision: DecisionReport
-
-generated_at: datetime = Field(
-    default_factory=utc_now
-)
-
-metadata: dict[str, Any] = Field(
-    default_factory=dict
-)
+generated_at: str
 ```
