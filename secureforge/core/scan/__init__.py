@@ -1,5 +1,7 @@
-"""Scan orchestration models and execution state for SecureForge."""
+"""Scan orchestration models, identifiers, and factories for SecureForge."""
 
+from .factory import ScanRunFactory
+from .identifiers import ScanIdentifier
 from .models import (
 ScanRun,
 ScanStatus,
@@ -9,7 +11,9 @@ ToolExecutionStatus,
 )
 
 **all** = [
+"ScanIdentifier",
 "ScanRun",
+"ScanRunFactory",
 "ScanStatus",
 "ScanSummary",
 "ToolExecutionResult",
