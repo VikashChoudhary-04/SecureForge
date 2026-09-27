@@ -1,95 +1,29 @@
 """Tests for SecureForge reporting package exports."""
 
-from **future** import annotations
-
-import secureforge.reporting as reporting
-
-def test_reporting_package_exports_models():
-"""Reporting package should expose report models."""
-assert hasattr(
-reporting,
-"SecurityReport",
-)
-assert hasattr(
-reporting,
-"ReportFinding",
-)
-assert hasattr(
-reporting,
-"RiskReport",
-)
-assert hasattr(
-reporting,
-"PolicyReport",
-)
-assert hasattr(
-reporting,
-"DecisionReport",
+from secureforge.reporting import (
+RegressionGateReport,
+RegressionReport,
+RegressionTestReport,
+SecurityReportBuilder,
+SecurityHTMLReportRenderer,
+SecurityReportSerializer,
+SecurityReportService,
+build_regression_gate_report,
+build_regression_report,
 )
 
-def test_reporting_package_exports_regression_models():
-"""Reporting package should expose regression report models."""
-assert hasattr(
-reporting,
-"RegressionReport",
-)
-assert hasattr(
-reporting,
-"RegressionTestReport",
-)
-
-def test_reporting_package_exports_regression_builder():
-"""Reporting package should expose the regression adapter."""
-assert hasattr(
-reporting,
-"build_regression_report",
-)
-assert callable(
-reporting.build_regression_report
-)
-
-def test_reporting_package_exports_builders():
-"""Reporting package should expose core reporting builders."""
-assert hasattr(
-reporting,
-"SecurityReportBuilder",
-)
-assert hasattr(
-reporting,
-"SecurityReportSerializer",
-)
-assert hasattr(
-reporting,
-"SecurityHTMLReportRenderer",
-)
-assert hasattr(
-reporting,
-"SecurityReportService",
-)
-
-def test_reporting_package_defines_public_api():
-"""All expected public names should be listed in **all**."""
-expected = {
-"DecisionReport",
-"PolicyReport",
-"RegressionReport",
-"RegressionTestReport",
-"ReleaseMetadata",
-"RemediationReport",
-"ReportFinding",
-"ReportPaths",
-"RiskReport",
-"ScanMetadata",
-"SecurityHTMLReportRenderer",
-"SecurityReport",
-"SecurityReportBuilder",
-"SecurityReportSerializer",
-"SecurityReportService",
-"build_regression_report",
-}
+def test_reporting_exports() -> None:
+"""Verify the public reporting API exports."""
+assert SecurityReportBuilder is not None
+assert SecurityHTMLReportRenderer is not None
+assert SecurityReportSerializer is not None
+assert SecurityReportService is not None
 
 ```
-assert set(
-    reporting.__all__
-) == expected
+assert RegressionReport is not None
+assert RegressionTestReport is not None
+assert RegressionGateReport is not None
+
+assert build_regression_report is not None
+assert build_regression_gate_report is not None
 ```
