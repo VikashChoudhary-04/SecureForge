@@ -14,6 +14,9 @@ RiskReport,
 ScanMetadata,
 SecurityReport,
 )
+from .regression import (
+build_regression_report,
+)
 from .serializers import SecurityReportSerializer
 from .service import (
 ReportPaths,
@@ -36,4 +39,5 @@ SecurityReportService,
 "SecurityReportBuilder",
 "SecurityReportSerializer",
 "SecurityReportService",
+"build_regression_report",
 ]
