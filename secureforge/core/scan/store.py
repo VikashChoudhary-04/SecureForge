@@ -1,4 +1,4 @@
-```python id="f1k7qp"
+```python id="p4x7nm"
 """Persistent storage for SecureForge scan results."""
 
 from __future__ import annotations
@@ -155,8 +155,14 @@ class ScanResultStore:
     def _serialize(
         result: SecurityScanResult,
     ) -> dict[str, Any]:
-        """Serialize a complete scan result."""
-        return result.to_dict()
+        """Serialize the complete scan result."""
+        payload = result.to_dict()
+
+        pipeline = result.pipeline.to_dict()
+
+        payload["pipeline"] = pipeline
+
+        return payload
 
     @staticmethod
     def _validate_identifier(
@@ -189,7 +195,7 @@ class ScanResultStore:
     def _validate_payload(
         payload: dict[str, Any],
     ) -> None:
-        """Validate the minimum persisted scan-result structure."""
+        """Validate the persisted scan-result structure."""
         required_sections = {
             "scan",
             "findings",
@@ -234,4 +240,50 @@ class ScanResultStore:
             raise ScanResultStoreError(
                 "Stored scan result 'pipeline' section must be an object."
             )
+
+        pipeline = payload["pipeline"]
+
+        required_pipeline_sections = {
+            "findings",
+            "risk",
+            "policy",
+            "release_gate",
+        }
+
+        missing_pipeline = (
+            required_pipeline_sections
+            - pipeline.keys()
+        )
+
+        if missing_pipeline:
+            missing_values = ", ".join(
+                sorted(missing_pipeline)
+            )
+
+            raise ScanResultStoreError(
+                "Stored pipeline is missing required "
+                f"sections: {missing_values}"
+            )
+
+        if not isinstance(
+            pipeline["findings"],
+            list,
+        ):
+            raise ScanResultStoreError(
+                "Stored pipeline 'findings' must be a list."
+            )
+
+        for section in (
+            "risk",
+            "policy",
+            "release_gate",
+        ):
+            if not isinstance(
+                pipeline[section],
+                dict,
+            ):
+                raise ScanResultStoreError(
+                    "Stored pipeline "
+                    f"'{section}' must be an object."
+                )
 ```
