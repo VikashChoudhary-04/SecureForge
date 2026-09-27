@@ -1,0 +1,24 @@
+{
+"tool": "securecommerce-container-scanner-lab",
+"version": "1.0.0",
+"target": "securecommerce:latest",
+"findings": [
+{
+"id": "CONTAINER-ROOT-001",
+"title": "Container runs application as root",
+"severity": "high",
+"confidence": "confirmed",
+"cwe": "CWE-250",
+"owasp": "A05:2021-Security Misconfiguration",
+"description": "The SecureCommerce container does not define a non-root runtime user.",
+"impact": "A successful application compromise may provide the attacker with root privileges inside the container, increasing the potential impact of container escape or local compromise.",
+"remediation": "Create a dedicated unprivileged application user and run the application under that user.",
+"security_requirement": "SF-CONTAINER-001",
+"evidence": {
+"image": "securecommerce:latest",
+"dockerfile": "Dockerfile",
+"user_instruction_present": false
+}
+}
+]
+}
