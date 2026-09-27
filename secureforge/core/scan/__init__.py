@@ -1,4 +1,4 @@
-"""Scan orchestration models, planning, execution, normalization, and factories."""
+"""Scan orchestration models, planning, execution, normalization, evaluation, and factories."""
 
 from .executor import ToolExecutor
 from .factory import ScanRunFactory
@@ -14,6 +14,7 @@ from .normalizer import ScanResultNormalizer
 from .orchestrator import ScanOrchestrator
 from .planner import PlannedTool, ScanPlanner
 from .runner import ScanRunner
+from .security_pipeline import SecurityPipeline
 
 **all** = [
 "PlannedTool",
@@ -26,6 +27,7 @@ from .runner import ScanRunner
 "ScanRunner",
 "ScanStatus",
 "ScanSummary",
+"SecurityPipeline",
 "ToolExecutionResult",
 "ToolExecutionStatus",
 "ToolExecutor",
