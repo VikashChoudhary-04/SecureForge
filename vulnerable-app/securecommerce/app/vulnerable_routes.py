@@ -63,6 +63,27 @@ if result is None:
 return jsonify(result)
 ```
 
+@vulnerable_bp.get("/search")
+def search():
+"""Intentionally vulnerable reflected-XSS endpoint."""
+query = request.args.get(
+"query",
+"",
+)
+
+```
+return (
+    "<!doctype html>"
+    "<html>"
+    "<head><title>SecureCommerce Search</title></head>"
+    "<body>"
+    "<h1>Product Search</h1>"
+    f"<p>Search results for: {query}</p>"
+    "</body>"
+    "</html>"
+)
+```
+
 @vulnerable_bp.get("/profile/[int:user_id](int:user_id)")
 def vulnerable_profile(user_id: int):
 """Intentionally vulnerable object-level authorization endpoint."""
