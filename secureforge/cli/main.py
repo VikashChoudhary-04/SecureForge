@@ -1,4 +1,4 @@
-```python id="q7m4tz"
+```python id="v4n7qx"
 """SecureForge command-line interface."""
 
 from __future__ import annotations
@@ -10,7 +10,6 @@ import typer
 
 from secureforge import __version__
 from secureforge.cli.report import (
-    ReportCommandService,
     build_report_command_service,
 )
 from secureforge.cli.scan import (
@@ -85,6 +84,40 @@ def scan(
         "--scan-id",
         help="Identifier assigned to this scan.",
     ),
+    application: str = typer.Option(
+        "secureforge-target",
+        "--application",
+        help="Application name recorded in the security report.",
+    ),
+    version: str = typer.Option(
+        "unknown",
+        "--version-label",
+        help="Application or release version.",
+    ),
+    commit_sha: str = typer.Option(
+        "unknown",
+        "--commit-sha",
+        help="Source-control commit associated with the release.",
+    ),
+    environment: str = typer.Option(
+        "local",
+        "--environment",
+        help="Environment being assessed.",
+    ),
+    output_directory: Path = typer.Option(
+        Path("reports"),
+        "--output",
+        help="Directory for security-report.json and security-report.html.",
+        file_okay=False,
+        dir_okay=True,
+    ),
+    scan_storage_directory: Path = typer.Option(
+        Path("reports/scans"),
+        "--scan-storage",
+        help="Directory for persisted scan-result JSON files.",
+        file_okay=False,
+        dir_okay=True,
+    ),
 ) -> None:
     """Run a SecureForge security verification scan."""
     try:
@@ -98,6 +131,14 @@ def scan(
                 profile=selected_profile,
                 target=target,
                 source_path=source_path,
+                application=application,
+                version=version,
+                commit_sha=commit_sha,
+                environment=environment,
+                output_directory=output_directory,
+                scan_storage_directory=(
+                    scan_storage_directory
+                ),
             )
         )
 
@@ -155,6 +196,18 @@ def scan(
     typer.echo(
         "Release Allowed: "
         f"{result.release_allowed}"
+    )
+    typer.echo(
+        "Security Report: "
+        f"{output_directory / 'security-report.json'}"
+    )
+    typer.echo(
+        "HTML Report: "
+        f"{output_directory / 'security-report.html'}"
+    )
+    typer.echo(
+        "Persisted Scan: "
+        f"{scan_storage_directory / f'{scan_id}.json'}"
     )
 
     if result.execution.warnings:
