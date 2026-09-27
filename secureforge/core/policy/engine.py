@@ -5,14 +5,14 @@ from **future** import annotations
 from collections.abc import Iterable
 
 from secureforge.core.findings import Finding
-from secureforge.core.risk import RiskAssessment, RiskLevel
+from secureforge.core.risk import RiskAssessment
 
+from .evaluator import PolicyEvaluator
 from .models import (
 PolicyAction,
 PolicyConfig,
 PolicyDecision,
 PolicyEvaluation,
-PolicyRule,
 )
 
 class PolicyEngine:
@@ -24,6 +24,12 @@ _decision_priority = {
     PolicyDecision.REVIEW: 1,
     PolicyDecision.BLOCK: 2,
 }
+
+def __init__(
+    self,
+    evaluator: PolicyEvaluator | None = None,
+) -> None:
+    self.evaluator = evaluator or PolicyEvaluator()
 
 def evaluate(
     self,
@@ -37,7 +43,9 @@ def evaluate(
     """Evaluate findings and contextual risk against policy."""
     finding_list = list(findings)
     assessment_list = list(assessments)
-    regression_failures = list(failed_regressions or [])
+    regression_failures = list(
+        failed_regressions or []
+    )
 
     assessment_map = {
         assessment.finding_id: assessment
@@ -54,42 +62,57 @@ def evaluate(
     final_decision = PolicyDecision.PASS
 
     for finding in finding_list:
-        assessment = assessment_map.get(finding.finding_id)
+        assessment = assessment_map.get(
+            finding.finding_id
+        )
 
         if assessment is None:
+            review_findings.append(
+                finding.finding_id
+            )
+
             reasons.append(
                 f"No risk assessment was available for "
                 f"{finding.finding_id}."
             )
-            review_findings.append(finding.finding_id)
+
             final_decision = self._higher_decision(
                 final_decision,
                 PolicyDecision.REVIEW,
             )
+
             continue
 
-        if self._exception_applies(finding, policy):
-            exception_id = self._get_exception_id(finding, policy)
+        exception = self.evaluator.find_exception(
+            finding,
+            policy,
+        )
 
-            if exception_id:
-                exceptions_applied.append(exception_id)
-
-            passed_findings.append(finding.finding_id)
+        if exception is not None:
+            exceptions_applied.append(
+                exception.exception_id
+            )
+            passed_findings.append(
+                finding.finding_id
+            )
 
             reasons.append(
-                f"Policy exception applied to "
-                f"{finding.finding_id}."
+                f"Policy exception '{exception.exception_id}' "
+                f"was applied to {finding.finding_id}."
             )
+
             continue
 
-        rule = self._match_rule(
+        rule = self.evaluator.match_rule(
             finding,
             assessment,
             policy.rules,
         )
 
         if rule is None:
-            review_findings.append(finding.finding_id)
+            review_findings.append(
+                finding.finding_id
+            )
 
             reasons.append(
                 f"No explicit policy rule matched "
@@ -100,28 +123,46 @@ def evaluate(
                 final_decision,
                 PolicyDecision.REVIEW,
             )
+
             continue
 
-        triggered_rules.append(rule.rule_id)
+        triggered_rules.append(
+            rule.rule_id
+        )
 
-        decision = self._action_to_decision(rule.action)
+        decision = self._action_to_decision(
+            rule.action
+        )
 
         if decision == PolicyDecision.BLOCK:
-            blocking_findings.append(finding.finding_id)
+            blocking_findings.append(
+                finding.finding_id
+            )
+
             reasons.append(
-                f"{finding.finding_id} triggered blocking rule "
-                f"{rule.rule_id}."
+                f"{finding.finding_id} triggered blocking "
+                f"rule {rule.rule_id}."
             )
 
         elif decision == PolicyDecision.REVIEW:
-            review_findings.append(finding.finding_id)
+            review_findings.append(
+                finding.finding_id
+            )
+
             reasons.append(
-                f"{finding.finding_id} triggered review rule "
-                f"{rule.rule_id}."
+                f"{finding.finding_id} triggered review "
+                f"rule {rule.rule_id}."
             )
 
         else:
-            passed_findings.append(finding.finding_id)
+            passed_findings.append(
+                finding.finding_id
+            )
+
+            reasons.append(
+                f"{finding.finding_id} passed rule "
+                f"{rule.rule_id}."
+            )
 
         final_decision = self._higher_decision(
             final_decision,
@@ -140,7 +181,6 @@ def evaluate(
                 + ", ".join(regression_failures)
                 + "."
             )
-
         else:
             final_decision = self._higher_decision(
                 final_decision,
@@ -148,7 +188,8 @@ def evaluate(
             )
 
             reasons.append(
-                "Security regression tests failed and require review: "
+                "Security regression tests failed and "
+                "require review: "
                 + ", ".join(regression_failures)
                 + "."
             )
@@ -161,10 +202,9 @@ def evaluate(
             )
 
             reasons.append(
-                f"{tool_errors} security tool execution error(s) "
-                "were encountered."
+                f"{tool_errors} security tool execution "
+                "error(s) were encountered."
             )
-
         else:
             final_decision = self._higher_decision(
                 final_decision,
@@ -172,118 +212,45 @@ def evaluate(
             )
 
             reasons.append(
-                f"{tool_errors} security tool execution error(s) "
-                "require review."
+                f"{tool_errors} security tool execution "
+                "error(s) require review."
             )
 
     if not reasons:
-        reasons.append("No policy conditions were triggered.")
+        reasons.append(
+            "No policy conditions were triggered."
+        )
 
     return PolicyEvaluation(
         decision=final_decision,
-        triggered_rules=self._unique(triggered_rules),
-        blocking_findings=self._unique(blocking_findings),
-        review_findings=self._unique(review_findings),
-        passed_findings=self._unique(passed_findings),
-        exceptions_applied=self._unique(exceptions_applied),
+        triggered_rules=self._unique(
+            triggered_rules
+        ),
+        blocking_findings=self._unique(
+            blocking_findings
+        ),
+        review_findings=self._unique(
+            review_findings
+        ),
+        passed_findings=self._unique(
+            passed_findings
+        ),
+        exceptions_applied=self._unique(
+            exceptions_applied
+        ),
         reasons=reasons,
         policy_id=policy.policy_id,
         policy_version=policy.version,
     )
-
-def _match_rule(
-    self,
-    finding: Finding,
-    assessment: RiskAssessment,
-    rules: list[PolicyRule],
-) -> PolicyRule | None:
-    """Return the highest-priority matching enabled rule."""
-    matching_rules: list[PolicyRule] = []
-
-    for rule in rules:
-        if not rule.enabled:
-            continue
-
-        if self._rule_matches(finding, assessment, rule):
-            matching_rules.append(rule)
-
-    if not matching_rules:
-        return None
-
-    return max(
-        matching_rules,
-        key=lambda rule: self._rule_priority(rule.action),
-    )
-
-@staticmethod
-def _rule_matches(
-    finding: Finding,
-    assessment: RiskAssessment,
-    rule: PolicyRule,
-) -> bool:
-    """Determine whether a policy rule matches a finding."""
-    if rule.severity is not None:
-        if finding.severity.value != rule.severity.lower():
-            return False
-
-    if rule.risk_level is not None:
-        if assessment.contextual_risk.value != rule.risk_level.lower():
-            return False
-
-    return True
-
-@staticmethod
-def _exception_applies(
-    finding: Finding,
-    policy: PolicyConfig,
-) -> bool:
-    """Determine whether an enabled exception applies."""
-    for exception in policy.exceptions:
-        if not exception.enabled:
-            continue
-
-        if exception.finding_id == finding.finding_id:
-            return True
-
-        if (
-            exception.requirement_id
-            and finding.security_requirement
-            and exception.requirement_id
-            == finding.security_requirement
-        ):
-            return True
-
-    return False
-
-@staticmethod
-def _get_exception_id(
-    finding: Finding,
-    policy: PolicyConfig,
-) -> str | None:
-    """Return the ID of the matching exception."""
-    for exception in policy.exceptions:
-        if not exception.enabled:
-            continue
-
-        if exception.finding_id == finding.finding_id:
-            return exception.exception_id
-
-        if (
-            exception.requirement_id
-            and finding.security_requirement
-            and exception.requirement_id
-            == finding.security_requirement
-        ):
-            return exception.exception_id
-
-    return None
 
 @staticmethod
 def _action_to_decision(
     action: PolicyAction,
 ) -> PolicyDecision:
     """Convert a policy action into a policy decision."""
-    return PolicyDecision(action.value)
+    return PolicyDecision(
+        action.value
+    )
 
 def _higher_decision(
     self,
@@ -300,23 +267,22 @@ def _higher_decision(
     return current
 
 @staticmethod
-def _rule_priority(action: PolicyAction) -> int:
-    """Return the priority of a policy action."""
-    priority = {
-        PolicyAction.PASS: 0,
-        PolicyAction.REVIEW: 1,
-        PolicyAction.BLOCK: 2,
-    }
-
-    return priority[action]
-
-@staticmethod
-def _unique(values: list[str]) -> list[str]:
+def _unique(
+    values: list[str],
+) -> list[str]:
     """Preserve order while removing duplicate values."""
-    return list(dict.fromkeys(values))
+    return list(
+        dict.fromkeys(values)
+    )
 
 @staticmethod
-def risk_level_from_string(value: str) -> RiskLevel:
+def risk_level_from_string(
+    value: str,
+):
     """Convert a risk-level string into a normalized enum."""
-    return RiskLevel(value.lower())
+    from secureforge.core.risk import RiskLevel
+
+    return RiskLevel(
+        value.strip().lower()
+    )
 ```
