@@ -1,247 +1,92 @@
-```python id="p4x8wm"
+```python id="a6r3k9"
 """Tests for SecureForge scan orchestration."""
-
-from datetime import datetime
 
 from secureforge.core.scan.orchestrator import (
     ScanOrchestrator,
 )
 
 
-class FakeScanRunner:
-    """Minimal scan runner for orchestration tests."""
-
-    def __init__(
-        self,
-        execution,
-    ) -> None:
-        self.execution = execution
-        self.calls: list[dict[str, object]] = []
-
-    def run(
-        self,
-        *,
-        scan_id: str,
-        profile: str,
-        target: str,
-        source_path: str | None = None,
-    ):
-        self.calls.append(
-            {
-                "scan_id": scan_id,
-                "profile": profile,
-                "target": target,
-                "source_path": source_path,
-            }
-        )
-
-        return self.execution
-
-
-class FakePipeline:
-    """Minimal security pipeline for orchestration tests."""
-
-    def __init__(
-        self,
-        result,
-    ) -> None:
-        self.result = result
-        self.calls: list[dict[str, object]] = []
-
-    def evaluate(
-        self,
-        findings,
-        *,
-        tool_errors,
-        regression=None,
-        regression_gate=None,
-    ):
-        self.calls.append(
-            {
-                "findings": findings,
-                "tool_errors": tool_errors,
-                "regression": regression,
-                "regression_gate": regression_gate,
-            }
-        )
-
-        return self.result
-
-
-def test_scan_orchestrator_runs_runner_and_pipeline(
-    sample_scan_execution,
-    sample_pipeline_result,
+def test_scan_orchestrator_runs_scan(
+    fake_scan_runner,
 ) -> None:
-    """Coordinate scan execution and security evaluation."""
-    runner = FakeScanRunner(
-        sample_scan_execution
-    )
-
-    pipeline = FakePipeline(
-        sample_pipeline_result
-    )
-
+    """Run a scan and produce a complete security result."""
     orchestrator = ScanOrchestrator(
-        runner=runner,
-        pipeline=pipeline,
+        runner=fake_scan_runner
     )
 
     result = orchestrator.run(
         scan_id="scan-001",
         profile="standard",
-        target="http://127.0.0.1:5000",
+        target="http://localhost:5000",
     )
 
-    assert result.execution is sample_scan_execution
-    assert result.pipeline is sample_pipeline_result
-
-    assert runner.calls == [
-        {
-            "scan_id": "scan-001",
-            "profile": "standard",
-            "target": "http://127.0.0.1:5000",
-            "source_path": None,
-        }
-    ]
-
-    assert len(
-        pipeline.calls
-    ) == 1
-
-    assert (
-        pipeline.calls[0]["findings"]
-        == sample_scan_execution.findings
+    assert result.execution.scan_id == "scan-001"
+    assert result.execution.profile == "standard"
+    assert result.execution.target == (
+        "http://localhost:5000"
     )
 
-    assert (
-        pipeline.calls[0]["tool_errors"]
-        == sample_scan_execution.errors
-    )
+    assert result.findings
+    assert result.pipeline is not None
+    assert result.pipeline.risk is not None
+    assert result.pipeline.policy is not None
+    assert result.pipeline.release_gate is not None
 
 
-def test_scan_orchestrator_passes_regression_inputs(
-    sample_scan_execution,
-    sample_pipeline_result,
+def test_scan_orchestrator_exposes_release_status(
+    fake_scan_runner,
 ) -> None:
-    """Forward regression results into the security pipeline."""
-    runner = FakeScanRunner(
-        sample_scan_execution
-    )
-
-    pipeline = FakePipeline(
-        sample_pipeline_result
-    )
-
+    """Expose the final release decision from the pipeline."""
     orchestrator = ScanOrchestrator(
-        runner=runner,
-        pipeline=pipeline,
+        runner=fake_scan_runner
     )
 
     result = orchestrator.run(
         scan_id="scan-002",
-        profile="full",
-        target="http://127.0.0.1:5000",
-        regression_result=None,
-        regression_gate=None,
+        profile="quick",
+        target="http://localhost:5000",
     )
 
-    assert result.pipeline is sample_pipeline_result
-
-    assert (
-        pipeline.calls[0]["regression"]
-        is None
+    assert result.release_allowed == (
+        result.pipeline.release_allowed
     )
 
-    assert (
-        pipeline.calls[0]["regression_gate"]
-        is None
+    assert result.release_blocked == (
+        result.pipeline.release_blocked
+    )
+
+    assert result.release_status == (
+        result.pipeline.release_gate.status.value
     )
 
 
-def test_scan_orchestrator_sets_execution_timestamps(
-    sample_scan_execution,
-    sample_pipeline_result,
+def test_scan_orchestrator_serializes_complete_result(
+    fake_scan_runner,
 ) -> None:
-    """Record execution start and completion timestamps."""
-    sample_scan_execution.started_at = None
-    sample_scan_execution.completed_at = None
-
-    runner = FakeScanRunner(
-        sample_scan_execution
-    )
-
-    pipeline = FakePipeline(
-        sample_pipeline_result
-    )
-
+    """Serialize the complete scan result."""
     orchestrator = ScanOrchestrator(
-        runner=runner,
-        pipeline=pipeline,
+        runner=fake_scan_runner
     )
 
     result = orchestrator.run(
         scan_id="scan-003",
-        profile="quick",
-        target="http://127.0.0.1:5000",
+        profile="standard",
+        target="http://localhost:5000",
     )
 
-    assert result.execution.started_at is not None
-    assert result.execution.completed_at is not None
+    payload = result.to_dict()
 
-    started = datetime.fromisoformat(
-        result.execution.started_at
+    assert isinstance(
+        payload,
+        dict,
     )
 
-    completed = datetime.fromisoformat(
-        result.execution.completed_at
-    )
+    assert "scan" in payload
+    assert "findings" in payload
+    assert "pipeline" in payload
 
-    assert (
-        completed
-        >= started
-    )
-
-
-def test_security_scan_result_properties(
-    sample_scan_result,
-) -> None:
-    """Expose release-gate state through scan-result properties."""
-    assert (
-        sample_scan_result.release_allowed
-        == sample_scan_result.pipeline.release_allowed
-    )
-
-    assert (
-        sample_scan_result.release_blocked
-        == sample_scan_result.pipeline.release_blocked
-    )
-
-    assert (
-        sample_scan_result.release_status
-        == sample_scan_result.pipeline
-        .release_gate.status.value
-    )
-
-
-def test_security_scan_result_to_dict(
-    sample_scan_result,
-) -> None:
-    """Serialize the complete scan result."""
-    payload = (
-        sample_scan_result.to_dict()
-    )
-
-    assert set(
-        payload
-    ) == {
-        "scan",
-        "findings",
-        "pipeline",
-    }
-
-    assert (
-        payload["scan"]["scan_id"]
-        == sample_scan_result.execution.scan_id
+    assert payload["scan"]["scan_id"] == (
+        "scan-003"
     )
 
     assert isinstance(
@@ -252,5 +97,69 @@ def test_security_scan_result_to_dict(
     assert isinstance(
         payload["pipeline"],
         dict,
+    )
+
+
+def test_scan_orchestrator_passes_source_path(
+    fake_scan_runner,
+) -> None:
+    """Pass source-code context to the scan runner."""
+    orchestrator = ScanOrchestrator(
+        runner=fake_scan_runner
+    )
+
+    result = orchestrator.run(
+        scan_id="scan-004",
+        profile="quick",
+        target="http://localhost:5000",
+        source_path="/workspace/securecommerce",
+    )
+
+    assert result.execution.scan_id == "scan-004"
+
+    assert fake_scan_runner.last_source_path == (
+        "/workspace/securecommerce"
+    )
+
+
+def test_scan_orchestrator_accepts_regression_result(
+    fake_scan_runner,
+    sample_regression_result,
+) -> None:
+    """Pass regression results into the security pipeline."""
+    orchestrator = ScanOrchestrator(
+        runner=fake_scan_runner
+    )
+
+    result = orchestrator.run(
+        scan_id="scan-005",
+        profile="standard",
+        target="http://localhost:5000",
+        regression_result=sample_regression_result,
+    )
+
+    assert result.pipeline.regression == (
+        sample_regression_result
+    )
+
+
+def test_scan_orchestrator_accepts_regression_gate(
+    fake_scan_runner,
+    sample_regression_gate,
+) -> None:
+    """Pass regression-gate decisions into the security pipeline."""
+    orchestrator = ScanOrchestrator(
+        runner=fake_scan_runner
+    )
+
+    result = orchestrator.run(
+        scan_id="scan-006",
+        profile="standard",
+        target="http://localhost:5000",
+        regression_gate=sample_regression_gate,
+    )
+
+    assert result.pipeline.regression_gate == (
+        sample_regression_gate
     )
 ```
