@@ -1,5 +1,6 @@
-"""SecureForge configuration models and scan profiles."""
+"""SecureForge configuration models, loader, and scan profiles."""
 
+from .loader import ConfigurationLoader
 from .models import (
 ScanConfiguration,
 ScanProfile,
@@ -17,6 +18,7 @@ list_profiles,
 )
 
 **all** = [
+"ConfigurationLoader",
 "FULL_PROFILE",
 "QUICK_PROFILE",
 "STANDARD_PROFILE",
