@@ -1,5 +1,9 @@
 """Security regression testing components for SecureForge."""
 
+from .assessment import (
+RegressionAssessment,
+assess_regression_result,
+)
 from .cli import app as regression_app
 from .engine import (
 RegressionEngine,
@@ -40,6 +44,7 @@ build_regression_service,
 
 **all** = [
 "DuplicateRegressionTestError",
+"RegressionAssessment",
 "RegressionConfigurationError",
 "RegressionEngine",
 "RegressionExecutionError",
@@ -58,6 +63,7 @@ build_regression_service,
 "RegressionTest",
 "RegressionTestNotFoundError",
 "SecureCommerceRegressionExecutor",
+"assess_regression_result",
 "build_regression_runner",
 "build_regression_service",
 "build_securecommerce_executor",
