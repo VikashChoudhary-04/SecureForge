@@ -30,6 +30,10 @@ from .security_pipeline import (
 SecurityPipeline,
 SecurityPipelineResult,
 )
+from .store import (
+ScanResultStore,
+ScanResultStoreError,
+)
 
 **all** = [
 "ScanEvidenceNormalizer",
@@ -39,6 +43,8 @@ SecurityPipelineResult,
 "ScanOrchestrator",
 "ScanPlan",
 "ScanPlanner",
+"ScanResultStore",
+"ScanResultStoreError",
 "ScanRunner",
 "ScanStatus",
 "SecurityPipeline",
