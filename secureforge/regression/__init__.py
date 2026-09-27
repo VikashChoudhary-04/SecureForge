@@ -32,6 +32,11 @@ RegressionRunConfiguration,
 RegressionRunner,
 build_regression_runner,
 )
+from .service import (
+RegressionService,
+RegressionServiceConfiguration,
+build_regression_service,
+)
 
 **all** = [
 "DuplicateRegressionTestError",
@@ -45,6 +50,8 @@ build_regression_runner,
 "RegressionResult",
 "RegressionRunConfiguration",
 "RegressionRunner",
+"RegressionService",
+"RegressionServiceConfiguration",
 "RegressionStatus",
 "RegressionSuite",
 "RegressionSuiteResult",
@@ -52,6 +59,7 @@ build_regression_runner,
 "RegressionTestNotFoundError",
 "SecureCommerceRegressionExecutor",
 "build_regression_runner",
+"build_regression_service",
 "build_securecommerce_executor",
 "regression_app",
 ]
