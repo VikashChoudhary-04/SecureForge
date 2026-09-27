@@ -1,0 +1,67 @@
+{
+"tool": "securecommerce-iac-scanner-lab",
+"version": "1.0.0",
+"target": "./infra",
+"findings": [
+{
+"id": "IAC-001",
+"title": "Application configured for public network exposure",
+"severity": "high",
+"confidence": "confirmed",
+"rule": "public-application-exposure",
+"cwe": "CWE-284",
+"owasp": "A05:2021-Security Misconfiguration",
+"file": "main.tf",
+"line": 31,
+"resource": "null_resource.public_application",
+"description": "The laboratory application is configured to listen on 0.0.0.0 and is therefore not restricted to a local interface.",
+"impact": "Unrestricted network exposure can make an application reachable by unintended clients.",
+"remediation": "Restrict the application to an explicitly approved network interface or controlled security boundary.",
+"security_requirement": "SF-IAC-001",
+"evidence": {
+"host": "0.0.0.0",
+"port": 5000
+}
+},
+{
+"id": "IAC-002",
+"title": "Storage configured without encryption",
+"severity": "high",
+"confidence": "confirmed",
+"rule": "unencrypted-storage",
+"cwe": "CWE-311",
+"owasp": "A02:2021-Cryptographic Failures",
+"file": "main.tf",
+"line": 39,
+"resource": "null_resource.insecure_storage",
+"description": "Laboratory storage is explicitly configured without encryption.",
+"impact": "Unencrypted stored data may be exposed if the underlying storage is accessed without authorization.",
+"remediation": "Enable encryption for stored application data and use managed encryption keys where appropriate.",
+"security_requirement": "SF-IAC-001",
+"evidence": {
+"encryption": "disabled",
+"access": "public"
+}
+},
+{
+"id": "IAC-003",
+"title": "Excessive wildcard permissions",
+"severity": "high",
+"confidence": "confirmed",
+"rule": "wildcard-permissions",
+"cwe": "CWE-732",
+"owasp": "A05:2021-Security Misconfiguration",
+"file": "main.tf",
+"line": 48,
+"resource": "null_resource.excessive_permissions",
+"description": "The laboratory role is configured with wildcard permissions.",
+"impact": "Excessive permissions increase the potential impact of credential or workload compromise.",
+"remediation": "Apply least-privilege permissions limited to the resources and actions required by the application.",
+"security_requirement": "SF-IAC-001",
+"evidence": {
+"role": "administrator",
+"permissions": "*"
+}
+}
+]
+}
