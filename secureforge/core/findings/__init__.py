@@ -1,4 +1,4 @@
-"""Finding models and finding-related types."""
+"""Finding models, storage, and finding-related types."""
 
 from .models import (
 Confidence,
@@ -8,12 +8,14 @@ FindingStatus,
 Severity,
 ValidationStatus,
 )
+from .store import FindingStore
 
 **all** = [
 "Confidence",
 "Evidence",
 "Finding",
 "FindingStatus",
+"FindingStore",
 "Severity",
 "ValidationStatus",
 ]
