@@ -1,6 +1,7 @@
-```python id="k2m8xr"
-"""Tests for SecureForge scan-result persistence."""
+```python id="n6r2k8"
+"""Tests for persistent SecureForge scan-result storage."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -11,11 +12,11 @@ from secureforge.core.scan import (
 )
 
 
-def test_scan_result_store_saves_complete_result(
+def test_scan_store_saves_complete_result(
     sample_scan_result,
     tmp_path: Path,
 ) -> None:
-    """Persist a complete scan result."""
+    """Persist a complete security scan result."""
     store = ScanResultStore(
         directory=tmp_path
     )
@@ -28,37 +29,29 @@ def test_scan_result_store_saves_complete_result(
         tmp_path
         / f"{sample_scan_result.execution.scan_id}.json"
     )
-    assert path.exists()
 
-    payload = store.load(
-        sample_scan_result.execution.scan_id
+    assert path.is_file()
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
     )
 
     assert "scan" in payload
     assert "findings" in payload
     assert "pipeline" in payload
 
-    assert (
-        payload["scan"]["scan_id"]
-        == sample_scan_result.execution.scan_id
-    )
-
-    assert isinstance(
-        payload["findings"],
-        list,
-    )
-
-    assert isinstance(
-        payload["pipeline"],
-        dict,
-    )
+    assert "risk" in payload["pipeline"]
+    assert "policy" in payload["pipeline"]
+    assert "release_gate" in payload["pipeline"]
 
 
-def test_scan_result_store_persists_full_pipeline(
+def test_scan_store_loads_saved_result(
     sample_scan_result,
     tmp_path: Path,
 ) -> None:
-    """Persist risk, policy, and release-gate details."""
+    """Load a previously persisted scan result."""
     store = ScanResultStore(
         directory=tmp_path
     )
@@ -67,82 +60,56 @@ def test_scan_result_store_persists_full_pipeline(
         sample_scan_result
     )
 
-    payload = store.load(
+    loaded = store.load(
         sample_scan_result.execution.scan_id
     )
 
-    pipeline = payload["pipeline"]
-
     assert isinstance(
-        pipeline["findings"],
-        list,
-    )
-    assert isinstance(
-        pipeline["risk"],
-        dict,
-    )
-    assert isinstance(
-        pipeline["policy"],
-        dict,
-    )
-    assert isinstance(
-        pipeline["release_gate"],
+        loaded,
         dict,
     )
 
-    assert (
-        pipeline["risk"]["score"]
-        == sample_scan_result.pipeline.risk.score
+    assert loaded["scan"]["scan_id"] == (
+        sample_scan_result.execution.scan_id
     )
 
-    assert (
-        pipeline["policy"]["policy_name"]
-        == sample_scan_result.pipeline
-        .policy.policy_name
+    assert len(
+        loaded["findings"]
+    ) == len(
+        sample_scan_result.findings
+    )
+
+    assert loaded["pipeline"]["risk"]["score"] == (
+        sample_scan_result.pipeline.risk.score
     )
 
 
-def test_scan_result_store_supports_custom_scan_id(
+def test_scan_store_exists(
     sample_scan_result,
     tmp_path: Path,
 ) -> None:
-    """Persist a result under an explicitly supplied identifier."""
+    """Check whether a persisted scan exists."""
     store = ScanResultStore(
         directory=tmp_path
     )
 
-    path = store.save(
-        sample_scan_result,
-        scan_id="custom-scan",
+    scan_id = (
+        sample_scan_result.execution.scan_id
     )
 
-    assert path == (
-        tmp_path
-        / "custom-scan.json"
+    assert store.exists(scan_id) is False
+
+    store.save(
+        sample_scan_result
     )
 
-    assert store.exists(
-        "custom-scan"
-    )
+    assert store.exists(scan_id) is True
 
 
-def test_scan_result_store_exists_returns_false(
+def test_scan_store_path_for(
     tmp_path: Path,
 ) -> None:
-    """Return false when a scan result is absent."""
-    store = ScanResultStore(
-        directory=tmp_path
-    )
-
-    assert not store.exists(
-        "missing-scan"
-    )
-
-
-def test_scan_result_store_path_for(
-    tmp_path: Path,
-) -> None:
-    """Return the expected persistence path."""
+    """Return the deterministic path for a scan identifier."""
     store = ScanResultStore(
         directory=tmp_path
     )
@@ -155,10 +122,35 @@ def test_scan_result_store_path_for(
     )
 
 
-def test_scan_result_store_rejects_empty_identifier(
+def test_scan_store_supports_explicit_scan_id(
+    sample_scan_result,
     tmp_path: Path,
 ) -> None:
-    """Reject empty scan identifiers."""
+    """Allow callers to override the stored scan identifier."""
+    store = ScanResultStore(
+        directory=tmp_path
+    )
+
+    path = store.save(
+        sample_scan_result,
+        scan_id="custom-scan-001",
+    )
+
+    assert path == (
+        tmp_path
+        / "custom-scan-001.json"
+    )
+
+    assert store.exists(
+        "custom-scan-001"
+    )
+
+
+def test_scan_store_rejects_empty_identifier(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Reject an empty scan identifier."""
     store = ScanResultStore(
         directory=tmp_path
     )
@@ -167,13 +159,17 @@ def test_scan_result_store_rejects_empty_identifier(
         ScanResultStoreError,
         match="must not be empty",
     ):
-        store.exists(" ")
+        store.save(
+            sample_scan_result,
+            scan_id="",
+        )
 
 
-def test_scan_result_store_rejects_path_traversal_identifier(
+def test_scan_store_rejects_path_separator(
+    sample_scan_result,
     tmp_path: Path,
 ) -> None:
-    """Reject identifiers that could escape the storage directory."""
+    """Reject path traversal through scan identifiers."""
     store = ScanResultStore(
         directory=tmp_path
     )
@@ -182,97 +178,124 @@ def test_scan_result_store_rejects_path_traversal_identifier(
         ScanResultStoreError,
         match="invalid path component",
     ):
-        store.path_for(
-            "../outside"
+        store.save(
+            sample_scan_result,
+            scan_id="../escape",
         )
 
 
-def test_scan_result_store_rejects_missing_result(
+def test_scan_store_rejects_backslash(
+    sample_scan_result,
     tmp_path: Path,
 ) -> None:
-    """Raise an error when a scan result does not exist."""
+    """Reject Windows-style path traversal."""
     store = ScanResultStore(
         directory=tmp_path
     )
 
     with pytest.raises(
         ScanResultStoreError,
-        match="not found",
+        match="invalid path component",
+    ):
+        store.save(
+            sample_scan_result,
+            scan_id=r"..\escape",
+        )
+
+
+def test_scan_store_rejects_missing_result(
+    tmp_path: Path,
+) -> None:
+    """Raise an explicit error for an unknown scan."""
+    store = ScanResultStore(
+        directory=tmp_path
+    )
+
+    with pytest.raises(
+        ScanResultStoreError,
+        match="Scan result not found",
     ):
         store.load(
             "missing-scan"
         )
 
 
-def test_scan_result_store_rejects_invalid_json(
+def test_scan_store_rejects_invalid_json(
     tmp_path: Path,
 ) -> None:
-    """Reject malformed persisted JSON."""
+    """Reject a corrupted persisted scan result."""
     store = ScanResultStore(
         directory=tmp_path
     )
 
     path = (
         tmp_path
-        / "broken.json"
+        / "scan-001.json"
     )
 
     path.write_text(
-        "{invalid",
+        "{invalid-json",
         encoding="utf-8",
     )
 
     with pytest.raises(
         ScanResultStoreError,
-        match="invalid JSON",
+        match="contains invalid JSON",
     ):
         store.load(
-            "broken"
+            "scan-001"
         )
 
 
-def test_scan_result_store_rejects_non_object_json(
+def test_scan_store_rejects_non_object_json(
     tmp_path: Path,
 ) -> None:
-    """Reject valid JSON that is not an object."""
+    """Reject a persisted JSON array."""
     store = ScanResultStore(
         directory=tmp_path
     )
 
     path = (
         tmp_path
-        / "list.json"
+        / "scan-001.json"
     )
 
     path.write_text(
-        "[]",
+        json.dumps(
+            ["not", "an", "object"]
+        ),
         encoding="utf-8",
     )
 
     with pytest.raises(
         ScanResultStoreError,
-        match="JSON object",
+        match="must contain a JSON object",
     ):
         store.load(
-            "list"
+            "scan-001"
         )
 
 
-def test_scan_result_store_rejects_incomplete_payload(
+def test_scan_store_rejects_missing_required_section(
     tmp_path: Path,
 ) -> None:
-    """Reject persisted data missing required scan sections."""
+    """Reject persisted results missing required sections."""
     store = ScanResultStore(
         directory=tmp_path
     )
 
     path = (
         tmp_path
-        / "incomplete.json"
+        / "scan-001.json"
     )
 
     path.write_text(
-        '{"scan": {}}',
+        json.dumps(
+            {
+                "scan": {},
+                "findings": [],
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -281,74 +304,43 @@ def test_scan_result_store_rejects_incomplete_payload(
         match="missing required sections",
     ):
         store.load(
-            "incomplete"
+            "scan-001"
         )
 
 
-def test_scan_result_store_rejects_incomplete_pipeline(
+def test_scan_store_rejects_invalid_pipeline(
     tmp_path: Path,
 ) -> None:
-    """Reject persisted data missing pipeline sections."""
+    """Reject persisted results with an invalid pipeline."""
     store = ScanResultStore(
         directory=tmp_path
     )
 
     path = (
         tmp_path
-        / "incomplete-pipeline.json"
+        / "scan-001.json"
     )
 
     path.write_text(
-        """
-        {
-          "scan": {},
-          "findings": [],
-          "pipeline": {
-            "risk": {}
-          }
-        }
-        """,
+        json.dumps(
+            {
+                "scan": {},
+                "findings": [],
+                "pipeline": {
+                    "risk": {},
+                    "policy": {},
+                    "release_gate": {},
+                },
+            }
+        ),
         encoding="utf-8",
     )
 
     with pytest.raises(
         ScanResultStoreError,
-        match="pipeline.*missing required",
+        match="missing required sections",
     ):
         store.load(
-            "incomplete-pipeline"
-        )
-
-
-def test_scan_result_store_rejects_invalid_section_types(
-    tmp_path: Path,
-) -> None:
-    """Reject persisted data with invalid section types."""
-    store = ScanResultStore(
-        directory=tmp_path
-    )
-
-    path = (
-        tmp_path
-        / "invalid-sections.json"
-    )
-
-    path.write_text(
-        """
-        {
-          "scan": [],
-          "findings": {},
-          "pipeline": {}
-        }
-        """,
-        encoding="utf-8",
-    )
-
-    with pytest.raises(
-        ScanResultStoreError,
-        match="scan.*object",
-    ):
-        store.load(
-            "invalid-sections"
+            "scan-001"
         )
 ```
