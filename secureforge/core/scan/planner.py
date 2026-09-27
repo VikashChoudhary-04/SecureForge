@@ -73,11 +73,10 @@ def missing_integrations(
     self,
     configuration: ScanConfiguration,
 ) -> list[str]:
-    """Return profile integrations without configured tools."""
+    """Return profile integrations with no configured tool."""
     configured_names = {
         tool.name.strip().lower()
         for tool in configuration.tools
-        if tool.enabled
     }
 
     return [
@@ -92,7 +91,7 @@ def disabled_integrations(
     self,
     configuration: ScanConfiguration,
 ) -> list[str]:
-    """Return profile integrations explicitly disabled."""
+    """Return profile integrations that are explicitly disabled."""
     disabled_names = {
         tool.name.strip().lower()
         for tool in configuration.tools
@@ -112,7 +111,7 @@ def _find_tool(
     configured_tools: dict[str, ToolConfiguration],
     integration: str,
 ) -> ToolConfiguration | None:
-    """Find a configured tool matching an integration name."""
+    """Find an enabled tool matching an integration name."""
     return configured_tools.get(
         integration.strip().lower()
     )
