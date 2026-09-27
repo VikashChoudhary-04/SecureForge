@@ -1,63 +1,74 @@
-"""Tests for the public SecureForge reporting package API."""
+"""Tests for SecureForge reporting package exports."""
 
 from **future** import annotations
 
 import secureforge.reporting as reporting
 
-def test_reporting_package_exports_builder():
-"""SecurityReportBuilder should be publicly available."""
+def test_reporting_package_exports_models():
+"""Reporting package should expose report models."""
+assert hasattr(
+reporting,
+"SecurityReport",
+)
+assert hasattr(
+reporting,
+"ReportFinding",
+)
+assert hasattr(
+reporting,
+"RiskReport",
+)
+assert hasattr(
+reporting,
+"PolicyReport",
+)
+assert hasattr(
+reporting,
+"DecisionReport",
+)
+
+def test_reporting_package_exports_regression_models():
+"""Reporting package should expose regression report models."""
+assert hasattr(
+reporting,
+"RegressionReport",
+)
+assert hasattr(
+reporting,
+"RegressionTestReport",
+)
+
+def test_reporting_package_exports_regression_builder():
+"""Reporting package should expose the regression adapter."""
+assert hasattr(
+reporting,
+"build_regression_report",
+)
+assert callable(
+reporting.build_regression_report
+)
+
+def test_reporting_package_exports_builders():
+"""Reporting package should expose core reporting builders."""
 assert hasattr(
 reporting,
 "SecurityReportBuilder",
 )
-
-def test_reporting_package_exports_models():
-"""Core reporting models should be publicly available."""
-exported_models = {
-"DecisionReport",
-"PolicyReport",
-"RegressionReport",
-"RegressionTestReport",
-"ReleaseMetadata",
-"RemediationReport",
-"ReportFinding",
-"RiskReport",
-"ScanMetadata",
-"SecurityReport",
-}
-
-```
-for model_name in exported_models:
-    assert hasattr(
-        reporting,
-        model_name,
-    )
-```
-
-def test_reporting_package_exports_rendering():
-"""HTML and JSON reporting components should be public."""
+assert hasattr(
+reporting,
+"SecurityReportSerializer",
+)
 assert hasattr(
 reporting,
 "SecurityHTMLReportRenderer",
 )
 assert hasattr(
 reporting,
-"SecurityReportSerializer",
-)
-
-def test_reporting_package_exports_service():
-"""The high-level reporting service should be public."""
-assert hasattr(
-reporting,
 "SecurityReportService",
 )
-assert hasattr(
-reporting,
-"ReportPaths",
-)
 
-def test_reporting_all_contains_public_api():
-"""The package **all** should describe the public reporting API."""
+def test_reporting_package_defines_public_api():
+"""All expected public names should be listed in **all**."""
 expected = {
 "DecisionReport",
 "PolicyReport",
@@ -74,8 +85,11 @@ expected = {
 "SecurityReportBuilder",
 "SecurityReportSerializer",
 "SecurityReportService",
+"build_regression_report",
 }
 
 ```
-assert set(reporting.__all__) == expected
+assert set(
+    reporting.__all__
+) == expected
 ```
