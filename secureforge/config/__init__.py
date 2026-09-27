@@ -13,6 +13,8 @@ RuntimeConfiguration,
 RuntimeConfigurationError,
 load_runtime_configuration,
 )
+from .runtime_builder import build_scan_configuration
+from .runtime_factory import load_scan_configuration
 
 **all** = [
 "ConfigLoader",
@@ -23,5 +25,7 @@ load_runtime_configuration,
 "ScanConfiguration",
 "ScanProfile",
 "TargetConfig",
+"build_scan_configuration",
 "load_runtime_configuration",
+"load_scan_configuration",
 ]
