@@ -1,10 +1,11 @@
-```python id="m7q2vx"
+```python id="n6v4xr"
 """SecureForge scan command service."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from datetime import datetime
 
 from secureforge.config.runtime_builder import (
     RuntimeConfigurationError,
@@ -12,6 +13,7 @@ from secureforge.config.runtime_builder import (
 from secureforge.core.config.models import ScanProfile
 from secureforge.core.scan import (
     ScanOrchestrator,
+    ScanResultStore,
     ScanRunner,
     SecurityScanResult,
 )
@@ -39,16 +41,20 @@ class ScanCommandConfiguration:
     commit_sha: str = "unknown"
     environment: str = "local"
     output_directory: Path = Path("reports")
+    scan_storage_directory: Path = Path(
+        "reports/scans"
+    )
 
 
 class ScanCommandService:
-    """Execute SecureForge scans and generate security reports."""
+    """Execute SecureForge scans and persist their results."""
 
     def __init__(
         self,
         *,
         orchestrator: ScanOrchestrator | None = None,
         reporting_service: SecurityReportService | None = None,
+        scan_store: ScanResultStore | None = None,
     ) -> None:
         if orchestrator is not None:
             self.orchestrator = orchestrator
@@ -71,29 +77,20 @@ class ScanCommandService:
             else SecurityReportService()
         )
 
+        self.scan_store = (
+            scan_store
+            if scan_store is not None
+            else ScanResultStore()
+        )
+
     def run(
         self,
         configuration: ScanCommandConfiguration,
     ) -> SecurityScanResult:
-        """Execute a configured security scan."""
-        if not configuration.scan_id.strip():
-            raise RuntimeConfigurationError(
-                "Scan ID must not be empty."
-            )
-
-        if not configuration.target.strip():
-            raise RuntimeConfigurationError(
-                "Scan target must not be empty."
-            )
-
-        if (
-            configuration.source_path is not None
-            and not configuration.source_path.exists()
-        ):
-            raise RuntimeConfigurationError(
-                "Source path does not exist: "
-                f"{configuration.source_path}"
-            )
+        """Execute, persist, and report a configured security scan."""
+        self._validate_configuration(
+            configuration
+        )
 
         result = self.orchestrator.run(
             scan_id=configuration.scan_id,
@@ -106,12 +103,40 @@ class ScanCommandService:
             ),
         )
 
+        self._persist_scan_result(
+            result=result,
+            configuration=configuration,
+        )
+
         self._generate_reports(
             result=result,
             configuration=configuration,
         )
 
         return result
+
+    def _persist_scan_result(
+        self,
+        *,
+        result: SecurityScanResult,
+        configuration: ScanCommandConfiguration,
+    ) -> Path:
+        """Persist the complete scan result."""
+        store = (
+            self.scan_store
+            if configuration.scan_storage_directory
+            == self.scan_store.directory
+            else ScanResultStore(
+                directory=(
+                    configuration.scan_storage_directory
+                )
+            )
+        )
+
+        return store.save(
+            result,
+            scan_id=configuration.scan_id,
+        )
 
     def _generate_reports(
         self,
@@ -136,8 +161,6 @@ class ScanCommandService:
             result.execution.started_at
             and result.execution.completed_at
         ):
-            from datetime import datetime
-
             started = datetime.fromisoformat(
                 result.execution.started_at
             )
@@ -196,6 +219,30 @@ class ScanCommandService:
             report,
             paths,
         )
+
+    @staticmethod
+    def _validate_configuration(
+        configuration: ScanCommandConfiguration,
+    ) -> None:
+        """Validate scan command configuration."""
+        if not configuration.scan_id.strip():
+            raise RuntimeConfigurationError(
+                "Scan ID must not be empty."
+            )
+
+        if not configuration.target.strip():
+            raise RuntimeConfigurationError(
+                "Scan target must not be empty."
+            )
+
+        if (
+            configuration.source_path is not None
+            and not configuration.source_path.exists()
+        ):
+            raise RuntimeConfigurationError(
+                "Source path does not exist: "
+                f"{configuration.source_path}"
+            )
 
 
 def build_scan_command_service() -> ScanCommandService:
