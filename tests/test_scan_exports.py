@@ -8,6 +8,8 @@ ScanExecutor,
 ScanOrchestrator,
 ScanPlan,
 ScanPlanner,
+ScanResultStore,
+ScanResultStoreError,
 ScanRunner,
 ScanStatus,
 SecurityPipeline,
@@ -26,6 +28,8 @@ assert ScanExecutor is not None
 assert ScanOrchestrator is not None
 assert ScanPlan is not None
 assert ScanPlanner is not None
+assert ScanResultStore is not None
+assert ScanResultStoreError is not None
 assert ScanRunner is not None
 assert ScanStatus is not None
 assert SecurityPipeline is not None
