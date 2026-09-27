@@ -9,6 +9,7 @@ from secureforge.core.findings.models import Finding
 from secureforge.core.policy.models import PolicyDecision
 from secureforge.core.release_gate.models import ReleaseGateDecision
 from secureforge.core.risk.models import RiskAssessment
+from secureforge.core.scan.orchestrator import SecurityScanResult
 from secureforge.regression import (
 RegressionGateDecision,
 RegressionSuiteResult,
@@ -22,6 +23,7 @@ RemediationReport,
 ScanMetadata,
 SecurityReport,
 )
+from .scan import build_scan_report
 from .serializers import SecurityReportSerializer
 
 @dataclass(frozen=True)
@@ -90,6 +92,22 @@ def build_report(
         generated_at=generated_at,
     )
 
+def build_from_scan_result(
+    self,
+    *,
+    result: SecurityScanResult,
+    release: ReleaseMetadata,
+    scan: ScanMetadata,
+    generated_at: str | None = None,
+) -> SecurityReport:
+    """Build a report directly from a completed scan result."""
+    return build_scan_report(
+        result,
+        release=release,
+        scan=scan,
+        generated_at=generated_at,
+    )
+
 def generate(
     self,
     report: SecurityReport,
@@ -134,6 +152,28 @@ def generate_from_results(
         remediation=remediation,
         regression=regression,
         regression_gate=regression_gate,
+        generated_at=generated_at,
+    )
+
+    return self.generate(
+        report,
+        paths,
+    )
+
+def generate_from_scan_result(
+    self,
+    *,
+    result: SecurityScanResult,
+    release: ReleaseMetadata,
+    scan: ScanMetadata,
+    paths: ReportPaths,
+    generated_at: str | None = None,
+) -> ReportPaths:
+    """Build and write reports directly from a scan result."""
+    report = self.build_from_scan_result(
+        result=result,
+        release=release,
+        scan=scan,
         generated_at=generated_at,
     )
 
