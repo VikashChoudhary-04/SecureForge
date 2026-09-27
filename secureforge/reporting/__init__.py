@@ -1,6 +1,7 @@
 """Security reporting components for SecureForge."""
 
 from .builder import SecurityReportBuilder
+from .html import SecurityHTMLReportRenderer
 from .models import (
 DecisionReport,
 PolicyReport,
@@ -14,6 +15,10 @@ ScanMetadata,
 SecurityReport,
 )
 from .serializers import SecurityReportSerializer
+from .service import (
+ReportPaths,
+SecurityReportService,
+)
 
 **all** = [
 "DecisionReport",
@@ -23,9 +28,12 @@ from .serializers import SecurityReportSerializer
 "ReleaseMetadata",
 "RemediationReport",
 "ReportFinding",
+"ReportPaths",
 "RiskReport",
 "ScanMetadata",
+"SecurityHTMLReportRenderer",
 "SecurityReport",
 "SecurityReportBuilder",
 "SecurityReportSerializer",
+"SecurityReportService",
 ]
