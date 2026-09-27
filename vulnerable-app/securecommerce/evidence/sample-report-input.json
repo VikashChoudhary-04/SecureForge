@@ -1,0 +1,166 @@
+{
+"release": {
+"release_id": "release-securecommerce-001",
+"application": "SecureCommerce",
+"version": "0.1.0",
+"commit_sha": "lab-demo-commit-001",
+"environment": "lab",
+"profile": "standard"
+},
+"scan": {
+"scan_id": "SF-SCAN-0001",
+"status": "completed",
+"started_at": "2026-09-27T08:00:00+00:00",
+"completed_at": "2026-09-27T08:02:30+00:00",
+"integrations": [
+"sast",
+"sca",
+"secrets",
+"api",
+"dast",
+"container"
+]
+},
+"findings": [
+{
+"finding_id": "SF-BOLA-001",
+"title": "Broken Object-Level Authorization",
+"source": "correlation",
+"source_finding_ids": [
+"API-BOLA-001",
+"DAST-BOLA-001",
+"BURP-BOLA-001"
+],
+"application": "SecureCommerce",
+"asset": "SecureCommerce API",
+"endpoint": "/api/orders/{order_id}",
+"parameter": "order_id",
+"cwe": "CWE-639",
+"owasp": "API1:2023-Broken Object Level Authorization",
+"security_requirement": "SF-AUTHZ-001",
+"severity": "high",
+"confidence": "confirmed",
+"description": "An authenticated user can access an order belonging to another user by changing the order identifier.",
+"impact": "Unauthorized users may access sensitive order information belonging to other customers.",
+"remediation": "Enforce server-side object ownership or an equivalent authorization decision before returning an order.",
+"status": "open",
+"validation_status": "confirmed",
+"regression_test": "BOLA-001",
+"evidence_count": 3
+},
+{
+"finding_id": "SF-SQLI-001",
+"title": "SQL Injection",
+"source": "sast",
+"source_finding_id": "SAST-SQLI-001",
+"application": "SecureCommerce",
+"asset": "SecureCommerce Web Application",
+"endpoint": "/vulnerable/search-user",
+"parameter": "user_id",
+"cwe": "CWE-89",
+"owasp": "A05:2025-Injection",
+"security_requirement": "SF-INPUT-001",
+"severity": "critical",
+"confidence": "confirmed",
+"description": "User-controlled input is concatenated directly into a SQL query.",
+"impact": "An attacker may manipulate database queries and access or modify unauthorized data.",
+"remediation": "Use parameterized queries or an ORM query API and validate input according to the expected type.",
+"status": "open",
+"validation_status": "confirmed",
+"regression_test": "SQLI-001",
+"evidence_count": 2
+},
+{
+"finding_id": "SF-SECRET-001",
+"title": "Hardcoded Secret",
+"source": "secrets",
+"source_finding_id": "SECRET-001",
+"application": "SecureCommerce",
+"asset": "SecureCommerce Source Code",
+"endpoint": null,
+"parameter": null,
+"cwe": "CWE-798",
+"owasp": "A07:2025-Identification and Authentication Failures",
+"security_requirement": "SF-SECRET-001",
+"severity": "high",
+"confidence": "confirmed",
+"description": "A synthetic laboratory API key is stored directly in application source code.",
+"impact": "Hardcoded credentials can be exposed through source repositories, builds, logs, or artifacts.",
+"remediation": "Remove the credential from source code and load secrets from a protected runtime secret store or environment configuration.",
+"status": "open",
+"validation_status": "confirmed",
+"regression_test": "SECRET-001",
+"evidence_count": 1
+}
+],
+"risk": {
+"overall_score": 9.4,
+"highest_severity": "critical",
+"confirmed_critical": 1,
+"confirmed_high": 2,
+"risk_factors": {
+"internet_exposure": true,
+"sensitive_data": true,
+"exploit_evidence": true,
+"authentication_required": false
+}
+},
+"policy": {
+"policy_name": "default",
+"critical_action": "block",
+"high_action": "block",
+"medium_action": "review",
+"low_action": "pass",
+"tool_errors": [],
+"regression_failures": []
+},
+"remediation": {
+"open_findings": 3,
+"remediated_findings": 0,
+"verified_findings": 0,
+"pending_retests": 3
+},
+"regression": {
+"suite": "SecureCommerce Security Regression Suite",
+"tests_total": 6,
+"tests_passed": 0,
+"tests_failed": 6,
+"tests": [
+{
+"test_id": "BOLA-001",
+"requirement": "SF-AUTHZ-001",
+"status": "failed"
+},
+{
+"test_id": "SQLI-001",
+"requirement": "SF-INPUT-001",
+"status": "failed"
+},
+{
+"test_id": "XSS-001",
+"requirement": "SF-INPUT-001",
+"status": "failed"
+},
+{
+"test_id": "SECRET-001",
+"requirement": "SF-SECRET-001",
+"status": "failed"
+},
+{
+"test_id": "AUTHZ-001",
+"requirement": "SF-AUTHZ-002",
+"status": "failed"
+},
+{
+"test_id": "MISCONFIG-001",
+"requirement": "SF-IAC-001",
+"status": "failed"
+}
+]
+},
+"decision": {
+"status": "block",
+"reason": "Confirmed critical and high-severity security findings violate the configured release policy.",
+"release_allowed": false
+}
+}
