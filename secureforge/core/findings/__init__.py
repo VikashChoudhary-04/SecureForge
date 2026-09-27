@@ -1,5 +1,7 @@
-"""Finding models, storage, and finding-related types."""
+"""Finding models, storage, identifiers, factory, and related types."""
 
+from .factory import FindingFactory
+from .identifiers import FindingIdentifier
 from .models import (
 Confidence,
 Evidence,
@@ -14,6 +16,8 @@ from .store import FindingStore
 "Confidence",
 "Evidence",
 "Finding",
+"FindingFactory",
+"FindingIdentifier",
 "FindingStatus",
 "FindingStore",
 "Severity",
