@@ -1,0 +1,32 @@
+{
+"tool": "securecommerce-dast-lab",
+"version": "1.0.0",
+"target": "http://localhost:5000",
+"alerts": [
+{
+"id": "DAST-BOLA-001",
+"name": "Broken Object-Level Authorization",
+"severity": "high",
+"confidence": "high",
+"cwe": "CWE-639",
+"owasp": "API1:2023-Broken Object Level Authorization",
+"method": "GET",
+"url": "http://localhost:5000/api/orders/2",
+"endpoint": "/api/orders/2",
+"parameter": "order_id",
+"description": "The authenticated test user was able to retrieve an order belonging to another laboratory user.",
+"impact": "Unauthorized users may access order records belonging to other customers.",
+"remediation": "Enforce object-level authorization using the authenticated user's identity before returning order data.",
+"security_requirement": "SF-AUTHZ-001",
+"evidence": {
+"authenticated_user": "alice",
+"authenticated_user_id": 2,
+"requested_object": "order",
+"requested_object_id": 2,
+"object_owner_id": 3,
+"response_status": 200,
+"response_contains_object": true
+}
+}
+]
+}
