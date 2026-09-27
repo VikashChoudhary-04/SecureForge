@@ -1,186 +1,215 @@
-"""Scan-result adapters for SecureForge reporting."""
+```python id="v3m8qx"
+"""Adapters for building security reports from scan results."""
 
-from **future** import annotations
+from __future__ import annotations
 
-from datetime import datetime, timezone
-
-from secureforge.core.scan.orchestrator import SecurityScanResult
+from secureforge.core.scan.orchestrator import (
+    SecurityScanResult,
+)
 
 from .models import (
-DecisionReport,
-PolicyReport,
-RegressionGateReport,
-RegressionReport,
-ReleaseMetadata,
-RemediationReport,
-ReportFinding,
-RiskReport,
-ScanMetadata,
-SecurityReport,
+    DecisionReport,
+    PolicyReport,
+    RegressionGateReport,
+    RegressionReport,
+    ReleaseMetadata,
+    RemediationReport,
+    ReportFinding,
+    RiskReport,
+    ScanMetadata,
+    SecurityReport,
 )
-from .regression import build_regression_report
-from .regression_gate import build_regression_gate_report
+
 
 def build_scan_report(
-result: SecurityScanResult,
-*,
-release: ReleaseMetadata,
-scan: ScanMetadata,
-generated_at: str | None = None,
+    result: SecurityScanResult,
+    *,
+    release: ReleaseMetadata,
+    scan: ScanMetadata,
+    generated_at: str | None = None,
 ) -> SecurityReport:
-"""Convert a complete scan result into a security report."""
-findings = [
-ReportFinding(
-finding_id=finding.finding_id,
-title=finding.title,
-source=finding.source,
-asset=finding.asset,
-application=finding.application,
-endpoint=finding.endpoint,
-parameter=finding.parameter,
-severity=finding.severity.value,
-confidence=finding.confidence.value,
-status=finding.status.value,
-validation_status=(
-finding.validation_status.value
-),
-cwe=finding.cwe,
-owasp_mapping=finding.owasp_mapping,
-security_requirement=(
-finding.security_requirement
-),
-description=finding.description,
-impact=finding.impact,
-remediation=finding.remediation,
-evidence=[
-evidence.model_dump()
-for evidence in finding.evidence
-],
-correlations=list(
-finding.correlations
-),
-regression_test=(
-finding.regression_test
-),
-)
-for finding in result.findings
-]
+    """Build a complete security report from a scan result."""
+    findings = [
+        ReportFinding(
+            finding_id=finding.finding_id,
+            title=finding.title,
+            source=finding.source,
+            asset=finding.asset,
+            application=finding.application,
+            endpoint=finding.endpoint,
+            parameter=finding.parameter,
+            cwe=finding.cwe,
+            owasp_mapping=finding.owasp_mapping,
+            security_requirement=(
+                finding.security_requirement
+            ),
+            severity=finding.severity.value,
+            confidence=finding.confidence.value,
+            evidence=[
+                evidence.model_dump(
+                    mode="json"
+                )
+                for evidence in finding.evidence
+            ],
+            description=finding.description,
+            impact=finding.impact,
+            remediation=finding.remediation,
+            status=finding.status.value,
+            validation_status=(
+                finding.validation_status.value
+            ),
+            first_seen=str(
+                finding.first_seen
+            ),
+            last_seen=str(
+                finding.last_seen
+            ),
+            regression_test=(
+                finding.regression_test
+            ),
+            correlation_ids=list(
+                finding.correlation_ids
+            ),
+        )
+        for finding in result.findings
+    ]
 
-```
-regression = (
-    build_regression_report(
-        result.pipeline.regression
+    risk = RiskReport(
+        score=result.pipeline.risk.score,
+        highest_severity=(
+            result.pipeline.risk
+            .highest_severity.value
+        ),
+        finding_count=(
+            result.pipeline.risk.finding_count
+        ),
+        evaluated_at=(
+            result.pipeline.risk.evaluated_at
+        ),
     )
-    if result.pipeline.regression is not None
-    else RegressionReport(
-        suite_id="not-run",
-        suite_name="Regression Testing",
-        status="skipped",
+
+    policy = PolicyReport(
+        policy_name=(
+            result.pipeline.policy.policy_name
+        ),
+        action=(
+            result.pipeline.policy.action
+        ),
+        allowed=(
+            result.pipeline.policy.allowed
+        ),
+        reason=(
+            result.pipeline.policy.reason
+        ),
+        violations=list(
+            result.pipeline.policy.violations
+        ),
+    )
+
+    decision = DecisionReport(
+        status=(
+            result.pipeline.release_gate
+            .status.value
+        ),
+        reason=(
+            result.pipeline.release_gate
+            .reason
+        ),
+        release_allowed=(
+            result.pipeline.release_gate
+            .release_allowed
+        ),
+    )
+
+    regression = RegressionReport(
+        suite_id="",
+        status="not_run",
         total=0,
         passed=0,
         failed=0,
         errors=0,
         skipped=0,
         tests=[],
-        started_at=None,
-        completed_at=None,
-        duration_seconds=0.0,
     )
-)
 
-regression_gate = (
-    build_regression_gate_report(
-        result.pipeline.regression_gate
+    if result.pipeline.regression is not None:
+        suite = result.pipeline.regression
+
+        regression = RegressionReport(
+            suite_id=suite.suite_id,
+            status=suite.status.value,
+            total=suite.total,
+            passed=suite.passed,
+            failed=suite.failed,
+            errors=suite.errors,
+            skipped=suite.skipped,
+            tests=[
+                {
+                    "test_id": item.test_id,
+                    "status": item.status.value,
+                    "message": item.message,
+                }
+                for item in suite.results
+            ],
+        )
+
+    regression_gate = None
+
+    if result.pipeline.regression_gate is not None:
+        gate = result.pipeline.regression_gate
+
+        regression_gate = RegressionGateReport(
+            allowed=gate.allowed,
+            blocked=gate.blocked,
+            status=gate.status,
+            reason=gate.reason,
+            failed_tests=list(
+                gate.failed_tests
+            ),
+            errored_tests=list(
+                gate.errored_tests
+            ),
+            skipped_tests=list(
+                gate.skipped_tests
+            ),
+            failures=list(
+                gate.failures
+            ),
+        )
+
+    remediation = RemediationReport(
+        total=len(findings),
+        open=sum(
+            1
+            for finding in result.findings
+            if finding.status.value == "open"
+        ),
+        remediated=sum(
+            1
+            for finding in result.findings
+            if finding.status.value == "remediated"
+        ),
+        verified=sum(
+            1
+            for finding in result.findings
+            if finding.validation_status.value == "verified"
+        ),
     )
-    if result.pipeline.regression_gate is not None
-    else None
-)
 
-risk = result.pipeline.risk
-
-risk_report = RiskReport(
-    score=risk.score,
-    highest_severity=(
-        risk.highest_severity.value
-    ),
-    confirmed_critical=(
-        risk.confirmed_critical
-    ),
-    confirmed_high=(
-        risk.confirmed_high
-    ),
-    factors=[
-        factor.model_dump()
-        if hasattr(
-            factor,
-            "model_dump",
-        )
-        else factor
-        for factor in risk.factors
-    ],
-)
-
-policy = result.pipeline.policy
-
-policy_report = PolicyReport(
-    policy_name=policy.policy_name,
-    actions=[
-        action.model_dump()
-        if hasattr(
-            action,
-            "model_dump",
-        )
-        else action
-        for action in policy.actions
-    ],
-    tool_errors=list(
-        policy.tool_errors
-    ),
-    regression_failures=list(
-        policy.regression_failures
-    ),
-    exceptions=[
-        exception.model_dump()
-        if hasattr(
-            exception,
-            "model_dump",
-        )
-        else exception
-        for exception in policy.exceptions
-    ],
-)
-
-decision = result.pipeline.release_gate
-
-decision_report = DecisionReport(
-    status=decision.status.value,
-    reason=decision.reason,
-    release_allowed=decision.release_allowed,
-)
-
-return SecurityReport(
-    release=release,
-    scan=scan,
-    findings=findings,
-    risk=risk_report,
-    policy=policy_report,
-    remediation=RemediationReport(
-        total=0,
-        open=0,
-        in_progress=0,
-        resolved=0,
-        verified=0,
-        items=[],
-    ),
-    regression=regression,
-    regression_gate=regression_gate,
-    decision=decision_report,
-    generated_at=(
-        generated_at
-        if generated_at is not None
-        else datetime.now(
-            timezone.utc
-        ).isoformat()
-    ),
-)
+    return SecurityReport(
+        release=release,
+        scan=scan,
+        findings=findings,
+        risk=risk,
+        policy=policy,
+        decision=decision,
+        remediation=remediation,
+        regression=regression,
+        regression_gate=regression_gate,
+        generated_at=(
+            generated_at
+            if generated_at is not None
+            else scan.completed_at
+        ),
+    )
 ```
