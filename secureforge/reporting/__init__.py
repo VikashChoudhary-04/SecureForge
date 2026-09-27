@@ -21,6 +21,9 @@ build_regression_report,
 from .regression_gate import (
 build_regression_gate_report,
 )
+from .scan import (
+build_scan_report,
+)
 from .serializers import SecurityReportSerializer
 from .service import (
 ReportPaths,
@@ -46,4 +49,5 @@ SecurityReportService,
 "SecurityReportService",
 "build_regression_gate_report",
 "build_regression_report",
+"build_scan_report",
 ]
