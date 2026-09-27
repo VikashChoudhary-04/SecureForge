@@ -1,5 +1,6 @@
 """Security regression testing components for SecureForge."""
 
+from .cli import app as regression_app
 from .engine import (
 RegressionEngine,
 RegressionExecutionError,
@@ -52,4 +53,5 @@ build_regression_runner,
 "SecureCommerceRegressionExecutor",
 "build_regression_runner",
 "build_securecommerce_executor",
+"regression_app",
 ]
