@@ -1,0 +1,39 @@
+{
+"correlation": {
+"group_id": "CORR-BOLA-001",
+"canonical_finding_id": "SF-BOLA-001",
+"title": "Broken Object-Level Authorization",
+"severity": "high",
+"confidence": "confirmed",
+"cwe": "CWE-639",
+"owasp": "API1:2023-Broken Object Level Authorization",
+"security_requirement": "SF-AUTHZ-001",
+"asset": "SecureCommerce",
+"endpoint": "/api/orders/{order_id}",
+"parameter": "order_id",
+"sources": [
+{
+"source": "api",
+"source_finding_id": "API-BOLA-001",
+"evidence_reference": "sample-api.json"
+},
+{
+"source": "dast",
+"source_finding_id": "DAST-BOLA-001",
+"evidence_reference": "sample-dast.json"
+},
+{
+"source": "manual",
+"source_finding_id": "BURP-BOLA-001",
+"evidence_reference": "sample-manual.json"
+}
+],
+"reason": {
+"same_cwe": true,
+"same_endpoint": true,
+"same_parameter": true,
+"same_requirement": true,
+"same_underlying_behavior": true
+}
+}
+}
