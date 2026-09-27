@@ -1,45 +1,54 @@
-"""Release-gate decision engine for SecureForge."""
+"""Release-gate orchestration for SecureForge."""
 
 from **future** import annotations
 
-from secureforge.core.policy import PolicyDecision
+from secureforge.core.policy.models import PolicyDecision
+from secureforge.core.risk.models import RiskAssessment
 
-from .evaluator import ReleaseDecisionEvaluator
-from .models import (
-ReleaseDecisionRecord,
-ReleaseGateInput,
-)
+from .evaluator import ReleaseGateEvaluator
+from .models import ReleaseGateDecision
+from .regression import RegressionGateResult
 
 class ReleaseGateEngine:
-"""Produce the final release decision from security evaluation results."""
+"""Combine security policy and regression results into a release decision."""
 
 ```
 def __init__(
     self,
-    evaluator: ReleaseDecisionEvaluator | None = None,
+    evaluator: ReleaseGateEvaluator | None = None,
 ) -> None:
-    self.evaluator = evaluator or ReleaseDecisionEvaluator()
+    self.evaluator = (
+        evaluator
+        if evaluator is not None
+        else ReleaseGateEvaluator()
+    )
 
 def evaluate(
     self,
-    gate_input: ReleaseGateInput,
-) -> ReleaseDecisionRecord:
-    """Evaluate release readiness."""
-    decision, reasons = self.evaluator.evaluate(
-        gate_input
+    *,
+    risk: RiskAssessment,
+    policy: PolicyDecision,
+    regression: RegressionGateResult | None = None,
+) -> ReleaseGateDecision:
+    """Evaluate whether the release is allowed."""
+    decision = self.evaluator.evaluate(
+        risk=risk,
+        policy=policy,
     )
 
-    return ReleaseDecisionRecord(
-        application=gate_input.application,
-        version=gate_input.version,
-        commit_sha=gate_input.commit_sha,
-        decision=decision,
-        reasons=reasons,
-        blocking_findings=gate_input.blocking_findings,
-        review_findings=gate_input.review_findings,
-        failed_regressions=gate_input.failed_regressions,
-        tool_errors=gate_input.tool_errors,
-        exceptions_applied=gate_input.exceptions_applied,
-        metadata=gate_input.metadata,
-    )
+    if regression is None:
+        return decision
+
+    if regression.blocked:
+        return ReleaseGateDecision(
+            status=decision.status.BLOCKED,
+            reason=(
+                f"{decision.reason} "
+                f"Regression gate blocked the release: "
+                f"{regression.reason}"
+            ),
+            release_allowed=False,
+        )
+
+    return decision
 ```
