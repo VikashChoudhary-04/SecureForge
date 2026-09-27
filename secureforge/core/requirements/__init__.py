@@ -1,5 +1,6 @@
-"""Security requirement models, registry, and related types."""
+"""Security requirement models, registry, loader, and related types."""
 
+from .loader import RequirementLoader
 from .models import (
 RequirementCategory,
 RequirementStatus,
@@ -9,6 +10,7 @@ from .registry import RequirementRegistry
 
 **all** = [
 "RequirementCategory",
+"RequirementLoader",
 "RequirementRegistry",
 "RequirementStatus",
 "SecurityRequirement",
