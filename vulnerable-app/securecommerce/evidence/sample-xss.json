@@ -1,0 +1,29 @@
+{
+"tool": "securecommerce-dast-lab",
+"version": "1.0.0",
+"target": "http://localhost:5000",
+"alerts": [
+{
+"id": "DAST-XSS-001",
+"name": "Reflected Cross-Site Scripting",
+"severity": "high",
+"confidence": "confirmed",
+"cwe": "CWE-79",
+"owasp": "A03:2021-Injection",
+"method": "GET",
+"url": "http://localhost:5000/vulnerable/search?query=%3Cscript%3Ealert(1)%3C/script%3E",
+"endpoint": "/vulnerable/search",
+"parameter": "query",
+"description": "User-controlled input is reflected into an HTML response without appropriate output encoding.",
+"impact": "An attacker may execute attacker-controlled script in a victim's browser within the application's security context.",
+"remediation": "Apply context-appropriate output encoding and validate untrusted input before rendering it into HTML.",
+"security_requirement": "SF-INPUT-001",
+"evidence": {
+"payload": "<script>alert(1)</script>",
+"response_status": 200,
+"payload_reflected": true,
+"encoding_applied": false
+}
+}
+]
+}
