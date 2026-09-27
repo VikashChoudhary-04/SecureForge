@@ -1,6 +1,7 @@
-"""Finding correlation engine and correlation models."""
+"""Finding correlation engine, matcher, and correlation models."""
 
 from .engine import CorrelationEngine
+from .matcher import FindingMatcher
 from .models import (
 CorrelatedFinding,
 CorrelationConfidence,
@@ -9,9 +10,10 @@ CorrelationType,
 )
 
 **all** = [
-"CorrelationEngine",
-"CorrelatedFinding",
 "CorrelationConfidence",
+"CorrelationEngine",
 "CorrelationLink",
 "CorrelationType",
+"CorrelatedFinding",
+"FindingMatcher",
 ]
