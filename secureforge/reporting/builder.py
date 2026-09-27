@@ -3,17 +3,20 @@
 from **future** import annotations
 
 from datetime import datetime, timezone
-from typing import Any
 
 from secureforge.core.findings.models import Finding
 from secureforge.core.policy.models import PolicyDecision
 from secureforge.core.release_gate.models import ReleaseGateDecision
 from secureforge.core.risk.models import RiskAssessment
-from secureforge.regression import RegressionSuiteResult
+from secureforge.regression import (
+RegressionGateDecision,
+RegressionSuiteResult,
+)
 
 from .models import (
 DecisionReport,
 PolicyReport,
+RegressionGateReport,
 RegressionReport,
 ReleaseMetadata,
 RemediationReport,
@@ -23,6 +26,7 @@ ScanMetadata,
 SecurityReport,
 )
 from .regression import build_regression_report
+from .regression_gate import build_regression_gate_report
 
 class SecurityReportBuilder:
 """Convert SecureForge domain results into a security report."""
@@ -39,6 +43,7 @@ def build(
     decision: ReleaseGateDecision,
     remediation: RemediationReport | None = None,
     regression: RegressionSuiteResult | None = None,
+    regression_gate: RegressionGateDecision | None = None,
     generated_at: str | None = None,
 ) -> SecurityReport:
     """Build a complete security report."""
@@ -70,6 +75,14 @@ def build(
         )
     )
 
+    regression_gate_report = (
+        build_regression_gate_report(
+            regression_gate
+        )
+        if regression_gate is not None
+        else None
+    )
+
     return SecurityReport(
         release=release,
         scan=scan,
@@ -93,6 +106,7 @@ def build(
             )
         ),
         regression=regression_report,
+        regression_gate=regression_gate_report,
         decision=self._build_decision(
             decision
         ),
