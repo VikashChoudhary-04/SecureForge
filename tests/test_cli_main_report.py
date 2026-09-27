@@ -1,123 +1,32 @@
-```python id="a9c4jw"
+```python id="k3p7w9"
 """Tests for the SecureForge report CLI command."""
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from secureforge.cli.main import app
-from secureforge.reporting import (
-    ReportPaths,
-    SecurityReportService,
-)
 
 
 runner = CliRunner()
 
 
-def test_report_command_regenerates_html(
+def test_report_command_generates_html(
     sample_security_report,
     tmp_path: Path,
 ) -> None:
-    """Regenerate HTML from a persisted JSON report."""
-    json_path = (
-        tmp_path
-        / "security-report.json"
-    )
+    """The report command should render HTML from JSON."""
+    input_path = tmp_path / "security-report.json"
+    output_path = tmp_path / "security-report.html"
 
-    initial_html_path = (
-        tmp_path
-        / "initial.html"
-    )
-
-    SecurityReportService().generate(
-        sample_security_report,
-        paths=ReportPaths(
-            json_path=json_path,
-            html_path=initial_html_path,
+    input_path.write_text(
+        json.dumps(
+            sample_security_report.model_dump(
+                mode="json"
+            ),
+            indent=2,
         ),
-    )
-
-    regenerated_path = (
-        tmp_path
-        / "regenerated.html"
-    )
-
-    result = runner.invoke(
-        app,
-        [
-            "report",
-            "--json",
-            str(json_path),
-            "--html",
-            str(regenerated_path),
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert (
-        "JSON Report:"
-        in result.stdout
-    )
-    assert (
-        "HTML Report:"
-        in result.stdout
-    )
-    assert regenerated_path.exists()
-
-
-def test_report_command_uses_default_html_path(
-    sample_security_report,
-    tmp_path: Path,
-) -> None:
-    """Generate HTML beside the supplied JSON report."""
-    json_path = (
-        tmp_path
-        / "security-report.json"
-    )
-
-    initial_html_path = (
-        tmp_path
-        / "initial.html"
-    )
-
-    SecurityReportService().generate(
-        sample_security_report,
-        paths=ReportPaths(
-            json_path=json_path,
-            html_path=initial_html_path,
-        ),
-    )
-
-    result = runner.invoke(
-        app,
-        [
-            "report",
-            "--json",
-            str(json_path),
-        ],
-    )
-
-    expected_html = (
-        tmp_path
-        / "security-report.html"
-    )
-
-    assert result.exit_code == 0
-    assert expected_html.exists()
-
-
-def test_report_command_rejects_invalid_report(
-    tmp_path: Path,
-) -> None:
-    """Return a non-zero exit code for an invalid report."""
-    json_path = (
-        tmp_path
-        / "invalid.json"
-    )
-
-    json_path.write_text(
-        '{"invalid": true}',
         encoding="utf-8",
     )
 
@@ -125,14 +34,139 @@ def test_report_command_rejects_invalid_report(
         app,
         [
             "report",
-            "--json",
-            str(json_path),
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
         ],
     )
 
-    assert result.exit_code == 2
-    assert (
-        "Report generation failed:"
-        in result.stdout
+    assert result.exit_code == 0
+    assert output_path.is_file()
+
+    output = output_path.read_text(
+        encoding="utf-8"
     )
+
+    assert "SecureForge" in output
+    assert (
+        sample_security_report.release.application
+        in output
+    )
+
+
+def test_report_command_uses_default_output_path(
+    sample_security_report,
+    tmp_path: Path,
+) -> None:
+    """The report command should derive an output path when omitted."""
+    input_path = tmp_path / "security-report.json"
+
+    input_path.write_text(
+        json.dumps(
+            sample_security_report.model_dump(
+                mode="json"
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "--input",
+            str(input_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+
+    expected_path = (
+        tmp_path
+        / "security-report.html"
+    )
+
+    assert expected_path.is_file()
+
+
+def test_report_command_reports_output_path(
+    sample_security_report,
+    tmp_path: Path,
+) -> None:
+    """The CLI should report where the HTML file was written."""
+    input_path = tmp_path / "security-report.json"
+    output_path = tmp_path / "security-report.html"
+
+    input_path.write_text(
+        json.dumps(
+            sample_security_report.model_dump(
+                mode="json"
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert str(output_path) in result.stdout
+
+
+def test_report_command_rejects_missing_input(
+    tmp_path: Path,
+) -> None:
+    """The CLI should return a failure for a missing report."""
+    input_path = tmp_path / "missing.json"
+    output_path = tmp_path / "security-report.html"
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert not output_path.exists()
+
+
+def test_report_command_rejects_invalid_json(
+    tmp_path: Path,
+) -> None:
+    """The CLI should reject malformed report JSON."""
+    input_path = tmp_path / "security-report.json"
+    output_path = tmp_path / "security-report.html"
+
+    input_path.write_text(
+        "{invalid-json",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert not output_path.exists()
 ```
