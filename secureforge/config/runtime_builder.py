@@ -18,12 +18,9 @@ runtime: RuntimeConfiguration,
 """Convert runtime YAML configuration into ScanConfiguration."""
 profile = _parse_profile(runtime.profile)
 target = _build_target(runtime.target)
+integrations = _build_integrations(runtime.integrations)
 
 ```
-integrations = _build_integrations(
-    runtime.integrations
-)
-
 return ScanConfiguration(
     profile=profile,
     target=target,
@@ -85,6 +82,15 @@ for name, raw_config in data.items():
             "must be a mapping."
         )
 
+    options = {
+        key: value
+        for key, value in raw_config.items()
+        if key not in {
+            "enabled",
+            "command",
+        }
+    }
+
     try:
         integrations[name] = IntegrationConfig(
             name=name,
@@ -95,14 +101,7 @@ for name, raw_config in data.items():
                 )
             ),
             command=raw_config.get("command"),
-            options={
-                key: value
-                for key, value in raw_config.items()
-                if key not in {
-                    "enabled",
-                    "command",
-                }
-            },
+            options=options,
         )
     except (TypeError, ValueError) as exc:
         raise RuntimeConfigurationError(
