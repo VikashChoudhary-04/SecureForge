@@ -1,250 +1,131 @@
 requirements:
 
-* requirement_id: SF-AUTH-001
-  title: Strong Authentication
-  description: >
-  Authentication mechanisms must protect user accounts against
-  weak credential handling, insecure authentication flows, and
-  common authentication weaknesses.
+* id: SF-AUTH-001
+  title: Authentication Security
+  description: "Authentication mechanisms must be securely implemented and enforced."
   category: authentication
-  status: active
-  owasp: A07:2025
-  cwe:
+  owasp:
 
+  * "A07:2025-Identification and Authentication Failures"
+    cwe:
   * CWE-287
-  * CWE-521
-  * CWE-798
-    verification_methods:
-  * sast
-  * dast
-  * api
-  * manual
-    mandatory: true
-
-* requirement_id: SF-AUTH-002
-  title: Secure Session Management
-  description: >
-  Authenticated sessions must be securely created, maintained,
-  expired, and invalidated to prevent session abuse.
-  category: authentication
-  status: active
-  owasp: A07:2025
-  cwe:
-
   * CWE-384
+
+* id: SF-AUTH-002
+  title: Session Security
+  description: "Sessions must be securely created, maintained, expired, and invalidated."
+  category: authentication
+  owasp:
+
+  * "A07:2025-Identification and Authentication Failures"
+    cwe:
   * CWE-613
-    verification_methods:
-  * dast
-  * api
-  * manual
-    mandatory: true
 
-* requirement_id: SF-AUTHZ-001
+* id: SF-AUTHZ-001
   title: Object-Level Authorization
-  description: >
-  Users must only be able to access objects and resources that
-  they are authorized to access.
+  description: "Users must only access objects they are authorized to access."
   category: authorization
-  status: active
-  owasp: API1:2023
-  cwe:
+  owasp:
 
+  * "API1:2023-Broken Object Level Authorization"
+    cwe:
   * CWE-639
   * CWE-862
-    verification_methods:
-  * api
-  * dast
-  * manual
-  * regression
-    mandatory: true
 
-* requirement_id: SF-AUTHZ-002
+* id: SF-AUTHZ-002
   title: Function-Level Authorization
-  description: >
-  Privileged application and API functions must enforce
-  authorization according to the authenticated user's role.
+  description: "Privileged application functions must enforce appropriate authorization."
   category: authorization
-  status: active
-  owasp: API5:2023
-  cwe:
+  owasp:
 
+  * "API5:2023-Broken Function Level Authorization"
+    cwe:
   * CWE-862
   * CWE-863
-    verification_methods:
-  * api
-  * dast
-  * manual
-  * regression
-    mandatory: true
 
-* requirement_id: SF-API-001
-  title: API Authentication and Authorization
-  description: >
-  Security-sensitive API endpoints must enforce appropriate
-  authentication and authorization controls.
+* id: SF-API-001
+  title: API Security
+  description: "API endpoints must enforce appropriate security controls and input handling."
   category: api
-  status: active
-  owasp: API2:2023
-  cwe:
+  owasp:
 
-  * CWE-306
-  * CWE-862
-  * CWE-863
-    verification_methods:
-  * api
-  * dast
-  * manual
-    mandatory: true
+  * "API Security Top 10"
+    cwe:
+  * CWE-20
 
-* requirement_id: SF-API-002
-  title: API Input and Response Security
-  description: >
-  APIs must validate untrusted input and avoid exposing
-  unnecessary sensitive information in responses.
+* id: SF-API-002
+  title: API Resource Protection
+  description: "API resources must have appropriate rate, size, and resource-consumption controls."
   category: api
-  status: active
-  owasp: API3:2023
-  cwe:
+  owasp:
 
+  * "API4:2023-Unrestricted Resource Consumption"
+    cwe:
+  * CWE-400
+
+* id: SF-INPUT-001
+  title: Input Validation
+  description: "Untrusted input must be validated and safely handled."
+  category: input_validation
+  owasp:
+
+  * "A05:2025-Injection"
+    cwe:
   * CWE-20
-  * CWE-200
-  * CWE-201
-    verification_methods:
-  * api
-  * dast
-  * sast
-    mandatory: true
-
-* requirement_id: SF-INPUT-001
-  title: Injection-Safe Input Handling
-  description: >
-  Untrusted application input must be safely handled so that it
-  cannot alter the intended behavior of interpreters or data stores.
-  category: input
-  status: active
-  owasp: A05:2025
-  cwe:
-
-  * CWE-20
-  * CWE-79
   * CWE-89
-  * CWE-918
-    verification_methods:
-  * sast
-  * dast
-  * api
-  * manual
-  * regression
-    mandatory: true
+  * CWE-79
 
-* requirement_id: SF-SECRET-001
+* id: SF-SECRET-001
   title: Secret Protection
-  description: >
-  Credentials, API keys, tokens, private keys, and other secrets
-  must not be exposed through source code, configuration, logs,
-  artifacts, or application responses.
-  category: secret
-  status: active
-  owasp: A02:2025
-  cwe:
+  description: "Secrets, credentials, tokens, and private keys must not be exposed in source code or artifacts."
+  category: secrets
+  owasp:
 
+  * "A02:2025-Security Misconfiguration"
+    cwe:
   * CWE-798
   * CWE-321
-  * CWE-312
-    verification_methods:
-  * secrets
-  * sast
-  * manual
-  * regression
-    mandatory: true
 
-* requirement_id: SF-DEP-001
+* id: SF-DEP-001
   title: Dependency Security
-  description: >
-  Application dependencies must be identified and evaluated for
-  known security vulnerabilities and unacceptable versions.
+  description: "Application dependencies must be inventoried and maintained against known vulnerabilities."
   category: dependency
-  status: active
-  owasp: A03:2025
-  cwe:
+  owasp:
 
+  * "A06:2025-Vulnerable and Outdated Components"
+    cwe:
   * CWE-1104
-  * CWE-1395
-    verification_methods:
-  * sca
-  * manual
-    mandatory: true
 
-* requirement_id: SF-CONTAINER-001
-  title: Secure Container Configuration
-  description: >
-  Application containers must follow secure configuration
-  practices including least privilege, appropriate users,
-  controlled ports, and secure runtime configuration.
+* id: SF-CONTAINER-001
+  title: Container Security
+  description: "Container images and runtime configurations must follow secure deployment practices."
   category: container
-  status: active
-  owasp: A05:2025
   cwe:
 
   * CWE-250
   * CWE-269
-  * CWE-16
-    verification_methods:
-  * container
-  * manual
-    mandatory: true
 
-* requirement_id: SF-IAC-001
-  title: Secure Infrastructure Configuration
-  description: >
-  Infrastructure-as-code configurations must avoid unnecessary
-  public exposure, excessive permissions, insecure storage,
-  and other dangerous infrastructure defaults.
+* id: SF-IAC-001
+  title: Infrastructure Security
+  description: "Infrastructure-as-Code must enforce secure resource exposure, permissions, and configuration."
   category: infrastructure
-  status: active
-  owasp: A05:2025
   cwe:
 
-  * CWE-16
-  * CWE-269
   * CWE-732
-    verification_methods:
-  * iac
-  * manual
-    mandatory: true
+  * CWE-284
 
-* requirement_id: SF-TRANSPORT-001
-  title: Secure Transport
-  description: >
-  Security-sensitive application and API communications must use
-  appropriate transport protection and must not expose sensitive
-  information through insecure communication channels.
+* id: SF-TRANSPORT-001
+  title: Transport Security
+  description: "Sensitive communications must use secure transport and appropriate TLS configuration."
   category: transport
-  status: active
-  owasp: A04:2025
-  cwe:
+  owasp:
 
+  * "A04:2025-Cryptographic Failures"
+    cwe:
   * CWE-319
-  * CWE-326
-    verification_methods:
-  * dast
-  * api
-  * manual
-  * wireshark
-    mandatory: true
+  * CWE-295
 
-* requirement_id: SF-REG-001
-  title: Security Regression Protection
-  description: >
-  Confirmed security vulnerabilities that are suitable for
-  automation must have repeatable regression tests to prevent
-  reintroduction.
+* id: SF-REG-001
+  title: Security Regression Prevention
+  description: "Previously confirmed security defects must have repeatable regression coverage."
   category: regression
-  status: active
-  owasp: null
-  cwe: []
-  verification_methods:
-
-  * regression
-  * manual
-    mandatory: false
