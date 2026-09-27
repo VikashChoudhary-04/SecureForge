@@ -1,0 +1,30 @@
+{
+"source": "wireshark",
+"tool": "Wireshark",
+"version": "4.4.0",
+"target": "127.0.0.1:5000",
+"findings": [
+{
+"id": "WIRESHARK-001",
+"title": "Sensitive laboratory HTTP traffic observed without transport encryption",
+"severity": "medium",
+"confidence": "confirmed",
+"cwe": "CWE-319",
+"owasp": "A02:2021-Cryptographic Failures",
+"description": "A controlled packet capture observed application traffic over HTTP rather than an encrypted transport channel.",
+"impact": "Sensitive application data transmitted over an unencrypted channel may be readable by an attacker with appropriate network visibility.",
+"remediation": "Use TLS for sensitive application traffic and enforce secure transport for protected endpoints.",
+"security_requirement": "SF-TRANSPORT-001",
+"manual_validation": true,
+"evidence": {
+"interface": "loopback",
+"protocol": "HTTP",
+"source": "127.0.0.1",
+"destination": "127.0.0.1",
+"destination_port": 5000,
+"capture_reference": "securecommerce-http-lab.pcapng",
+"packet_reference": "frame-42"
+}
+}
+]
+}
