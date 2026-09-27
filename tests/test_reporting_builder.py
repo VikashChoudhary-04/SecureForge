@@ -1,362 +1,294 @@
+```python id="q7m2x4"
 """Tests for the SecureForge security report builder."""
 
-from **future** import annotations
-
-from datetime import datetime, timezone
-
-from secureforge.core.findings import (
-Confidence,
-Evidence,
-Finding,
-FindingStatus,
-Severity,
-ValidationStatus,
-)
-from secureforge.core.policy import PolicyDecision
-from secureforge.core.release_gate import (
-ReleaseGateDecision,
-ReleaseGateStatus,
-)
-from secureforge.core.risk import RiskAssessment
-from secureforge.reporting import SecurityReportBuilder
-
-def build_finding(
-*,
-finding_id: str = "SF-BOLA-001",
-severity: Severity = Severity.HIGH,
-status: FindingStatus = FindingStatus.OPEN,
-validation_status: ValidationStatus = (
-ValidationStatus.CONFIRMED
-),
-) -> Finding:
-"""Build a representative domain finding."""
-finding = Finding(
-finding_id=finding_id,
-title="Broken Object-Level Authorization",
-source="api",
-source_finding_id="API-BOLA-001",
-application="SecureCommerce",
-asset="SecureCommerce API",
-endpoint="/api/orders/{order_id}",
-parameter="order_id",
-cwe="CWE-639",
-owasp=(
-"API1:2023-Broken Object Level "
-"Authorization"
-),
-security_requirement="SF-AUTHZ-001",
-severity=severity,
-confidence=Confidence.CONFIRMED,
-description="Unauthorized order access.",
-impact="Customer order data may be exposed.",
-remediation="Enforce object-level authorization.",
-status=status,
-validation_status=validation_status,
-regression_test="BOLA-001",
-evidence=[
-Evidence(
-evidence_id="EV-001",
-source="api",
-description="User accessed another user's order.",
-data={
-"request_user_id": 2,
-"order_owner_id": 3,
-},
-)
-],
+from secureforge.reporting import (
+    DecisionReport,
+    PolicyReport,
+    RegressionGateReport,
+    RegressionReport,
+    ReleaseMetadata,
+    RemediationReport,
+    ReportFinding,
+    RiskReport,
+    ScanMetadata,
+    SecurityReportBuilder,
 )
 
-```
-return finding
-```
 
-def build_risk() -> RiskAssessment:
-"""Build a representative risk assessment."""
-return RiskAssessment(
-score=8.5,
-highest_severity="high",
-confirmed_critical=0,
-confirmed_high=1,
-factors={
-"internet_exposure": True,
-"sensitive_data": True,
-"exploit_evidence": True,
-},
-)
+def test_build_security_report(
+    sample_findings,
+    sample_risk_assessment,
+    sample_policy_decision,
+    sample_release_gate_decision,
+) -> None:
+    """Build a complete security report from domain objects."""
+    builder = SecurityReportBuilder()
 
-def build_policy() -> PolicyDecision:
-"""Build a representative policy decision."""
-return PolicyDecision(
-policy_name="default",
-actions={
-"critical": "block",
-"high": "block",
-"medium": "review",
-"low": "pass",
-"info": "pass",
-},
-tool_errors=[],
-regression_failures=[],
-exceptions=[],
-)
+    release = ReleaseMetadata(
+        application="securecommerce",
+        version="1.0.0",
+        commit_sha="abc123",
+        environment="test",
+    )
 
-def build_release_gate() -> ReleaseGateDecision:
-"""Build a representative blocked release decision."""
-return ReleaseGateDecision(
-status=ReleaseGateStatus.BLOCK,
-reason=(
-"Confirmed high-severity finding "
-"violates the release policy."
-),
-release_allowed=False,
-)
+    scan = ScanMetadata(
+        scan_id="scan-001",
+        profile="standard",
+        target="http://localhost:5000",
+        started_at="2026-09-27T10:00:00+00:00",
+        completed_at="2026-09-27T10:05:00+00:00",
+    )
 
-def test_builder_creates_complete_report():
-"""Builder should create a complete security report."""
-builder = SecurityReportBuilder()
+    report = builder.build(
+        release=release,
+        scan=scan,
+        findings=sample_findings,
+        risk=sample_risk_assessment,
+        policy=sample_policy_decision,
+        decision=sample_release_gate_decision,
+    )
 
-```
-started_at = datetime(
-    2026,
-    9,
-    27,
-    8,
-    0,
-    tzinfo=timezone.utc,
-)
+    assert isinstance(report.release, ReleaseMetadata)
+    assert isinstance(report.scan, ScanMetadata)
+    assert isinstance(report.risk, RiskReport)
+    assert isinstance(report.policy, PolicyReport)
+    assert isinstance(report.decision, DecisionReport)
+    assert isinstance(report.remediation, RemediationReport)
 
-completed_at = datetime(
-    2026,
-    9,
-    27,
-    8,
-    2,
-    tzinfo=timezone.utc,
-)
+    assert report.release == release
+    assert report.scan == scan
 
-report = builder.build(
-    release_id="release-001",
-    application="SecureCommerce",
-    version="0.1.0",
-    environment="lab",
-    profile="standard",
-    scan_id="SF-SCAN-001",
-    scan_status="completed",
-    integrations=[
-        "sast",
-        "api",
-        "dast",
-    ],
-    findings=[
-        build_finding()
-    ],
-    risk=build_risk(),
-    policy=build_policy(),
-    release_gate=build_release_gate(),
-    commit_sha="lab-commit-001",
-    started_at=started_at,
-    completed_at=completed_at,
-)
+    assert len(report.findings) == len(
+        sample_findings
+    )
 
-assert report.release.release_id == (
-    "release-001"
-)
-assert report.release.application == (
-    "SecureCommerce"
-)
-assert report.release.commit_sha == (
-    "lab-commit-001"
-)
+    assert report.risk.score == (
+        sample_risk_assessment.score
+    )
 
-assert report.scan.scan_id == (
-    "SF-SCAN-001"
-)
-assert report.scan.status == "completed"
-assert report.scan.integrations == [
-    "sast",
-    "api",
-    "dast",
-]
+    assert report.policy.policy_name == (
+        sample_policy_decision.policy_name
+    )
 
-assert len(report.findings) == 1
-assert report.findings[0].finding_id == (
-    "SF-BOLA-001"
-)
-assert report.findings[0].source == "api"
-assert report.findings[0].evidence_count == 1
+    assert report.decision.release_allowed == (
+        sample_release_gate_decision.release_allowed
+    )
 
-assert report.risk.overall_score == 8.5
-assert report.risk.highest_severity == "high"
 
-assert report.policy.policy_name == "default"
-assert report.policy.high_action == "block"
+def test_build_security_report_maps_findings(
+    sample_findings,
+    sample_risk_assessment,
+    sample_policy_decision,
+    sample_release_gate_decision,
+) -> None:
+    """Map normalized findings into report findings."""
+    builder = SecurityReportBuilder()
 
-assert report.decision.status == "block"
-assert report.decision.release_allowed is False
-```
+    release = ReleaseMetadata(
+        application="securecommerce",
+        version="1.0.0",
+        commit_sha="abc123",
+        environment="test",
+    )
 
-def test_builder_preserves_source_finding_id():
-"""A finding's original source identifier should remain traceable."""
-builder = SecurityReportBuilder()
+    scan = ScanMetadata(
+        scan_id="scan-001",
+        profile="standard",
+        target="http://localhost:5000",
+        started_at="2026-09-27T10:00:00+00:00",
+        completed_at="2026-09-27T10:05:00+00:00",
+    )
 
-```
-report = builder.build(
-    release_id="release-002",
-    application="SecureCommerce",
-    version="0.1.0",
-    environment="lab",
-    profile="quick",
-    scan_id="SF-SCAN-002",
-    scan_status="completed",
-    integrations=["sast"],
-    findings=[
-        build_finding()
-    ],
-    risk=build_risk(),
-    policy=build_policy(),
-    release_gate=build_release_gate(),
-)
+    report = builder.build(
+        release=release,
+        scan=scan,
+        findings=sample_findings,
+        risk=sample_risk_assessment,
+        policy=sample_policy_decision,
+        decision=sample_release_gate_decision,
+    )
 
-finding = report.findings[0]
+    for source, rendered in zip(
+        sample_findings,
+        report.findings,
+    ):
+        assert isinstance(
+            rendered,
+            ReportFinding,
+        )
 
-assert finding.source_finding_ids == [
-    "API-BOLA-001"
-]
-```
+        assert rendered.finding_id == source.finding_id
+        assert rendered.title == source.title
+        assert rendered.source == source.source
+        assert rendered.asset == source.asset
+        assert rendered.application == source.application
+        assert rendered.endpoint == source.endpoint
+        assert rendered.parameter == source.parameter
+        assert rendered.cwe == source.cwe
+        assert rendered.owasp_mapping == source.owasp_mapping
+        assert (
+            rendered.security_requirement
+            == source.security_requirement
+        )
+        assert rendered.severity == source.severity.value
+        assert rendered.confidence == source.confidence.value
+        assert rendered.description == source.description
+        assert rendered.impact == source.impact
+        assert rendered.remediation == source.remediation
+        assert rendered.status == source.status.value
+        assert (
+            rendered.validation_status
+            == source.validation_status.value
+        )
+        assert rendered.regression_test == (
+            source.regression_test
+        )
+        assert rendered.correlation_ids == (
+            source.correlation_ids
+        )
 
-def test_builder_counts_remediation_states():
-"""Builder should summarize the finding lifecycle correctly."""
-builder = SecurityReportBuilder()
 
-```
-open_finding = build_finding(
-    finding_id="SF-OPEN-001",
-    status=FindingStatus.OPEN,
-)
+def test_build_security_report_calculates_remediation(
+    sample_findings,
+    sample_risk_assessment,
+    sample_policy_decision,
+    sample_release_gate_decision,
+) -> None:
+    """Calculate remediation counts from finding lifecycle state."""
+    builder = SecurityReportBuilder()
 
-remediated_finding = build_finding(
-    finding_id="SF-REMEDIATED-001",
-    status=FindingStatus.REMEDIATED,
-)
+    release = ReleaseMetadata(
+        application="securecommerce",
+        version="1.0.0",
+        commit_sha="abc123",
+        environment="test",
+    )
 
-verified_finding = build_finding(
-    finding_id="SF-VERIFIED-001",
-    status=FindingStatus.VERIFIED,
-)
+    scan = ScanMetadata(
+        scan_id="scan-001",
+        profile="standard",
+        target="http://localhost:5000",
+        started_at="2026-09-27T10:00:00+00:00",
+        completed_at="2026-09-27T10:05:00+00:00",
+    )
 
-report = builder.build(
-    release_id="release-003",
-    application="SecureCommerce",
-    version="0.1.0",
-    environment="lab",
-    profile="standard",
-    scan_id="SF-SCAN-003",
-    scan_status="completed",
-    integrations=["dast"],
-    findings=[
-        open_finding,
-        remediated_finding,
-        verified_finding,
-    ],
-    risk=build_risk(),
-    policy=build_policy(),
-    release_gate=build_release_gate(),
-)
+    report = builder.build(
+        release=release,
+        scan=scan,
+        findings=sample_findings,
+        risk=sample_risk_assessment,
+        policy=sample_policy_decision,
+        decision=sample_release_gate_decision,
+    )
 
-assert report.remediation.open_findings == 1
-assert report.remediation.remediated_findings == 1
-assert report.remediation.verified_findings == 1
-assert report.remediation.pending_retests == 1
-```
+    expected_open = sum(
+        1
+        for finding in sample_findings
+        if finding.status.value == "open"
+    )
 
-def test_builder_calculates_regression_summary():
-"""Builder should calculate passed and failed regression counts."""
-builder = SecurityReportBuilder()
+    expected_remediated = sum(
+        1
+        for finding in sample_findings
+        if finding.status.value == "remediated"
+    )
 
-```
-regression_results = [
-    {
-        "test_id": "BOLA-001",
-        "requirement": "SF-AUTHZ-001",
-        "status": "failed",
-        "expected_result": "HTTP 403",
-        "actual_result": "HTTP 200",
-        "message": "Authorization bypass remains.",
-    },
-    {
-        "test_id": "SECRET-001",
-        "requirement": "SF-SECRET-001",
-        "status": "passed",
-        "expected_result": "No hardcoded secret",
-        "actual_result": "No hardcoded secret",
-    },
-    {
-        "test_id": "XSS-001",
-        "requirement": "SF-INPUT-001",
-        "status": "passed",
-    },
-]
+    expected_verified = sum(
+        1
+        for finding in sample_findings
+        if finding.validation_status.value == "verified"
+    )
 
-report = builder.build(
-    release_id="release-004",
-    application="SecureCommerce",
-    version="0.1.0",
-    environment="lab",
-    profile="full",
-    scan_id="SF-SCAN-004",
-    scan_status="completed",
-    integrations=[
-        "sast",
-        "secrets",
-        "dast",
-    ],
-    findings=[],
-    risk=build_risk(),
-    policy=build_policy(),
-    release_gate=build_release_gate(),
-    regression_results=regression_results,
-)
+    assert report.remediation.total == len(
+        sample_findings
+    )
 
-assert report.regression.tests_total == 3
-assert report.regression.tests_passed == 2
-assert report.regression.tests_failed == 1
+    assert report.remediation.open == expected_open
+    assert report.remediation.remediated == expected_remediated
+    assert report.remediation.verified == expected_verified
 
-assert report.regression.tests[0].test_id == (
-    "BOLA-001"
-)
-assert report.regression.tests[0].status == (
-    "failed"
-)
-```
 
-def test_builder_preserves_metadata():
-"""Additional report metadata should remain intact."""
-builder = SecurityReportBuilder()
+def test_build_security_report_without_optional_sections(
+    sample_findings,
+    sample_risk_assessment,
+    sample_policy_decision,
+    sample_release_gate_decision,
+) -> None:
+    """Optional regression sections are absent when not supplied."""
+    builder = SecurityReportBuilder()
 
-```
-report = builder.build(
-    release_id="release-005",
-    application="SecureCommerce",
-    version="0.1.0",
-    environment="lab",
-    profile="standard",
-    scan_id="SF-SCAN-005",
-    scan_status="completed",
-    integrations=["api"],
-    findings=[],
-    risk=build_risk(),
-    policy=build_policy(),
-    release_gate=build_release_gate(),
-    metadata={
-        "runner": "secureforge",
-        "lab_mode": True,
-        "source": "integration-test",
-    },
-)
+    release = ReleaseMetadata(
+        application="securecommerce",
+        version="1.0.0",
+        commit_sha="abc123",
+        environment="test",
+    )
 
-assert report.metadata == {
-    "runner": "secureforge",
-    "lab_mode": True,
-    "source": "integration-test",
-}
+    scan = ScanMetadata(
+        scan_id="scan-001",
+        profile="quick",
+        target="http://localhost:5000",
+        started_at="2026-09-27T10:00:00+00:00",
+        completed_at="2026-09-27T10:05:00+00:00",
+    )
+
+    report = builder.build(
+        release=release,
+        scan=scan,
+        findings=sample_findings,
+        risk=sample_risk_assessment,
+        policy=sample_policy_decision,
+        decision=sample_release_gate_decision,
+    )
+
+    assert isinstance(report, SecurityReport)
+    assert report.regression is not None
+    assert report.regression_gate is None
+
+
+def test_report_models_are_serializable(
+    sample_findings,
+    sample_risk_assessment,
+    sample_policy_decision,
+    sample_release_gate_decision,
+) -> None:
+    """The generated report must be serializable through Pydantic."""
+    builder = SecurityReportBuilder()
+
+    release = ReleaseMetadata(
+        application="securecommerce",
+        version="1.0.0",
+        commit_sha="abc123",
+        environment="test",
+    )
+
+    scan = ScanMetadata(
+        scan_id="scan-001",
+        profile="standard",
+        target="http://localhost:5000",
+        started_at="2026-09-27T10:00:00+00:00",
+        completed_at="2026-09-27T10:05:00+00:00",
+    )
+
+    report = builder.build(
+        release=release,
+        scan=scan,
+        findings=sample_findings,
+        risk=sample_risk_assessment,
+        policy=sample_policy_decision,
+        decision=sample_release_gate_decision,
+    )
+
+    payload = report.model_dump(
+        mode="json"
+    )
+
+    assert isinstance(payload, dict)
+    assert payload["release"]["application"] == "securecommerce"
+    assert payload["scan"]["scan_id"] == "scan-001"
+    assert "findings" in payload
+    assert "risk" in payload
+    assert "policy" in payload
+    assert "decision" in payload
+    assert "remediation" in payload
 ```
