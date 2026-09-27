@@ -1,0 +1,67 @@
+project:
+name: securecommerce
+application: SecureCommerce
+environment: lab
+version: "0.1.0"
+
+scan:
+profile: standard
+
+target:
+base_url: "http://localhost:5000"
+api_base_url: "http://localhost:5000/api"
+openapi_url: "http://localhost:5000/openapi.json"
+source_path: "./vulnerable-app/securecommerce"
+container_image: "securecommerce:latest"
+iac_path: "./vulnerable-app/securecommerce/infra"
+network_target: "127.0.0.1"
+evidence_path: "./evidence"
+
+integrations:
+sast:
+enabled: true
+command: "sast-scanner --source {source_path} --format json"
+
+sca:
+enabled: true
+command: "sca-scanner --source {source_path} --format json"
+
+secrets:
+enabled: true
+command: "secret-scanner --source {source_path} --format json"
+
+api:
+enabled: true
+command: "api-security-scanner --openapi {openapi_url} --format json"
+
+dast:
+enabled: true
+command: "dast-scanner --target {base_url} --format json"
+
+container:
+enabled: true
+command: "container-scanner --target {container_image} --format json"
+
+iac:
+enabled: true
+command: "iac-scanner --path {iac_path} --format json"
+
+nessus:
+enabled: false
+command: "nessus-scanner --target {network_target} --format json"
+
+nmap:
+enabled: true
+command: "nmap -sV -oX - {network_target}"
+
+manual:
+enabled: true
+evidence_path: "./evidence/manual.json"
+
+output:
+directory: "./reports"
+json: "./reports/security-report.json"
+html: "./reports/security-report.html"
+
+logging:
+level: "INFO"
