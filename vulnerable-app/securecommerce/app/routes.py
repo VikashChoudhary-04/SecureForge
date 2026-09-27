@@ -8,6 +8,7 @@ from .admin import admin_bp
 from .api import api_bp
 from .auth import auth_bp
 from .openapi import openapi_bp
+from .vulnerable_routes import vulnerable_bp
 from .web import web_bp
 
 def register_routes(app: Flask) -> None:
@@ -16,6 +17,7 @@ app.register_blueprint(web_bp)
 app.register_blueprint(api_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(vulnerable_bp)
 app.register_blueprint(openapi_bp)
 
 ```
