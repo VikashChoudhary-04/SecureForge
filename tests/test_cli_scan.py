@@ -1,4 +1,4 @@
-```python id="c2n8wf"
+```python id="w4n8kc"
 """Tests for SecureForge scan command services."""
 
 from pathlib import Path
@@ -13,6 +13,9 @@ from secureforge.config.runtime_builder import (
     RuntimeConfigurationError,
 )
 from secureforge.core.config.models import ScanProfile
+from secureforge.core.scan import (
+    ScanResultStore,
+)
 
 
 class FakeScanOrchestrator:
@@ -98,9 +101,14 @@ def test_scan_command_service_runs_scan(
         FakeReportingService()
     )
 
+    scan_store = ScanResultStore(
+        directory=tmp_path
+    )
+
     service = ScanCommandService(
         orchestrator=orchestrator,
         reporting_service=reporting_service,
+        scan_store=scan_store,
     )
 
     configuration = ScanCommandConfiguration(
@@ -108,6 +116,7 @@ def test_scan_command_service_runs_scan(
         profile=ScanProfile.STANDARD,
         target="http://127.0.0.1:5000",
         source_path=tmp_path,
+        scan_storage_directory=tmp_path,
     )
 
     result = service.run(
@@ -129,9 +138,76 @@ def test_scan_command_service_runs_scan(
         reporting_service.calls
     ) == 2
 
+    persisted = scan_store.load(
+        "scan-001"
+    )
+
+    assert (
+        persisted["scan"]["scan_id"]
+        == "scan-001"
+    )
+
+
+def test_scan_command_service_persists_to_configured_directory(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Persist scans in the directory supplied by the command configuration."""
+    orchestrator = FakeScanOrchestrator(
+        sample_scan_result
+    )
+
+    reporting_service = (
+        FakeReportingService()
+    )
+
+    default_store_directory = (
+        tmp_path
+        / "default"
+    )
+
+    configured_directory = (
+        tmp_path
+        / "configured"
+    )
+
+    scan_store = ScanResultStore(
+        directory=default_store_directory
+    )
+
+    service = ScanCommandService(
+        orchestrator=orchestrator,
+        reporting_service=reporting_service,
+        scan_store=scan_store,
+    )
+
+    configuration = ScanCommandConfiguration(
+        scan_id="scan-002",
+        profile=ScanProfile.QUICK,
+        target="http://127.0.0.1:5000",
+        scan_storage_directory=(
+            configured_directory
+        ),
+    )
+
+    service.run(
+        configuration
+    )
+
+    assert (
+        configured_directory
+        / "scan-002.json"
+    ).exists()
+
+    assert not (
+        default_store_directory
+        / "scan-002.json"
+    ).exists()
+
 
 def test_scan_command_service_rejects_empty_scan_id(
     sample_scan_result,
+    tmp_path: Path,
 ) -> None:
     """Reject an empty scan identifier."""
     service = ScanCommandService(
@@ -139,12 +215,16 @@ def test_scan_command_service_rejects_empty_scan_id(
             sample_scan_result
         ),
         reporting_service=FakeReportingService(),
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
     )
 
     configuration = ScanCommandConfiguration(
         scan_id=" ",
         profile=ScanProfile.STANDARD,
         target="http://127.0.0.1:5000",
+        scan_storage_directory=tmp_path,
     )
 
     with pytest.raises(
@@ -156,6 +236,7 @@ def test_scan_command_service_rejects_empty_scan_id(
 
 def test_scan_command_service_rejects_empty_target(
     sample_scan_result,
+    tmp_path: Path,
 ) -> None:
     """Reject an empty scan target."""
     service = ScanCommandService(
@@ -163,12 +244,16 @@ def test_scan_command_service_rejects_empty_target(
             sample_scan_result
         ),
         reporting_service=FakeReportingService(),
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
     )
 
     configuration = ScanCommandConfiguration(
-        scan_id="scan-002",
+        scan_id="scan-003",
         profile=ScanProfile.STANDARD,
         target=" ",
+        scan_storage_directory=tmp_path,
     )
 
     with pytest.raises(
@@ -188,6 +273,9 @@ def test_scan_command_service_rejects_missing_source_path(
             sample_scan_result
         ),
         reporting_service=FakeReportingService(),
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
     )
 
     missing_path = (
@@ -196,10 +284,11 @@ def test_scan_command_service_rejects_missing_source_path(
     )
 
     configuration = ScanCommandConfiguration(
-        scan_id="scan-003",
+        scan_id="scan-004",
         profile=ScanProfile.QUICK,
         target="http://127.0.0.1:5000",
         source_path=missing_path,
+        scan_storage_directory=tmp_path,
     )
 
     with pytest.raises(
@@ -225,10 +314,13 @@ def test_scan_command_service_uses_custom_metadata(
     service = ScanCommandService(
         orchestrator=orchestrator,
         reporting_service=reporting_service,
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
     )
 
     configuration = ScanCommandConfiguration(
-        scan_id="scan-004",
+        scan_id="scan-005",
         profile=ScanProfile.FULL,
         target="http://127.0.0.1:5000",
         application="securecommerce",
@@ -236,6 +328,7 @@ def test_scan_command_service_uses_custom_metadata(
         commit_sha="abc123",
         environment="lab",
         output_directory=tmp_path,
+        scan_storage_directory=tmp_path / "scans",
     )
 
     service.run(configuration)
@@ -252,6 +345,6 @@ def test_scan_command_service_uses_custom_metadata(
     assert release.commit_sha == "abc123"
     assert release.environment == "lab"
 
-    assert scan.scan_id == "scan-004"
+    assert scan.scan_id == "scan-005"
     assert scan.profile == "full"
 ```
