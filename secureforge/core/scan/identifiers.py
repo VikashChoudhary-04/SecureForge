@@ -24,10 +24,22 @@ def generate(
     environment: str | None = None,
 ) -> str:
     """Generate a deterministic scan identifier."""
+    normalized_application = cls._normalize_required(
+        application,
+        "application",
+    )
+    normalized_version = cls._normalize_required(
+        version,
+        "version",
+    )
+    normalized_profile = cls._normalize_profile(
+        profile
+    )
+
     canonical_parts = [
-        cls._normalize(application),
-        cls._normalize(version),
-        cls._normalize_profile(profile),
+        normalized_application,
+        normalized_version,
+        normalized_profile,
         cls._normalize(commit_sha),
         cls._normalize(environment),
     ]
@@ -59,12 +71,28 @@ def from_configuration(
     )
 
 @staticmethod
+def _normalize_required(
+    value: str,
+    field_name: str,
+) -> str:
+    """Normalize and validate a required identifier component."""
+    normalized = ScanIdentifier._normalize(value)
+
+    if not normalized:
+        raise ValueError(
+            f"{field_name} cannot be empty."
+        )
+
+    return normalized
+
+@staticmethod
 def _normalize(value: str | None) -> str:
     """Normalize an optional identifier component."""
     if value is None:
         return ""
 
     normalized = str(value).strip().lower()
+
     return re.sub(
         r"\s+",
         " ",
@@ -75,9 +103,22 @@ def _normalize(value: str | None) -> str:
 def _normalize_profile(
     profile: ScanProfile | str,
 ) -> str:
-    """Normalize a scan profile."""
+    """Normalize and validate a scan profile."""
     if isinstance(profile, ScanProfile):
         return profile.value
 
-    return str(profile).strip().lower()
+    normalized = str(profile).strip().lower()
+
+    try:
+        return ScanProfile(normalized).value
+    except ValueError as exc:
+        supported = ", ".join(
+            item.value
+            for item in ScanProfile
+        )
+
+        raise ValueError(
+            f"Unsupported scan profile '{profile}'. "
+            f"Choose from: {supported}."
+        ) from exc
 ```
