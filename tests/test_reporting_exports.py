@@ -4,12 +4,13 @@ from secureforge.reporting import (
 RegressionGateReport,
 RegressionReport,
 RegressionTestReport,
-SecurityReportBuilder,
 SecurityHTMLReportRenderer,
+SecurityReportBuilder,
 SecurityReportSerializer,
 SecurityReportService,
 build_regression_gate_report,
 build_regression_report,
+build_scan_report,
 )
 
 def test_reporting_exports() -> None:
@@ -26,4 +27,5 @@ assert RegressionGateReport is not None
 
 assert build_regression_report is not None
 assert build_regression_gate_report is not None
+assert build_scan_report is not None
 ```
