@@ -14,6 +14,10 @@ RegressionExecutorError,
 SecureCommerceRegressionExecutor,
 build_securecommerce_executor,
 )
+from .gate import (
+RegressionGateDecision,
+evaluate_regression_gate,
+)
 from .integration import (
 RegressionGateInput,
 build_regression_gate_input,
@@ -54,6 +58,7 @@ build_regression_service,
 "RegressionEngine",
 "RegressionExecutionError",
 "RegressionExecutorError",
+"RegressionGateDecision",
 "RegressionGateInput",
 "RegressionLoader",
 "RegressionRegistry",
@@ -75,5 +80,6 @@ build_regression_service,
 "build_regression_runner",
 "build_regression_service",
 "build_securecommerce_executor",
+"evaluate_regression_gate",
 "regression_app",
 ]
