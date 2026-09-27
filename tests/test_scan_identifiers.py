@@ -1,5 +1,7 @@
 """Tests for SecureForge scan identifier generation."""
 
+import pytest
+
 from secureforge.core.config import (
 ScanConfiguration,
 ScanProfile,
@@ -55,6 +57,18 @@ profile=ScanProfile.QUICK,
 
 ```
 assert identifier.startswith("SCAN-")
+```
+
+def test_scan_identifier_has_expected_length() -> None:
+"""Verify generated identifiers have the expected format."""
+identifier = ScanIdentifier.generate(
+application="SecureCommerce",
+version="1.0.0",
+profile=ScanProfile.QUICK,
+)
+
+```
+assert len(identifier) == 17
 ```
 
 def test_scan_identifier_changes_with_application() -> None:
@@ -187,6 +201,44 @@ second = ScanIdentifier.generate(
 assert first == second
 ```
 
+def test_scan_identifier_normalizes_version_case() -> None:
+"""Verify version normalization is deterministic."""
+first = ScanIdentifier.generate(
+application="SecureCommerce",
+version=" RELEASE-1 ",
+profile="quick",
+)
+
+```
+second = ScanIdentifier.generate(
+    application="SecureCommerce",
+    version="release-1",
+    profile="quick",
+)
+
+assert first == second
+```
+
+def test_scan_identifier_normalizes_commit_case() -> None:
+"""Verify commit normalization is deterministic."""
+first = ScanIdentifier.generate(
+application="SecureCommerce",
+version="1.0.0",
+profile="quick",
+commit_sha="ABC123",
+)
+
+```
+second = ScanIdentifier.generate(
+    application="SecureCommerce",
+    version="1.0.0",
+    profile="quick",
+    commit_sha="abc123",
+)
+
+assert first == second
+```
+
 def test_scan_identifier_accepts_string_profile() -> None:
 """Verify string scan profiles are supported."""
 identifier = ScanIdentifier.generate(
@@ -223,6 +275,92 @@ profile="quick",
 assert identifier.startswith("SCAN-")
 assert len(identifier) == 17
 ```
+
+def test_scan_identifier_handles_none_commit() -> None:
+"""Verify an explicitly missing commit is supported."""
+identifier = ScanIdentifier.generate(
+application="SecureCommerce",
+version="1.0.0",
+profile="quick",
+commit_sha=None,
+)
+
+```
+assert identifier.startswith("SCAN-")
+```
+
+def test_scan_identifier_handles_none_environment() -> None:
+"""Verify an explicitly missing environment is supported."""
+identifier = ScanIdentifier.generate(
+application="SecureCommerce",
+version="1.0.0",
+profile="quick",
+environment=None,
+)
+
+```
+assert identifier.startswith("SCAN-")
+```
+
+def test_scan_identifier_rejects_empty_application() -> None:
+"""Verify empty application names are rejected."""
+with pytest.raises(
+ValueError,
+match="application cannot be empty",
+):
+ScanIdentifier.generate(
+application="",
+version="1.0.0",
+profile="quick",
+)
+
+def test_scan_identifier_rejects_whitespace_application() -> None:
+"""Verify whitespace-only application names are rejected."""
+with pytest.raises(
+ValueError,
+match="application cannot be empty",
+):
+ScanIdentifier.generate(
+application="   ",
+version="1.0.0",
+profile="quick",
+)
+
+def test_scan_identifier_rejects_empty_version() -> None:
+"""Verify empty versions are rejected."""
+with pytest.raises(
+ValueError,
+match="version cannot be empty",
+):
+ScanIdentifier.generate(
+application="SecureCommerce",
+version="",
+profile="quick",
+)
+
+def test_scan_identifier_rejects_whitespace_version() -> None:
+"""Verify whitespace-only versions are rejected."""
+with pytest.raises(
+ValueError,
+match="version cannot be empty",
+):
+ScanIdentifier.generate(
+application="SecureCommerce",
+version="   ",
+profile="quick",
+)
+
+def test_scan_identifier_rejects_invalid_profile() -> None:
+"""Verify unsupported profiles are rejected."""
+with pytest.raises(
+ValueError,
+match="Unsupported scan profile",
+):
+ScanIdentifier.generate(
+application="SecureCommerce",
+version="1.0.0",
+profile="invalid",
+)
 
 def test_scan_identifier_from_configuration() -> None:
 """Verify configuration-based identifier generation."""
@@ -263,6 +401,42 @@ second = ScanIdentifier.from_configuration(
 assert first != second
 ```
 
+def test_configuration_identifier_uses_configuration_profile() -> None:
+"""Verify configuration profile affects the generated ID."""
+configuration = build_configuration()
+
+```
+standard_id = ScanIdentifier.from_configuration(
+    configuration
+)
+
+configuration.profile = ScanProfile.FULL
+
+full_id = ScanIdentifier.from_configuration(
+    configuration
+)
+
+assert standard_id != full_id
+```
+
+def test_configuration_identifier_uses_configuration_environment() -> None:
+"""Verify configuration environment affects the generated ID."""
+configuration = build_configuration()
+
+```
+lab_id = ScanIdentifier.from_configuration(
+    configuration
+)
+
+configuration.environment = "staging"
+
+staging_id = ScanIdentifier.from_configuration(
+    configuration
+)
+
+assert lab_id != staging_id
+```
+
 def test_different_profiles_have_distinct_identifiers() -> None:
 """Verify all supported profiles produce distinct IDs."""
 identifiers = {
@@ -279,4 +453,23 @@ for profile in ScanProfile
 assert len(identifiers) == len(
     list(ScanProfile)
 )
+```
+
+def test_same_inputs_with_optional_values_are_reproducible() -> None:
+"""Verify reproducibility when optional values are supplied."""
+parameters = {
+"application": "SecureCommerce",
+"version": "1.0.0",
+"profile": ScanProfile.FULL,
+"commit_sha": "ABC123",
+"environment": "LAB",
+}
+
+```
+identifiers = [
+    ScanIdentifier.generate(**parameters)
+    for _ in range(5)
+]
+
+assert len(set(identifiers)) == 1
 ```
