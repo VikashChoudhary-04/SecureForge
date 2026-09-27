@@ -1,17 +1,27 @@
-"""Release-gate engine, evaluator, and release decision models."""
+"""Release-gate components for SecureForge."""
 
-from .engine import ReleaseGateEngine
-from .evaluator import ReleaseDecisionEvaluator
+from .engine import (
+ReleaseGateEngine,
+)
+from .evaluator import (
+ReleaseGateEvaluator,
+)
 from .models import (
-ReleaseDecision,
-ReleaseDecisionRecord,
-ReleaseGateInput,
+ReleaseGateAction,
+ReleaseGateDecision,
+ReleaseGateStatus,
+)
+from .regression import (
+RegressionGateResult,
+build_regression_gate_result,
 )
 
 **all** = [
-"ReleaseDecision",
-"ReleaseDecisionEvaluator",
-"ReleaseDecisionRecord",
+"ReleaseGateAction",
+"ReleaseGateDecision",
 "ReleaseGateEngine",
-"ReleaseGateInput",
+"ReleaseGateEvaluator",
+"ReleaseGateStatus",
+"RegressionGateResult",
+"build_regression_gate_result",
 ]
