@@ -1,0 +1,27 @@
+{
+"source": "metasploit",
+"tool": "Metasploit Framework",
+"version": "6.4",
+"target": "127.0.0.1:5000",
+"findings": [
+{
+"id": "MSF-001",
+"title": "Controlled validation of exposed laboratory service",
+"severity": "medium",
+"confidence": "confirmed",
+"description": "A controlled Metasploit validation module confirmed that the intentionally exposed SecureCommerce laboratory service is reachable and responds to the expected application probe.",
+"impact": "An exposed service increases the attack surface and should be restricted to approved network boundaries.",
+"remediation": "Restrict service exposure to the intended laboratory network and ensure that application-level security controls are independently enforced.",
+"security_requirement": "SF-API-001",
+"manual_validation": true,
+"evidence": {
+"module": "auxiliary/scanner/http/http_version",
+"target_host": "127.0.0.1",
+"target_port": 5000,
+"transport": "tcp",
+"validation_result": "service_reachable",
+"controlled_lab": true
+}
+}
+]
+}
