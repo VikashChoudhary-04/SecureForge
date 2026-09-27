@@ -5,6 +5,7 @@ from **future** import annotations
 from flask import Flask, jsonify
 
 from .api import api_bp
+from .auth import auth_bp
 from .openapi import openapi_bp
 from .web import web_bp
 
@@ -12,6 +13,7 @@ def register_routes(app: Flask) -> None:
 """Register all SecureCommerce web and API routes."""
 app.register_blueprint(web_bp)
 app.register_blueprint(api_bp)
+app.register_blueprint(auth_bp)
 app.register_blueprint(openapi_bp)
 
 ```
