@@ -1,306 +1,244 @@
+```python id="r3m7x1"
 """Tests for SecureForge reporting models."""
 
-from **future** import annotations
-
-from datetime import datetime, timezone
-
 from secureforge.reporting import (
-DecisionReport,
-PolicyReport,
-RegressionReport,
-RegressionTestReport,
-ReleaseMetadata,
-RemediationReport,
-ReportFinding,
-RiskReport,
-ScanMetadata,
-SecurityReport,
+    DecisionReport,
+    PolicyReport,
+    RegressionGateReport,
+    RegressionReport,
+    RegressionTestReport,
+    ReleaseMetadata,
+    RemediationReport,
+    ReportFinding,
+    RiskReport,
+    ScanMetadata,
+    SecurityReport,
 )
 
-def test_release_metadata_defaults_timestamp():
-"""Release metadata should create a UTC timestamp automatically."""
-release = ReleaseMetadata(
-release_id="release-001",
-application="SecureCommerce",
-version="0.1.0",
-environment="lab",
-profile="standard",
-)
 
-```
-assert release.release_id == "release-001"
-assert release.application == "SecureCommerce"
-assert release.version == "0.1.0"
-assert release.environment == "lab"
-assert release.profile == "standard"
-assert release.timestamp.tzinfo == timezone.utc
-```
+def test_release_metadata_model() -> None:
+    """Release metadata stores release identity."""
+    release = ReleaseMetadata(
+        application="securecommerce",
+        version="1.0.0",
+        commit_sha="abc123",
+        environment="test",
+    )
 
-def test_scan_metadata_preserves_execution_information():
-"""Scan metadata should preserve scan execution details."""
-started = datetime(
-2026,
-9,
-27,
-8,
-0,
-tzinfo=timezone.utc,
-)
+    assert release.application == "securecommerce"
+    assert release.version == "1.0.0"
+    assert release.commit_sha == "abc123"
+    assert release.environment == "test"
 
-```
-completed = datetime(
-    2026,
-    9,
-    27,
-    8,
-    2,
-    tzinfo=timezone.utc,
-)
 
-scan = ScanMetadata(
-    scan_id="SF-SCAN-001",
-    status="completed",
-    started_at=started,
-    completed_at=completed,
-    integrations=[
-        "sast",
-        "sca",
-        "dast",
-    ],
-)
+def test_scan_metadata_model() -> None:
+    """Scan metadata stores scan execution information."""
+    scan = ScanMetadata(
+        scan_id="scan-001",
+        profile="standard",
+        target="http://localhost:5000",
+        started_at="2026-09-27T10:00:00+00:00",
+        completed_at="2026-09-27T10:05:00+00:00",
+    )
 
-assert scan.scan_id == "SF-SCAN-001"
-assert scan.status == "completed"
-assert scan.started_at == started
-assert scan.completed_at == completed
-assert scan.integrations == [
-    "sast",
-    "sca",
-    "dast",
-]
-```
+    assert scan.scan_id == "scan-001"
+    assert scan.profile == "standard"
+    assert scan.target == "http://localhost:5000"
 
-def test_report_finding_contains_security_context():
-"""Report findings should preserve security context."""
-finding = ReportFinding(
-finding_id="SF-BOLA-001",
-title="Broken Object-Level Authorization",
-source="correlation",
-source_finding_ids=[
-"API-BOLA-001",
-"DAST-BOLA-001",
-],
-application="SecureCommerce",
-asset="SecureCommerce API",
-endpoint="/api/orders/{order_id}",
-parameter="order_id",
-cwe="CWE-639",
-owasp=(
-"API1:2023-Broken Object Level "
-"Authorization"
-),
-security_requirement="SF-AUTHZ-001",
-severity="high",
-confidence="confirmed",
-description="Unauthorized object access.",
-impact="Customer data may be exposed.",
-remediation="Enforce object ownership.",
-status="open",
-validation_status="confirmed",
-regression_test="BOLA-001",
-evidence_count=2,
-)
 
-```
-assert finding.finding_id == "SF-BOLA-001"
-assert finding.source == "correlation"
-assert finding.source_finding_ids == [
-    "API-BOLA-001",
-    "DAST-BOLA-001",
-]
-assert finding.cwe == "CWE-639"
-assert finding.security_requirement == (
-    "SF-AUTHZ-001"
-)
-assert finding.evidence_count == 2
-```
+def test_report_finding_model() -> None:
+    """Report findings preserve normalized security evidence."""
+    finding = ReportFinding(
+        finding_id="SF-001",
+        title="BOLA in order endpoint",
+        source="dast",
+        asset="api",
+        application="securecommerce",
+        endpoint="/api/orders/1001",
+        parameter="id",
+        cwe="CWE-639",
+        owasp_mapping="API1:2023",
+        security_requirement="SF-AUTHZ-001",
+        severity="high",
+        confidence="confirmed",
+        evidence=[
+            {
+                "type": "http_response",
+                "content": "Order belonging to another user was returned.",
+            }
+        ],
+        description="Object authorization is missing.",
+        impact="Unauthorized users can access another user's order.",
+        remediation="Enforce object-level authorization.",
+        status="open",
+        validation_status="validated",
+        first_seen="2026-09-27T10:00:00+00:00",
+        last_seen="2026-09-27T10:00:00+00:00",
+        regression_test="BOLA-001",
+        correlation_ids=["CORR-001"],
+    )
 
-def test_risk_report_preserves_risk_factors():
-"""Risk reports should retain the factors used in evaluation."""
-risk = RiskReport(
-overall_score=8.5,
-highest_severity="high",
-confirmed_critical=0,
-confirmed_high=2,
-risk_factors={
-"internet_exposure": True,
-"sensitive_data": True,
-"exploit_evidence": False,
-},
-)
+    assert finding.finding_id == "SF-001"
+    assert finding.severity == "high"
+    assert finding.confidence == "confirmed"
+    assert finding.regression_test == "BOLA-001"
+    assert finding.correlation_ids == ["CORR-001"]
 
-```
-assert risk.overall_score == 8.5
-assert risk.highest_severity == "high"
-assert risk.confirmed_high == 2
-assert risk.risk_factors["internet_exposure"] is True
-```
 
-def test_policy_report_preserves_gate_configuration():
-"""Policy reports should preserve configured release actions."""
-policy = PolicyReport(
-policy_name="default",
-critical_action="block",
-high_action="block",
-medium_action="review",
-low_action="pass",
-info_action="pass",
-tool_errors=[
-"SAST execution failed."
-],
-regression_failures=[
-"BOLA-001",
-],
-)
+def test_risk_report_model() -> None:
+    """Risk report stores calculated risk information."""
+    risk = RiskReport(
+        score=85.0,
+        highest_severity="high",
+        finding_count=3,
+        evaluated_at="2026-09-27T10:05:00+00:00",
+    )
 
-```
-assert policy.policy_name == "default"
-assert policy.critical_action == "block"
-assert policy.high_action == "block"
-assert policy.medium_action == "review"
-assert policy.low_action == "pass"
-assert policy.info_action == "pass"
-assert policy.tool_errors == [
-    "SAST execution failed."
-]
-assert policy.regression_failures == [
-    "BOLA-001"
-]
-```
+    assert risk.score == 85.0
+    assert risk.highest_severity == "high"
+    assert risk.finding_count == 3
 
-def test_remediation_report_tracks_lifecycle_counts():
-"""Remediation reports should track finding lifecycle counts."""
-remediation = RemediationReport(
-open_findings=3,
-remediated_findings=1,
-verified_findings=2,
-pending_retests=1,
-)
 
-```
-assert remediation.open_findings == 3
-assert remediation.remediated_findings == 1
-assert remediation.verified_findings == 2
-assert remediation.pending_retests == 1
-```
+def test_policy_report_model() -> None:
+    """Policy report stores policy evaluation results."""
+    policy = PolicyReport(
+        policy_name="default",
+        action="block",
+        allowed=False,
+        reason="High severity confirmed finding.",
+        violations=["SF-001"],
+    )
 
-def test_regression_test_report_preserves_result():
-"""Individual regression results should be represented accurately."""
-test = RegressionTestReport(
-test_id="BOLA-001",
-requirement="SF-AUTHZ-001",
-status="failed",
-expected_result="HTTP 403",
-actual_result="HTTP 200",
-message="Authorization bypass remains exploitable.",
-)
+    assert policy.policy_name == "default"
+    assert policy.action == "block"
+    assert policy.allowed is False
+    assert policy.violations == ["SF-001"]
 
-```
-assert test.test_id == "BOLA-001"
-assert test.requirement == "SF-AUTHZ-001"
-assert test.status == "failed"
-assert test.expected_result == "HTTP 403"
-assert test.actual_result == "HTTP 200"
-```
 
-def test_regression_report_tracks_suite_summary():
-"""Regression reports should summarize test execution."""
-regression = RegressionReport(
-suite="SecureCommerce Security Regression Suite",
-tests_total=2,
-tests_passed=1,
-tests_failed=1,
-tests=[
-RegressionTestReport(
-test_id="BOLA-001",
-requirement="SF-AUTHZ-001",
-status="failed",
-),
-RegressionTestReport(
-test_id="SECRET-001",
-requirement="SF-SECRET-001",
-status="passed",
-),
-],
-)
+def test_decision_report_model() -> None:
+    """Decision report stores the final release decision."""
+    decision = DecisionReport(
+        status="blocked",
+        reason="Security policy blocked the release.",
+        release_allowed=False,
+    )
 
-```
-assert regression.tests_total == 2
-assert regression.tests_passed == 1
-assert regression.tests_failed == 1
-assert len(regression.tests) == 2
-```
+    assert decision.status == "blocked"
+    assert decision.release_allowed is False
 
-def test_decision_report_represents_blocked_release():
-"""A blocked release should explicitly prevent release."""
-decision = DecisionReport(
-status="block",
-reason="Confirmed critical finding.",
-release_allowed=False,
-)
 
-```
-assert decision.status == "block"
-assert decision.release_allowed is False
-assert decision.reason
-```
+def test_remediation_report_model() -> None:
+    """Remediation report stores lifecycle counts."""
+    remediation = RemediationReport(
+        total=5,
+        open=3,
+        remediated=1,
+        verified=1,
+    )
 
-def test_security_report_contains_all_major_sections():
-"""A complete security report should contain every major section."""
-report = SecurityReport(
-release=ReleaseMetadata(
-release_id="release-001",
-application="SecureCommerce",
-version="0.1.0",
-environment="lab",
-profile="standard",
-),
-scan=ScanMetadata(
-scan_id="SF-SCAN-001",
-status="completed",
-),
-risk=RiskReport(
-overall_score=9.0,
-highest_severity="critical",
-),
-policy=PolicyReport(
-policy_name="default",
-critical_action="block",
-high_action="block",
-medium_action="review",
-low_action="pass",
-),
-remediation=RemediationReport(),
-regression=RegressionReport(
-suite="SecureCommerce Security Regression Suite"
-),
-decision=DecisionReport(
-status="block",
-reason="Critical finding.",
-release_allowed=False,
-),
-)
+    assert remediation.total == 5
+    assert remediation.open == 3
+    assert remediation.remediated == 1
+    assert remediation.verified == 1
 
-```
-assert report.release.application == (
-    "SecureCommerce"
-)
-assert report.scan.scan_id == "SF-SCAN-001"
-assert report.risk.highest_severity == "critical"
-assert report.policy.policy_name == "default"
-assert report.regression.suite == (
-    "SecureCommerce Security Regression Suite"
-)
-assert report.decision.release_allowed is False
-assert report.generated_at.tzinfo == timezone.utc
+
+def test_regression_test_report_model() -> None:
+    """Regression-test reports store individual test results."""
+    result = RegressionTestReport(
+        test_id="BOLA-001",
+        status="passed",
+        message="BOLA protection verified.",
+    )
+
+    assert result.test_id == "BOLA-001"
+    assert result.status == "passed"
+    assert result.message == "BOLA protection verified."
+
+
+def test_regression_report_model() -> None:
+    """Regression reports store suite-level results."""
+    regression = RegressionReport(
+        suite_id="securecommerce-regression",
+        status="passed",
+        total=2,
+        passed=2,
+        failed=0,
+        errors=0,
+        skipped=0,
+        tests=[
+            RegressionTestReport(
+                test_id="BOLA-001",
+                status="passed",
+                message="BOLA protection verified.",
+            ),
+            RegressionTestReport(
+                test_id="SQLI-001",
+                status="passed",
+                message="SQL injection protection verified.",
+            ),
+        ],
+    )
+
+    assert regression.suite_id == "securecommerce-regression"
+    assert regression.status == "passed"
+    assert regression.total == 2
+    assert regression.passed == 2
+    assert regression.failed == 0
+    assert len(regression.tests) == 2
+    assert regression.tests[0].test_id == "BOLA-001"
+
+
+def test_regression_gate_report_model() -> None:
+    """Regression-gate reports preserve release-gate evidence."""
+    gate = RegressionGateReport(
+        allowed=False,
+        blocked=True,
+        status="failed",
+        reason="A security regression test failed.",
+        failed_tests=["BOLA-001"],
+        errored_tests=[],
+        skipped_tests=[],
+        failures=["BOLA-001"],
+    )
+
+    assert gate.allowed is False
+    assert gate.blocked is True
+    assert gate.status == "failed"
+    assert gate.failed_tests == ["BOLA-001"]
+    assert gate.failures == ["BOLA-001"]
+
+
+def test_security_report_model(
+    sample_security_report,
+) -> None:
+    """Security report combines all report sections."""
+    assert isinstance(
+        sample_security_report,
+        SecurityReport,
+    )
+
+    assert isinstance(
+        sample_security_report.release,
+        ReleaseMetadata,
+    )
+
+    assert isinstance(
+        sample_security_report.scan,
+        ScanMetadata,
+    )
+
+    assert isinstance(
+        sample_security_report.risk,
+        RiskReport,
+    )
+
+    assert isinstance(
+        sample_security_report.policy,
+        PolicyReport,
+    )
+
+    assert isinstance(
+        sample_security_report.decision,
+        DecisionReport,
+    )
 ```
