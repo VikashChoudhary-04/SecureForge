@@ -65,6 +65,17 @@ regression,
 "assess_regression_result",
 )
 
+def test_regression_package_exports_gate_components():
+"""Regression package should expose release-gate components."""
+assert hasattr(
+regression,
+"RegressionGateDecision",
+)
+assert hasattr(
+regression,
+"evaluate_regression_gate",
+)
+
 def test_regression_package_exports_gate_integration():
 """Regression package should expose release-gate integration."""
 assert hasattr(
@@ -102,11 +113,13 @@ regression,
 def test_regression_package_defines_public_api():
 """All expected public names should be listed in **all**."""
 expected = {
+"DuplicateRegressionTestError",
 "RegressionAssessment",
 "RegressionConfigurationError",
 "RegressionEngine",
 "RegressionExecutionError",
 "RegressionExecutorError",
+"RegressionGateDecision",
 "RegressionGateInput",
 "RegressionLoader",
 "RegressionRegistry",
@@ -128,6 +141,7 @@ expected = {
 "build_regression_runner",
 "build_regression_service",
 "build_securecommerce_executor",
+"evaluate_regression_gate",
 "regression_app",
 }
 
