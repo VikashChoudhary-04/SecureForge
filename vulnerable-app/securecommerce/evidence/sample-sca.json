@@ -1,0 +1,27 @@
+{
+"tool": "securecommerce-sca-lab",
+"version": "1.0.0",
+"target": "./vulnerable-app/securecommerce",
+"vulnerabilities": [
+{
+"id": "SCA-CVE-001",
+"package": "example-vulnerable-package",
+"installed_version": "1.0.0",
+"fixed_version": "1.0.2",
+"severity": "high",
+"confidence": "high",
+"cve": "CVE-2026-0001",
+"cvss": 8.1,
+"cwe": "CWE-1395",
+"description": "The laboratory dependency contains a deliberately documented vulnerable version used to demonstrate dependency verification.",
+"impact": "A vulnerable dependency may expose the application to known security weaknesses inherited from third-party software.",
+"remediation": "Upgrade the dependency to the fixed version or a later supported secure release.",
+"security_requirement": "SF-DEP-001",
+"dependency": {
+"name": "example-vulnerable-package",
+"version": "1.0.0",
+"fixed_version": "1.0.2"
+}
+}
+]
+}
