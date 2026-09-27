@@ -1,28 +1,54 @@
-"""Security evaluation pipeline for SecureForge scan results."""
+"""Security verification pipeline for SecureForge."""
 
 from **future** import annotations
 
-from collections.abc import Iterable
+from dataclasses import dataclass
+from typing import Any
 
-from secureforge.core.config import ScanConfiguration
-from secureforge.core.correlation import CorrelationEngine
-from secureforge.core.policy import (
-PolicyConfig,
-PolicyEngine,
+from secureforge.core.correlation.engine import CorrelationEngine
+from secureforge.core.findings.models import Finding
+from secureforge.core.policy.engine import PolicyEngine
+from secureforge.core.policy.models import PolicyDecision
+from secureforge.core.release_gate.engine import ReleaseGateEngine
+from secureforge.core.release_gate.models import ReleaseGateDecision
+from secureforge.core.release_gate.regression import (
+RegressionGateResult,
+build_regression_gate_result,
 )
-from secureforge.core.release_gate import (
-ReleaseGateEngine,
-ReleaseGateInput,
-)
-from secureforge.core.risk import (
-RiskContext,
-RiskEngine,
+from secureforge.core.risk.engine import RiskEngine
+from secureforge.core.risk.models import RiskAssessment
+from secureforge.regression import (
+RegressionGateDecision,
+RegressionSuiteResult,
+assess_regression_result,
+evaluate_regression_gate,
 )
 
-from .models import ScanRun
+@dataclass(frozen=True)
+class SecurityPipelineResult:
+"""Complete result produced by the SecureForge security pipeline."""
+
+```
+findings: list[Finding]
+risk: RiskAssessment
+policy: PolicyDecision
+regression: RegressionSuiteResult | None
+regression_gate: RegressionGateDecision | None
+release_gate: ReleaseGateDecision
+
+@property
+def release_allowed(self) -> bool:
+    """Return whether the release is allowed."""
+    return self.release_gate.release_allowed
+
+@property
+def release_blocked(self) -> bool:
+    """Return whether the release is blocked."""
+    return not self.release_allowed
+```
 
 class SecurityPipeline:
-"""Run correlation, risk, policy, and release evaluation."""
+"""Run correlation, risk, policy, regression, and release evaluation."""
 
 ```
 def __init__(
@@ -35,158 +61,147 @@ def __init__(
 ) -> None:
     self.correlation_engine = (
         correlation_engine
-        or CorrelationEngine()
+        if correlation_engine is not None
+        else CorrelationEngine()
     )
 
     self.risk_engine = (
         risk_engine
-        or RiskEngine()
+        if risk_engine is not None
+        else RiskEngine()
     )
 
     self.policy_engine = (
         policy_engine
-        or PolicyEngine()
+        if policy_engine is not None
+        else PolicyEngine()
     )
 
     self.release_gate_engine = (
         release_gate_engine
-        or ReleaseGateEngine()
+        if release_gate_engine is not None
+        else ReleaseGateEngine()
     )
 
 def evaluate(
     self,
-    scan: ScanRun,
-    configuration: ScanConfiguration,
-    policy: PolicyConfig,
+    findings: list[Finding],
     *,
-    risk_context: RiskContext | None = None,
-    failed_regressions: Iterable[str] | None = None,
-) -> ScanRun:
-    """Evaluate a completed scan through the security decision pipeline."""
-    correlations = self.correlation_engine.correlate(
-        scan.findings
-    )
+    tool_errors: list[str] | None = None,
+    regression: RegressionSuiteResult | None = None,
+    regression_gate: RegressionGateDecision | None = None,
+) -> SecurityPipelineResult:
+    """Evaluate findings and optional regression results."""
+    finding_list = list(findings)
 
-    scan.summary.correlated_group_count = len(
-        correlations
-    )
-
-    assessments = self._assess_risk(
-        scan,
-        risk_context,
-    )
-
-    scan.add_risk_assessments(
-        assessments
-    )
-
-    regression_failures = list(
-        failed_regressions
-        or scan.regression_failures
-    )
-
-    for regression_id in regression_failures:
-        scan.add_regression_failure(
-            regression_id
+    correlated_findings = (
+        self.correlation_engine.correlate(
+            finding_list
         )
-
-    policy_evaluation = self.policy_engine.evaluate(
-        scan.findings,
-        assessments,
-        policy,
-        tool_errors=scan.tool_error_count,
-        failed_regressions=regression_failures,
     )
 
-    scan.policy_evaluation = policy_evaluation
+    risk = self.risk_engine.assess(
+        correlated_findings
+    )
 
-    release_input = ReleaseGateInput(
-        application=scan.application,
-        version=scan.version,
-        commit_sha=scan.commit_sha,
-        policy_decision=policy_evaluation.decision,
-        blocking_findings=(
-            policy_evaluation.blocking_findings
+    policy = self.policy_engine.evaluate(
+        findings=correlated_findings,
+        risk=risk,
+        tool_errors=(
+            tool_errors
+            if tool_errors is not None
+            else []
         ),
-        review_findings=(
-            policy_evaluation.review_findings
-        ),
-        failed_regressions=regression_failures,
-        tool_errors=[
-            result.error
-            or (
-                f"Tool '{result.tool_name}' "
-                "failed."
-            )
-            for result in scan.tool_results
-            if result.failed
-        ],
-        exceptions_applied=(
-            policy_evaluation.exceptions_applied
-        ),
-        metadata={
-            "profile": scan.profile.value,
-            "environment": scan.environment,
-            "policy_id": policy.policy_id,
-            "policy_version": policy.version,
-        },
     )
 
-    scan.release_decision = (
-        self.release_gate_engine.evaluate(
-            release_input
+    resolved_regression_gate = (
+        self._resolve_regression_gate(
+            regression=regression,
+            regression_gate=regression_gate,
         )
     )
 
-    return scan
-
-def _assess_risk(
-    self,
-    scan: ScanRun,
-    default_context: RiskContext | None,
-):
-    """Assess contextual risk for every scan finding."""
-    assessments = []
-
-    for finding in scan.findings:
-        context = self._context_for_finding(
-            finding,
-            scan,
-            default_context,
+    release_regression = (
+        build_regression_gate_result(
+            resolved_regression_gate
         )
+        if resolved_regression_gate is not None
+        else None
+    )
 
-        assessments.append(
-            self.risk_engine.evaluate(
-                finding,
-                context,
-            )
-        )
+    release_gate = self.release_gate_engine.evaluate(
+        risk=risk,
+        policy=policy,
+        regression=release_regression,
+    )
 
-    return assessments
+    return SecurityPipelineResult(
+        findings=correlated_findings,
+        risk=risk,
+        policy=policy,
+        regression=regression,
+        regression_gate=resolved_regression_gate,
+        release_gate=release_gate,
+    )
 
 @staticmethod
-def _context_for_finding(
-    finding,
-    scan: ScanRun,
-    default_context: RiskContext | None,
-) -> RiskContext:
-    """Build a risk context for an individual finding."""
-    if default_context is None:
-        return RiskContext(
-            environment=scan.environment,
-            security_requirement=(
-                finding.security_requirement
-            ),
-        )
+def _resolve_regression_gate(
+    *,
+    regression: RegressionSuiteResult | None,
+    regression_gate: RegressionGateDecision | None,
+) -> RegressionGateDecision | None:
+    """Resolve a regression gate from supplied results."""
+    if regression_gate is not None:
+        return regression_gate
 
-    context = default_context.model_copy(
-        deep=True
+    if regression is None:
+        return None
+
+    assessment = assess_regression_result(
+        regression
     )
 
-    if context.security_requirement is None:
-        context.security_requirement = (
-            finding.security_requirement
+    return evaluate_regression_gate(
+        assessment
+    )
+
+@staticmethod
+def summarize(
+    result: SecurityPipelineResult,
+) -> dict[str, Any]:
+    """Return a compact, serializable pipeline summary."""
+    summary: dict[str, Any] = {
+        "finding_count": len(
+            result.findings
+        ),
+        "risk_score": result.risk.score,
+        "highest_severity": (
+            result.risk.highest_severity.value
+        ),
+        "policy": result.policy.policy_name,
+        "release_status": (
+            result.release_gate.status.value
+        ),
+        "release_allowed": (
+            result.release_gate.release_allowed
+        ),
+    }
+
+    if result.regression is not None:
+        summary["regression"] = {
+            "suite_id": result.regression.suite_id,
+            "status": result.regression.status.value,
+            "total": result.regression.total,
+            "passed": result.regression.passed,
+            "failed": result.regression.failed,
+            "errors": result.regression.errors,
+            "skipped": result.regression.skipped,
+        }
+
+    if result.regression_gate is not None:
+        summary["regression_gate"] = (
+            result.regression_gate.to_dict()
         )
 
-    return context
+    return summary
 ```
