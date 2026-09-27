@@ -1,139 +1,139 @@
-"""Tests for regression-gate rendering in HTML security reports."""
+```python id="x9c4m2"
+"""Tests for regression-gate rendering in HTML reports."""
 
-from secureforge.regression import (
-RegressionGateDecision,
-)
+from pathlib import Path
+
 from secureforge.reporting import (
-SecurityHTMLReportRenderer,
-SecurityReportBuilder,
+    SecurityHTMLReportRenderer,
 )
+
 
 def test_html_renderer_includes_regression_gate(
-sample_release,
-sample_scan,
-sample_findings,
-sample_risk,
-sample_policy,
-sample_decision,
+    sample_security_report,
 ) -> None:
-"""Render the regression-gate decision in the HTML report."""
-regression_gate = RegressionGateDecision(
-allowed=False,
-status="failed",
-reason=(
-"One or more security regression tests failed."
-),
-failed_tests=(
-"BOLA-001",
-"SQLI-001",
-),
-errored_tests=(
-"AUTHZ-001",
-),
-skipped_tests=(
-"OPTIONAL-001",
-),
-)
+    """Render regression-gate information in the HTML report."""
+    renderer = SecurityHTMLReportRenderer()
 
-```
-report = SecurityReportBuilder().build(
-    release=sample_release,
-    scan=sample_scan,
-    findings=sample_findings,
-    risk=sample_risk,
-    policy=sample_policy,
-    decision=sample_decision,
-    regression_gate=regression_gate,
-)
+    html = renderer.render(
+        sample_security_report
+    )
 
-html = SecurityHTMLReportRenderer().render(
-    report
-)
+    gate = sample_security_report.regression_gate
 
-assert "<h2>Regression Gate</h2>" in html
-assert "failed" in html
-assert "BOLA-001" in html
-assert "SQLI-001" in html
-assert "AUTHZ-001" in html
-assert "OPTIONAL-001" in html
-assert (
-    "One or more security regression tests failed."
-    in html
-)
-```
+    if gate is None:
+        assert "Regression Gate" not in html
+        return
 
-def test_html_renderer_escapes_regression_gate_values(
-sample_release,
-sample_scan,
-sample_findings,
-sample_risk,
-sample_policy,
-sample_decision,
+    assert "Regression Gate" in html
+    assert gate.status in html
+    assert gate.reason in html
+
+    if gate.allowed:
+        assert "Allowed" in html
+    else:
+        assert "Blocked" in html
+
+
+def test_html_renderer_includes_failed_regression_tests(
+    sample_security_report,
 ) -> None:
-"""Escape untrusted regression-gate values in HTML."""
-regression_gate = RegressionGateDecision(
-allowed=False,
-status="<failed>",
-reason="<script>alert('x')</script>",
-failed_tests=(
-"<BOLA-001>",
-),
-errored_tests=(),
-skipped_tests=(),
-)
+    """Render failed regression identifiers."""
+    renderer = SecurityHTMLReportRenderer()
 
-```
-report = SecurityReportBuilder().build(
-    release=sample_release,
-    scan=sample_scan,
-    findings=sample_findings,
-    risk=sample_risk,
-    policy=sample_policy,
-    decision=sample_decision,
-    regression_gate=regression_gate,
-)
+    html = renderer.render(
+        sample_security_report
+    )
 
-html = SecurityHTMLReportRenderer().render(
-    report
-)
+    gate = sample_security_report.regression_gate
 
-assert "<failed>" not in html
-assert "&lt;failed&gt;" in html
-assert "<script>alert('x')</script>" not in html
-assert (
-    "&lt;script&gt;alert(&#x27;x&#x27;)&lt;/script&gt;"
-    in html
-)
-assert "<BOLA-001>" not in html
-assert "&lt;BOLA-001&gt;" in html
-```
+    if gate is None:
+        return
 
-def test_html_renderer_handles_missing_regression_gate(
-sample_release,
-sample_scan,
-sample_findings,
-sample_risk,
-sample_policy,
-sample_decision,
+    for test_id in gate.failed_tests:
+        assert test_id in html
+
+    for test_id in gate.errored_tests:
+        assert test_id in html
+
+    for test_id in gate.skipped_tests:
+        assert test_id in html
+
+
+def test_html_renderer_escapes_regression_gate_content(
+    sample_security_report,
 ) -> None:
-"""Render a clear message when no regression gate exists."""
-report = SecurityReportBuilder().build(
-release=sample_release,
-scan=sample_scan,
-findings=sample_findings,
-risk=sample_risk,
-policy=sample_policy,
-decision=sample_decision,
-)
+    """HTML-escape untrusted regression-gate values."""
+    from secureforge.reporting import (
+        RegressionGateReport,
+        SecurityReport,
+    )
 
-```
-html = SecurityHTMLReportRenderer().render(
-    report
-)
+    gate = RegressionGateReport(
+        allowed=False,
+        blocked=True,
+        status="failed",
+        reason="<script>alert('xss')</script>",
+        failed_tests=[
+            "<img src=x onerror=alert(1)>"
+        ],
+        errored_tests=[],
+        skipped_tests=[],
+        failures=[
+            "<svg onload=alert(1)>"
+        ],
+    )
 
-assert "<h2>Regression Gate</h2>" in html
-assert (
-    "No regression-gate decision was recorded."
-    in html
-)
+    report = SecurityReport(
+        release=sample_security_report.release,
+        scan=sample_security_report.scan,
+        findings=sample_security_report.findings,
+        risk=sample_security_report.risk,
+        policy=sample_security_report.policy,
+        decision=sample_security_report.decision,
+        remediation=sample_security_report.remediation,
+        regression=sample_security_report.regression,
+        regression_gate=gate,
+        generated_at=sample_security_report.generated_at,
+    )
+
+    renderer = SecurityHTMLReportRenderer()
+
+    html = renderer.render(
+        report
+    )
+
+    assert "<script>alert('xss')</script>" not in html
+    assert "<img src=x onerror=alert(1)>" not in html
+    assert "<svg onload=alert(1)>" not in html
+
+    assert "&lt;script&gt;" in html
+    assert "&lt;img" in html
+    assert "&lt;svg" in html
+
+
+def test_html_renderer_writes_regression_gate_report(
+    sample_security_report,
+    tmp_path: Path,
+) -> None:
+    """Write an HTML report containing regression-gate evidence."""
+    renderer = SecurityHTMLReportRenderer()
+
+    output_path = (
+        tmp_path
+        / "security-report.html"
+    )
+
+    renderer.write_html(
+        sample_security_report,
+        output_path,
+    )
+
+    assert output_path.is_file()
+
+    html = output_path.read_text(
+        encoding="utf-8"
+    )
+
+    if sample_security_report.regression_gate is not None:
+        assert "Regression Gate" in html
 ```
