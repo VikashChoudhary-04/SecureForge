@@ -1,153 +1,171 @@
-```python id="n4v7qs"
-"""Tests for SecureForge report command services."""
+```python id="v4c8n1"
+"""Tests for the SecureForge report command service."""
 
+import json
 from pathlib import Path
 
 from secureforge.cli.report import (
     ReportCommandConfiguration,
     ReportCommandService,
 )
-from secureforge.reporting import (
-    SecurityReportLoader,
-    SecurityReportService,
-)
 
 
-def test_report_command_service_builds_report(
-    sample_scan_result,
-) -> None:
-    """Build a security report from a completed scan."""
-    service = ReportCommandService()
-
-    configuration = ReportCommandConfiguration(
-        release_id="release-001",
-        application="securecommerce",
-        version="1.0.0",
-        commit_sha="abc123",
-        environment="lab",
-        scan_id="scan-001",
-        profile="standard",
-        scan_status="completed",
-        started_at="2026-09-27T10:00:00+00:00",
-        completed_at="2026-09-27T10:01:00+00:00",
-        duration_seconds=60.0,
-    )
-
-    report = service.build_report(
-        result=sample_scan_result,
-        configuration=configuration,
-    )
-
-    assert report.release.release_id == "release-001"
-    assert report.release.application == "securecommerce"
-    assert report.scan.scan_id == "scan-001"
-
-
-def test_report_command_service_generates_reports(
-    sample_scan_result,
-    tmp_path: Path,
-) -> None:
-    """Generate JSON and HTML reports from a scan result."""
-    service = ReportCommandService()
-
-    configuration = ReportCommandConfiguration(
-        release_id="release-002",
-        application="securecommerce",
-        version="1.0.0",
-        commit_sha="def456",
-        environment="lab",
-        scan_id="scan-002",
-        profile="standard",
-        scan_status="completed",
-        started_at="2026-09-27T10:00:00+00:00",
-        completed_at="2026-09-27T10:01:00+00:00",
-        duration_seconds=60.0,
-        output_directory=tmp_path,
-    )
-
-    paths = service.generate(
-        result=sample_scan_result,
-        configuration=configuration,
-    )
-
-    assert paths.json_path.exists()
-    assert paths.html_path.exists()
-
-    assert (
-        paths.json_path.read_text(
-            encoding="utf-8"
-        )
-    )
-
-    assert (
-        paths.html_path.read_text(
-            encoding="utf-8"
-        )
-    )
-
-
-def test_report_command_service_loads_report(
+def test_report_command_generates_html_from_json(
     sample_security_report,
     tmp_path: Path,
 ) -> None:
-    """Load a persisted security report."""
-    path = (
-        tmp_path
-        / "security-report.json"
-    )
+    """Generate an HTML report from a persisted JSON report."""
+    input_path = tmp_path / "security-report.json"
+    output_path = tmp_path / "security-report.html"
 
-    path.write_text(
-        sample_security_report.model_dump_json(
-            indent=2
-        ),
-        encoding="utf-8",
-    )
-
-    service = ReportCommandService(
-        report_loader=SecurityReportLoader()
-    )
-
-    report = service.load(path)
-
-    assert report == sample_security_report
-
-
-def test_report_command_service_regenerates_html(
-    sample_security_report,
-    tmp_path: Path,
-) -> None:
-    """Regenerate HTML from an existing JSON report."""
-    json_path = (
-        tmp_path
-        / "security-report.json"
-    )
-
-    html_path = (
-        tmp_path
-        / "regenerated.html"
-    )
-
-    json_path.write_text(
-        sample_security_report.model_dump_json(
-            indent=2
+    input_path.write_text(
+        json.dumps(
+            sample_security_report.model_dump(
+                mode="json"
+            ),
+            indent=2,
         ),
         encoding="utf-8",
     )
 
     service = ReportCommandService()
 
-    result_path = service.regenerate_html(
-        json_path=json_path,
-        html_path=html_path,
+    configuration = ReportCommandConfiguration(
+        input_path=input_path,
+        output_path=output_path,
     )
 
-    assert result_path == html_path
-    assert html_path.exists()
+    generated = service.run(
+        configuration
+    )
 
-    html = html_path.read_text(
+    assert generated == output_path
+    assert output_path.is_file()
+
+    html = output_path.read_text(
         encoding="utf-8"
     )
 
-    assert "<html" in html
+    assert html
     assert "SecureForge" in html
+    assert (
+        sample_security_report.release.application
+        in html
+    )
+
+
+def test_report_command_preserves_regression_data(
+    sample_security_report,
+    tmp_path: Path,
+) -> None:
+    """Preserve regression information when rendering the report."""
+    input_path = tmp_path / "security-report.json"
+    output_path = tmp_path / "security-report.html"
+
+    input_path.write_text(
+        json.dumps(
+            sample_security_report.model_dump(
+                mode="json"
+            ),
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    service = ReportCommandService()
+
+    generated = service.run(
+        ReportCommandConfiguration(
+            input_path=input_path,
+            output_path=output_path,
+        )
+    )
+
+    assert generated == output_path
+
+    html = output_path.read_text(
+        encoding="utf-8"
+    )
+
+    if sample_security_report.regression is not None:
+        assert "Regression Testing" in html
+
+        assert (
+            sample_security_report.regression.suite_id
+            in html
+        )
+
+    if sample_security_report.regression_gate is not None:
+        assert "Regression Gate" in html
+
+
+def test_report_command_creates_parent_directory(
+    sample_security_report,
+    tmp_path: Path,
+) -> None:
+    """Create the output directory when it does not exist."""
+    input_path = tmp_path / "security-report.json"
+    output_path = (
+        tmp_path
+        / "nested"
+        / "reports"
+        / "security-report.html"
+    )
+
+    input_path.write_text(
+        json.dumps(
+            sample_security_report.model_dump(
+                mode="json"
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    service = ReportCommandService()
+
+    service.run(
+        ReportCommandConfiguration(
+            input_path=input_path,
+            output_path=output_path,
+        )
+    )
+
+    assert output_path.is_file()
+    assert output_path.parent.is_dir()
+
+
+def test_report_command_accepts_path_objects(
+    sample_security_report,
+    tmp_path: Path,
+) -> None:
+    """Accept pathlib paths throughout the report command."""
+    input_path = tmp_path / "security-report.json"
+    output_path = tmp_path / "security-report.html"
+
+    input_path.write_text(
+        json.dumps(
+            sample_security_report.model_dump(
+                mode="json"
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    configuration = ReportCommandConfiguration(
+        input_path=Path(input_path),
+        output_path=Path(output_path),
+    )
+
+    service = ReportCommandService()
+
+    result = service.run(
+        configuration
+    )
+
+    assert isinstance(
+        result,
+        Path,
+    )
+
+    assert result == output_path
 ```
