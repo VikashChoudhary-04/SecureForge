@@ -28,4 +28,13 @@ assert RegressionGateReport is not None
 assert build_regression_report is not None
 assert build_regression_gate_report is not None
 assert build_scan_report is not None
+
+assert hasattr(
+    SecurityReportService,
+    "build_from_scan_result",
+)
+assert hasattr(
+    SecurityReportService,
+    "generate_from_scan_result",
+)
 ```
