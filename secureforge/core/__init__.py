@@ -6,6 +6,13 @@ from .policy import PolicyEngine
 from .release_gate import ReleaseGateEngine
 from .requirements import SecurityRequirement
 from .risk import RiskEngine
+from .scan import (
+ScanOrchestrator,
+ScanPlanner,
+ScanRun,
+ScanRunFactory,
+ToolExecutor,
+)
 
 **all** = [
 "CorrelationEngine",
@@ -13,5 +20,10 @@ from .risk import RiskEngine
 "PolicyEngine",
 "ReleaseGateEngine",
 "RiskEngine",
+"ScanOrchestrator",
+"ScanPlanner",
+"ScanRun",
+"ScanRunFactory",
 "SecurityRequirement",
+"ToolExecutor",
 ]
