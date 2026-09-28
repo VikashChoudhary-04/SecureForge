@@ -2,4 +2,4 @@
 
 from .main import app
 
-**all** = ["app"]
+__all__ = ["app"]
