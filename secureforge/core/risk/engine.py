@@ -1,6 +1,6 @@
 """Contextual risk evaluation engine for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 
