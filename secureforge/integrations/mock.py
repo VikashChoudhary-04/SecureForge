@@ -1,140 +1,112 @@
-"""Deterministic mock security integration for SecureForge testing."""
+"""Deterministic mock security integration for SecureForge tests and CI."""
 
-from **future** import annotations
+from __future__ import annotations
 
-from typing import Any
+import json
 
 from secureforge.core.config import ScanConfiguration
-from secureforge.core.normalization import (
-NormalizationResult,
-RawEvidence,
-)
-from secureforge.core.scan import (
-ToolExecutionResult,
-ToolExecutionStatus,
-)
+from secureforge.core.normalization.models import NormalizationResult
+from secureforge.core.scan.models import RawEvidence
 
 from .base import SecurityIntegration
 
+
 class MockSecurityIntegration(SecurityIntegration):
-"""Controlled integration that produces deterministic findings."""
+    """Produce deterministic security evidence without external tools."""
 
-```
-integration_name = "mock"
-display_name = "Mock Security Scanner"
+    integration_name = "mock"
+    display_name = "Mock Security Scanner"
 
-def __init__(
-    self,
-    *,
-    findings: list[dict[str, Any]] | None = None,
-    version: str = "1.0.0",
-    metadata: dict[str, Any] | None = None,
-) -> None:
-    super().__init__(
-        version=version,
-        metadata=metadata,
-    )
+    def __init__(
+        self,
+        *,
+        findings: list[dict[str, object]] | None = None,
+    ) -> None:
+        super().__init__(
+            version="1.0",
+            metadata={
+                "purpose": "deterministic-ci-verification",
+                "external_tool": False,
+            },
+        )
+        self._findings = findings or []
 
-    self.findings = list(
-        findings or []
-    )
+    def build_command(
+        self,
+        configuration: ScanConfiguration,
+    ) -> list[str]:
+        """Return a deterministic command representation."""
+        del configuration
 
-def build_command(
-    self,
-    configuration: ScanConfiguration,
-) -> list[str]:
-    """Return a deterministic mock command."""
-    self.validate_configuration(
-        configuration
-    )
+        return [
+            "secureforge-mock",
+            "--format",
+            "json",
+        ]
 
-    return [
-        "secureforge-mock",
-        "--application",
-        configuration.application,
-        "--target",
-        configuration.target.name,
-    ]
+    def normalize(
+        self,
+        evidence: RawEvidence,
+    ) -> NormalizationResult:
+        """Normalize deterministic mock evidence."""
+        payload = evidence.raw_data
 
-def normalize(
-    self,
-    evidence: RawEvidence,
-) -> NormalizationResult:
-    """Convert mock evidence into normalized findings."""
-    if evidence.source != self.integration_name:
-        raise ValueError(
-            f"Expected evidence source "
-            f"'{self.integration_name}', "
-            f"received '{evidence.source}'."
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                payload = {}
+
+        if not isinstance(payload, dict):
+            payload = {}
+
+        findings = payload.get("findings", [])
+
+        if not isinstance(findings, list):
+            findings = []
+
+        return NormalizationResult(
+            integration=self.integration_name,
+            findings=findings,
+            metadata={
+                "source": self.integration_name,
+                "deterministic": True,
+            },
         )
 
-    return NormalizationResult(
-        source=self.integration_name,
-        findings=list(
-            self.findings
-        ),
-        evidence=[
-            evidence
-        ],
-        success=True,
-    )
+    def create_evidence(
+        self,
+        configuration: ScanConfiguration,
+    ) -> RawEvidence:
+        """Create deterministic evidence for a CI verification run."""
+        del configuration
 
-def execute(
-    self,
-    configuration: ScanConfiguration,
-) -> ToolExecutionResult:
-    """Produce a successful deterministic tool result."""
-    command = self.build_command(
-        configuration
-    )
-
-    return ToolExecutionResult(
-        tool_name=self.integration_name,
-        integration=self.integration_name,
-        status=ToolExecutionStatus.SUCCESS,
-        command=command,
-        exit_code=0,
-        stdout=(
-            "Mock security scan completed successfully."
-        ),
-        stderr="",
-        duration_seconds=0.0,
-        metadata=self.integration_metadata(),
-    )
-
-def add_finding(
-    self,
-    finding: dict[str, Any],
-) -> None:
-    """Add a normalized finding to the mock scanner."""
-    if not isinstance(
-        finding,
-        dict,
-    ):
-        raise TypeError(
-            "Mock finding must be a dictionary."
+        return RawEvidence(
+            integration=self.integration_name,
+            raw_data=json.dumps(
+                {
+                    "findings": self._findings,
+                    "metadata": {
+                        "deterministic": True,
+                        "external_tool": False,
+                    },
+                }
+            ),
+            metadata={
+                "source": self.integration_name,
+                "deterministic": True,
+            },
         )
 
-    self.findings.append(
-        dict(finding)
-    )
+    def supports_target(
+        self,
+        configuration: ScanConfiguration,
+    ) -> bool:
+        """Return whether the mock integration can run."""
+        del configuration
+        return True
 
-def clear_findings(self) -> None:
-    """Remove all configured mock findings."""
-    self.findings.clear()
 
-def create_evidence_from_execution(
-    self,
-    result: ToolExecutionResult,
-    configuration: ScanConfiguration,
-) -> RawEvidence:
-    """Create raw evidence from a mock execution result."""
-    return self.create_evidence(
-        result,
-        target=(
-            configuration.target.base_url
-            or configuration.target.api_base_url
-            or configuration.target.name
-        ),
-    )
-```
+__all__ = [
+    "MockSecurityIntegration",
+]
