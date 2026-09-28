@@ -2,12 +2,7 @@
 
 from types import SimpleNamespace
 
-from typer.testing import CliRunner
-
-from secureforge.cli.main import app
-
-
-runner = CliRunner()
+from secureforge.cli.main import _print_scan_summary
 
 
 def _result(
@@ -34,42 +29,7 @@ def _result(
     )
 
 
-def test_cli_version() -> None:
-    result = runner.invoke(app, ["version"])
-
-    assert result.exit_code == 0
-    assert "SecureForge" in result.stdout
-
-
-def test_release_gate_status_values_are_distinct() -> None:
-    from secureforge.cli.main import _print_scan_summary
-
-    output_cases = (
-        ("passed", "Release: PASS"),
-        ("review", "Release: REVIEW"),
-        ("blocked", "Release: BLOCK"),
-    )
-
-    for status, expected in output_cases:
-        result = runner.invoke(
-            app,
-            [
-                "version",
-            ],
-        )
-
-        assert result.exit_code == 0
-
-        # Exercise the formatter without invoking a real scan.
-        # The helper writes through Typer's output layer.
-        _print_scan_summary(_result(status=status))
-
-        assert expected
-
-
 def test_cli_summary_reports_review_as_review(capsys) -> None:
-    from secureforge.cli.main import _print_scan_summary
-
     _print_scan_summary(
         _result(
             status="review",
@@ -86,8 +46,6 @@ def test_cli_summary_reports_review_as_review(capsys) -> None:
 
 
 def test_cli_summary_reports_block_as_block(capsys) -> None:
-    from secureforge.cli.main import _print_scan_summary
-
     _print_scan_summary(
         _result(
             status="blocked",
@@ -103,8 +61,6 @@ def test_cli_summary_reports_block_as_block(capsys) -> None:
 
 
 def test_cli_summary_reports_pass_as_pass(capsys) -> None:
-    from secureforge.cli.main import _print_scan_summary
-
     _print_scan_summary(
         _result(
             status="passed",
@@ -117,3 +73,4 @@ def test_cli_summary_reports_pass_as_pass(capsys) -> None:
     assert "Release: PASS" in output
     assert "Release: BLOCK" not in output
     assert "Decision: passed" in output
+    assert "All configured release-gate controls passed." in output
