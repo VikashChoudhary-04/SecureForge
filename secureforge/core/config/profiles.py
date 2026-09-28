@@ -28,26 +28,12 @@ class ProfileDefinition:
         profile: ScanProfile | str,
     ) -> ProfileDefinition:
         """Return the definition for a SecureForge scan profile."""
-        if isinstance(profile, str):
-            try:
-                profile = ScanProfile(profile.lower())
-            except ValueError as exc:
-                supported = ", ".join(
-                    item.value
-                    for item in ScanProfile
-                )
-
-                raise ValueError(
-                    f"Unsupported scan profile '{profile}'. "
-                    f"Choose from: {supported}."
-                ) from exc
-
-        return _PROFILE_MAP[profile]
+        return get_profile(profile)
 
     @staticmethod
     def list_profiles() -> list[ProfileDefinition]:
         """Return all supported SecureForge scan profiles."""
-        return list(_PROFILE_MAP.values())
+        return list_profiles()
 
 
 QUICK_PROFILE = ProfileDefinition(
@@ -114,9 +100,37 @@ _PROFILE_MAP: dict[ScanProfile, ProfileDefinition] = {
 }
 
 
+def get_profile(
+    profile: ScanProfile | str,
+) -> ProfileDefinition:
+    """Return the definition for a SecureForge scan profile."""
+    if isinstance(profile, str):
+        try:
+            profile = ScanProfile(profile.lower())
+        except ValueError as exc:
+            supported = ", ".join(
+                item.value
+                for item in ScanProfile
+            )
+
+            raise ValueError(
+                f"Unsupported scan profile '{profile}'. "
+                f"Choose from: {supported}."
+            ) from exc
+
+    return _PROFILE_MAP[profile]
+
+
+def list_profiles() -> list[ProfileDefinition]:
+    """Return all supported SecureForge scan profiles."""
+    return list(_PROFILE_MAP.values())
+
+
 __all__ = [
     "FULL_PROFILE",
     "ProfileDefinition",
     "QUICK_PROFILE",
     "STANDARD_PROFILE",
+    "get_profile",
+    "list_profiles",
 ]
