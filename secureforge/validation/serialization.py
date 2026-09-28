@@ -1,4 +1,4 @@
-```python id="j8c4p1"
+```python id="6r9v2m"
 """Serialization helpers for SecureForge validation results."""
 
 from __future__ import annotations
@@ -18,28 +18,58 @@ from .models import (
 def validation_result_to_dict(
     result: ValidationResult,
 ) -> dict[str, Any]:
-    """Serialize a validation result to a JSON-compatible dictionary."""
-    return result.model_dump(mode="json")
+    """Convert a validation result to a JSON-compatible dictionary."""
+    data = result.model_dump(mode="json")
+
+    data["confirmed"] = result.confirmed
+    data["rejected"] = result.rejected
+    data["inconclusive"] = result.inconclusive
+    data["failed"] = result.failed
+
+    return data
 
 
 def validation_summary_to_dict(
     summary: ValidationSummary,
 ) -> dict[str, Any]:
-    """Serialize a validation summary."""
-    return summary.model_dump(mode="json")
+    """Convert a validation summary to a JSON-compatible dictionary."""
+    return {
+        "total": summary.total,
+        "confirmed": summary.confirmed,
+        "rejected": summary.rejected,
+        "inconclusive": summary.inconclusive,
+        "errors": summary.errors,
+        "remediated": summary.remediated,
+        "all_validated": summary.all_validated,
+        "results": [
+            validation_result_to_dict(result)
+            for result in summary.results
+        ],
+    }
 
 
 def retest_result_to_dict(
     result: RetestResult,
 ) -> dict[str, Any]:
-    """Serialize a retest result."""
-    return result.model_dump(mode="json")
+    """Convert a retest result to a JSON-compatible dictionary."""
+    data = result.model_dump(mode="json")
+
+    data["fixed"] = result.fixed
+    data["regression_required"] = (
+        result.regression_required
+    )
+
+    data["validation"] = validation_result_to_dict(
+        result.validation
+    )
+
+    return data
 
 
 def assessment_to_dict(
     assessment: ValidationAssessment,
 ) -> dict[str, Any]:
-    """Serialize a validation assessment."""
+    """Convert a validation assessment to a dictionary."""
     return {
         "finding_id": assessment.finding_id,
         "outcome": assessment.outcome.value,
@@ -59,7 +89,7 @@ def assessment_to_dict(
 def gate_decision_to_dict(
     decision: ValidationGateDecision,
 ) -> dict[str, Any]:
-    """Serialize a validation gate decision."""
+    """Convert a validation-gate decision to a dictionary."""
     return {
         "allowed": decision.allowed,
         "blocked": decision.blocked,
