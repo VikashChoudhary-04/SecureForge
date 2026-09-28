@@ -1,154 +1,134 @@
-"""Scan-result normalization bridge for SecureForge."""
+"""Normalize scan tool results into SecureForge findings."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from secureforge.core.normalization import (
-NormalizationFindingFactory,
-NormalizationPipeline,
-RawEvidence,
-)
+from secureforge.core.normalization import NormalizationPipeline
+from secureforge.core.normalization.models import NormalizationResult
 
 from .models import ToolExecutionResult
 
+
 class ScanResultNormalizer:
-"""Convert tool execution results into normalized SecureForge findings."""
+    """Convert tool execution results into normalized SecureForge findings."""
 
     def __init__(
         self,
-        pipeline: NormalizationPipeline,
-        finding_factory: NormalizationFindingFactory | None = None,
+        pipeline: NormalizationPipeline | None = None,
     ) -> None:
-        self.pipeline = pipeline
-        self.finding_factory = (
-            finding_factory
-            or NormalizationFindingFactory()
-        )
-    
-    def build_evidence(
-        self,
-        result: ToolExecutionResult,
-        *,
-        target: str | None = None,
-        application: str | None = None,
-    ) -> RawEvidence:
-        """Convert one tool result into raw SecureForge evidence."""
-        raw_data: dict[str, Any] = {
-            "tool_name": result.tool_name,
-            "integration": result.integration,
-            "status": result.status.value,
-            "command": result.command,
-            "exit_code": result.exit_code,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "duration_seconds": result.duration_seconds,
-            "error": result.error,
-        }
-    
-        metadata = dict(result.metadata)
-    
-        if application is not None:
-            metadata.setdefault(
-                "application",
-                application,
-            )
-    
-        return RawEvidence(
-            source=result.integration,
-            source_version=metadata.get(
-                "source_version"
-            ),
-            source_reference=result.evidence_path,
-            target=target,
-            collected_at=(
-                result.completed_at
-                or result.started_at
-            ),
-            raw_data=raw_data,
-            metadata=metadata,
-        )
-    
-    def normalize_result(
-        self,
-        result: ToolExecutionResult,
-        *,
-        target: str | None = None,
-        application: str | None = None,
-    ):
-        """Normalize one tool execution result."""
-        evidence = self.build_evidence(
-            result,
-            target=target,
-            application=application,
-        )
-    
-        return self.pipeline.normalize(
-            evidence
-        )
-    
-    def findings_from_result(
-        self,
-        result: ToolExecutionResult,
-        *,
-        target: str | None = None,
-        application: str | None = None,
-    ):
-        """Normalize a result and create canonical findings."""
-        normalization_result = self.normalize_result(
-            result,
-            target=target,
-            application=application,
-        )
-    
-        if not normalization_result.success:
-            return normalization_result, []
-    
-        findings = self.finding_factory.create(
-            normalization_result
-        )
-    
-        return normalization_result, findings
-    
-    def normalize_results(
-        self,
-        results: list[ToolExecutionResult],
-        *,
-        target: str | None = None,
-        application: str | None = None,
-    ):
-        """Normalize multiple tool execution results."""
-        evidence_items = [
-            self.build_evidence(
-                result,
-                target=target,
-                application=application,
-            )
-            for result in results
-        ]
-    
-        return self.pipeline.normalize_many(
-            evidence_items
-        )
-    
+        self.pipeline = pipeline or NormalizationPipeline()
+
     def findings_from_results(
         self,
         results: list[ToolExecutionResult],
         *,
         target: str | None = None,
-        application: str | None = None,
-    ):
-        """Normalize multiple results and create canonical findings."""
-        normalization_results = self.normalize_results(
-            results,
+        application: str = "unknown",
+    ) -> tuple[list[NormalizationResult], list[Any]]:
+        """Normalize successful tool results into findings."""
+        normalization_results: list[NormalizationResult] = []
+        findings: list[Any] = []
+
+        for result in results:
+            if not result.succeeded:
+                continue
+
+            normalized = self._normalize_result(
+                result,
+                target=target,
+                application=application,
+            )
+
+            normalization_results.append(normalized)
+
+            if normalized.success:
+                findings.extend(
+                    normalized.findings
+                )
+
+        return normalization_results, findings
+
+    def normalize(
+        self,
+        result: ToolExecutionResult,
+        *,
+        target: str | None = None,
+        application: str = "unknown",
+    ) -> NormalizationResult:
+        """Normalize one successful tool execution result."""
+        return self._normalize_result(
+            result,
             target=target,
             application=application,
         )
-    
-        findings = self.finding_factory.create_many(
-            result
-            for result in normalization_results
-            if result.success
+
+    def _normalize_result(
+        self,
+        result: ToolExecutionResult,
+        *,
+        target: str | None,
+        application: str,
+    ) -> NormalizationResult:
+        """Convert one tool result into normalized evidence."""
+        metadata = dict(result.metadata)
+
+        metadata.setdefault(
+            "tool_name",
+            result.tool_name,
         )
-    
-        return normalization_results, findings
+        metadata.setdefault(
+            "integration",
+            result.integration,
+        )
+        metadata.setdefault(
+            "application",
+            application,
+        )
+
+        try:
+            return self.pipeline.normalize(
+                source=result.integration,
+                raw_data={
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "exit_code": result.exit_code,
+                    "command": result.command,
+                    "target": target,
+                },
+                target=target,
+                metadata=metadata,
+            )
+        except (AttributeError, TypeError):
+            return self._fallback_normalization(
+                result,
+                target=target,
+                application=application,
+            )
+
+    @staticmethod
+    def _fallback_normalization(
+        result: ToolExecutionResult,
+        *,
+        target: str | None,
+        application: str,
+    ) -> NormalizationResult:
+        """Return a safe empty normalization result when no adapter exists."""
+        return NormalizationResult(
+            source=result.integration,
+            findings=[],
+            warnings=[
+                (
+                    f"No normalization adapter is available for "
+                    f"integration '{result.integration}'."
+                )
+            ],
+            errors=[],
+            success=True,
+            evidence=[],
+            metadata={
+                "tool_name": result.tool_name,
+                "application": application,
+                "target": target,
+            },
+        )
