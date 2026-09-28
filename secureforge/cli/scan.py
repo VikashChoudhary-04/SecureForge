@@ -1,4 +1,3 @@
-```python id="7p4m2k"
 """Scan service used by the SecureForge CLI."""
 
 from __future__ import annotations
@@ -111,4 +110,3 @@ class ScanCommandService:
             result,
             config.output_directory,
         )
-```
