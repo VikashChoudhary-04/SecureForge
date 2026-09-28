@@ -1,6 +1,6 @@
 """Models used by the SecureForge scan orchestration layer."""
 
-from __future___ import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
