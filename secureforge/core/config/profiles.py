@@ -84,15 +84,15 @@ class ProfileDefinition:
         }
         
         def get_profile(profile: ScanProfile | str) -> ProfileDefinition:
-        """Return the definition for a SecureForge scan profile."""
-        if isinstance(profile, str):
-        try:
-        profile = ScanProfile(profile.lower())
-        except ValueError as exc:
-        supported = ", ".join(
-        item.value
-        for item in ScanProfile
-        )
+                """Return the definition for a SecureForge scan profile."""
+                if isinstance(profile, str):
+                try:
+                profile = ScanProfile(profile.lower())
+                except ValueError as exc:
+                supported = ", ".join(
+                item.value
+                for item in ScanProfile
+                )
         
         
                 raise ValueError(
