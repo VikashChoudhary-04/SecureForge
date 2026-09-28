@@ -104,12 +104,15 @@ class ReleaseGateDecision:
         }
 
 
+# Compatibility aliases used by other SecureForge components.
+ReleaseDecisionRecord = ReleaseGateDecision
 ReleaseGateAction = ReleaseDecision
 ReleaseGateStatus = ReleaseDecision
 
 
 __all__ = [
     "ReleaseDecision",
+    "ReleaseDecisionRecord",
     "ReleaseGateAction",
     "ReleaseGateStatus",
     "ReleaseGateInput",
