@@ -87,12 +87,12 @@ class ProfileDefinition:
                 """Return the definition for a SecureForge scan profile."""
                 if isinstance(profile, str):
                         try:
-                        profile = ScanProfile(profile.lower())
+                                profile = ScanProfile(profile.lower())
                         except ValueError as exc:
-                        supported = ", ".join(
-                        item.value
-                        for item in ScanProfile
-                        )
+                                supported = ", ".join(
+                                item.value
+                                for item in ScanProfile
+                                )
         
         
                         raise ValueError(
