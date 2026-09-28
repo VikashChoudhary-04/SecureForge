@@ -1,5 +1,5 @@
-```python id="7q3m8k"
-"""SecureCommerce-specific security validators for SecureForge."""
+```python id="q7v2mx"
+# SecureCommerce-specific security validators
 
 from __future__ import annotations
 
@@ -31,6 +31,9 @@ class SecureCommerceValidator(BaseValidator):
         "AUTHZ-001",
         "SECRET-001",
         "MISCONFIG-001",
+        "SSRF-001",
+        "UPLOAD-001",
+        "PATH-TRAVERSAL-001",
     }
 
     def supports(
@@ -50,34 +53,39 @@ class SecureCommerceValidator(BaseValidator):
         """Validate one supported SecureCommerce finding."""
         finding_id = request.finding_id.upper()
 
-        if finding_id == "BOLA-001":
-            return self._validate_bola(request)
+        validators = {
+            "BOLA-001": self._validate_bola,
+            "SQLI-001": self._validate_sqli,
+            "XSS-001": self._validate_xss,
+            "AUTHZ-001": self._validate_authorization,
+            "SECRET-001": self._validate_secret,
+            "MISCONFIG-001": self._validate_misconfiguration,
+            "SSRF-001": self._validate_ssrf,
+            "UPLOAD-001": self._validate_upload,
+            "PATH-TRAVERSAL-001": self._validate_path_traversal,
+        }
 
-        if finding_id == "SQLI-001":
-            return self._validate_sqli(request)
-
-        if finding_id == "XSS-001":
-            return self._validate_xss(request)
-
-        if finding_id == "AUTHZ-001":
-            return self._validate_authorization(request)
-
-        if finding_id == "SECRET-001":
-            return self._validate_secret(request)
-
-        if finding_id == "MISCONFIG-001":
-            return self._validate_misconfiguration(request)
-
-        raise ValidationError(
-            f"Unsupported SecureCommerce finding: {finding_id}"
+        validator = validators.get(
+            finding_id
         )
+
+        if validator is None:
+            raise ValidationError(
+                "Unsupported SecureCommerce finding: "
+                f"{finding_id}"
+            )
+
+        return validator(request)
 
     def _validate_bola(
         self,
         request: ValidationRequest,
     ) -> ValidationResult:
         """Validate unauthorized object-level access."""
-        endpoint = request.endpoint or "/api/users/2"
+        endpoint = (
+            request.endpoint
+            or "/api/users/2"
+        )
 
         response = self._request(
             request=request,
@@ -94,17 +102,13 @@ class SecureCommerceValidator(BaseValidator):
                     "without evidence of authorization enforcement."
                 ),
                 evidence=ValidationEvidence(
-                    method=(
-                        ValidationMethod.API
-                        if request.method == ValidationMethod.API
-                        else ValidationMethod.HTTP
-                    ),
+                    method=self._validation_method(request),
                     description=(
                         "Controlled BOLA validation request."
                     ),
                     request=response.request,
                     response=response.body,
-                    expected="HTTP 401 or 403 for unauthorized access.",
+                    expected="HTTP 401 or 403.",
                     observed=f"HTTP {response.status}",
                 ),
             )
@@ -118,11 +122,7 @@ class SecureCommerceValidator(BaseValidator):
                     "object access."
                 ),
                 evidence=ValidationEvidence(
-                    method=(
-                        ValidationMethod.API
-                        if request.method == ValidationMethod.API
-                        else ValidationMethod.HTTP
-                    ),
+                    method=self._validation_method(request),
                     description=(
                         "Controlled BOLA validation request."
                     ),
@@ -147,7 +147,10 @@ class SecureCommerceValidator(BaseValidator):
         request: ValidationRequest,
     ) -> ValidationResult:
         """Validate controlled SQL injection behavior."""
-        endpoint = request.endpoint or "/vulnerable/search"
+        endpoint = (
+            request.endpoint
+            or "/vulnerable/search"
+        )
 
         payload = (
             request.payload
@@ -192,8 +195,8 @@ class SecureCommerceValidator(BaseValidator):
                     request=response.request,
                     response=response.body,
                     expected=(
-                        "The application should handle the "
-                        "input without database errors."
+                        "The application should process input "
+                        "without exposing database errors."
                     ),
                     observed=(
                         "Database error marker detected."
@@ -215,7 +218,10 @@ class SecureCommerceValidator(BaseValidator):
         request: ValidationRequest,
     ) -> ValidationResult:
         """Validate controlled reflected-XSS behavior."""
-        endpoint = request.endpoint or "/vulnerable/search"
+        endpoint = (
+            request.endpoint
+            or "/vulnerable/search"
+        )
 
         payload = (
             request.payload
@@ -247,38 +253,10 @@ class SecureCommerceValidator(BaseValidator):
                     request=response.request,
                     response=response.body,
                     expected=(
-                        "User-controlled HTML should be "
-                        "encoded before reflection."
+                        "User-controlled HTML should be encoded."
                     ),
                     observed=(
                         "The exact controlled marker was reflected."
-                    ),
-                ),
-            )
-
-        if (
-            quote(payload, safe="")
-            in response.body
-        ):
-            return self._result(
-                request=request,
-                outcome=ValidationOutcome.REJECTED,
-                message=(
-                    "The XSS marker was present only in "
-                    "URL-encoded form."
-                ),
-                evidence=ValidationEvidence(
-                    method=ValidationMethod.HTTP,
-                    description=(
-                        "Controlled reflected-XSS validation."
-                    ),
-                    request=response.request,
-                    response=response.body,
-                    expected=(
-                        "Unencoded marker must not be reflected."
-                    ),
-                    observed=(
-                        "Only encoded marker was observed."
                     ),
                 ),
             )
@@ -288,7 +266,7 @@ class SecureCommerceValidator(BaseValidator):
             outcome=ValidationOutcome.REJECTED,
             message=(
                 "The controlled XSS marker was not reflected "
-                "in the response."
+                "as unencoded HTML."
             ),
             evidence=ValidationEvidence(
                 method=ValidationMethod.HTTP,
@@ -298,9 +276,9 @@ class SecureCommerceValidator(BaseValidator):
                 request=response.request,
                 response=response.body,
                 expected=(
-                    "Unencoded marker should not be reflected."
+                    "Unencoded marker must not be reflected."
                 ),
-                observed="Marker not reflected.",
+                observed="Marker not reflected as raw HTML.",
             ),
         )
 
@@ -309,7 +287,10 @@ class SecureCommerceValidator(BaseValidator):
         request: ValidationRequest,
     ) -> ValidationResult:
         """Validate protected administrative functionality."""
-        endpoint = request.endpoint or "/vulnerable/admin-action"
+        endpoint = (
+            request.endpoint
+            or "/vulnerable/admin-action"
+        )
 
         response = self._request(
             request=request,
@@ -377,11 +358,9 @@ class SecureCommerceValidator(BaseValidator):
             else "SECURECOMMERCE_FAKE_SECRET"
         )
 
-        endpoint = request.endpoint or "/"
-
         response = self._request(
             request=request,
-            endpoint=endpoint,
+            endpoint=request.endpoint or "/",
             method="GET",
         )
 
@@ -412,8 +391,7 @@ class SecureCommerceValidator(BaseValidator):
             request=request,
             outcome=ValidationOutcome.REJECTED,
             message=(
-                "The synthetic lab secret was not exposed "
-                "in the tested response."
+                "The synthetic lab secret was not exposed."
             ),
             evidence=ValidationEvidence(
                 method=ValidationMethod.HTTP,
@@ -434,12 +412,10 @@ class SecureCommerceValidator(BaseValidator):
         self,
         request: ValidationRequest,
     ) -> ValidationResult:
-        """Validate the controlled development-server exposure."""
-        endpoint = request.endpoint or "/"
-
+        """Validate controlled development-server exposure."""
         response = self._request(
             request=request,
-            endpoint=endpoint,
+            endpoint=request.endpoint or "/",
             method="GET",
         )
 
@@ -485,6 +461,278 @@ class SecureCommerceValidator(BaseValidator):
             ),
         )
 
+    def _validate_ssrf(
+        self,
+        request: ValidationRequest,
+    ) -> ValidationResult:
+        """Validate the controlled SSRF endpoint."""
+        endpoint = (
+            request.endpoint
+            or "/external/fetch"
+        )
+
+        internal_target = (
+            request.payload
+            or request.metadata.get(
+                "ssrf_target",
+                "http://127.0.0.1:5000/",
+            )
+        )
+
+        response = self._request(
+            request=request,
+            endpoint=endpoint,
+            method="GET",
+            parameter=request.parameter or "url",
+            payload=internal_target,
+        )
+
+        body_lower = response.body.lower()
+
+        indicators = (
+            '"status":"fetched"',
+            '"status": "fetched"',
+            "securecommerce",
+        )
+
+        if response.status == 200 and any(
+            indicator in body_lower
+            for indicator in indicators
+        ):
+            return self._result(
+                request=request,
+                outcome=ValidationOutcome.CONFIRMED,
+                message=(
+                    "The application fetched a controlled "
+                    "internal resource through a user-supplied URL."
+                ),
+                evidence=ValidationEvidence(
+                    method=ValidationMethod.HTTP,
+                    description=(
+                        "Controlled SSRF validation against the "
+                        "SecureCommerce lab application."
+                    ),
+                    request=response.request,
+                    response=response.body,
+                    expected=(
+                        "User-controlled URLs should not allow "
+                        "access to internal resources."
+                    ),
+                    observed=(
+                        "The internal target was fetched."
+                    ),
+                ),
+            )
+
+        if response.status in {400, 403}:
+            return self._result(
+                request=request,
+                outcome=ValidationOutcome.REJECTED,
+                message=(
+                    "The application rejected the controlled "
+                    "internal-resource request."
+                ),
+                evidence=ValidationEvidence(
+                    method=ValidationMethod.HTTP,
+                    description=(
+                        "Controlled SSRF validation."
+                    ),
+                    request=response.request,
+                    response=response.body,
+                    expected="HTTP 400 or 403.",
+                    observed=f"HTTP {response.status}",
+                ),
+            )
+
+        return self._inconclusive(
+            request=request,
+            message=(
+                "The SSRF response did not provide sufficient "
+                "evidence to confirm or reject the finding."
+            ),
+            response=response,
+        )
+
+    def _validate_upload(
+        self,
+        request: ValidationRequest,
+    ) -> ValidationResult:
+        """Validate insecure file-upload handling."""
+        endpoint = (
+            request.endpoint
+            or "/upload/"
+        )
+
+        filename = (
+            request.payload
+            or "secureforge-test.txt"
+        )
+
+        boundary = "----SecureForgeBoundary"
+
+        body = (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; '
+            f'name="file"; filename="{filename}"\r\n'
+            "Content-Type: text/plain\r\n"
+            "\r\n"
+            "SecureForge controlled upload\r\n"
+            f"--{boundary}--\r\n"
+        ).encode()
+
+        response = self._request_raw(
+            request=request,
+            endpoint=endpoint,
+            method="POST",
+            body=body,
+            headers={
+                "Content-Type": (
+                    f"multipart/form-data; boundary={boundary}"
+                )
+            },
+        )
+
+        if response.status == 201:
+            return self._result(
+                request=request,
+                outcome=ValidationOutcome.CONFIRMED,
+                message=(
+                    "The application accepted the controlled "
+                    "file upload without the expected security "
+                    "validation controls."
+                ),
+                evidence=ValidationEvidence(
+                    method=ValidationMethod.HTTP,
+                    description=(
+                        "Controlled file-upload validation."
+                    ),
+                    request=response.request,
+                    response=response.body,
+                    expected=(
+                        "Untrusted file uploads should be "
+                        "subject to security validation."
+                    ),
+                    observed=f"HTTP {response.status}",
+                ),
+            )
+
+        if response.status in {400, 403, 415}:
+            return self._result(
+                request=request,
+                outcome=ValidationOutcome.REJECTED,
+                message=(
+                    "The application rejected the controlled "
+                    "file upload."
+                ),
+                evidence=ValidationEvidence(
+                    method=ValidationMethod.HTTP,
+                    description=(
+                        "Controlled file-upload validation."
+                    ),
+                    request=response.request,
+                    response=response.body,
+                    expected="HTTP 400, 403, or 415.",
+                    observed=f"HTTP {response.status}",
+                ),
+            )
+
+        return self._inconclusive(
+            request=request,
+            message=(
+                "The file-upload response was inconclusive."
+            ),
+            response=response,
+        )
+
+    def _validate_path_traversal(
+        self,
+        request: ValidationRequest,
+    ) -> ValidationResult:
+        """Validate controlled path-traversal behavior."""
+        endpoint = (
+            request.endpoint
+            or "/upload/download/.."
+        )
+
+        traversal_path = (
+            request.payload
+            or "../securecommerce/app.py"
+        )
+
+        if request.payload is None:
+            endpoint = (
+                "/upload/download/"
+                + traversal_path
+            )
+
+        response = self._request(
+            request=request,
+            endpoint=endpoint,
+            method="GET",
+        )
+
+        traversal_markers = (
+            "from flask import",
+            "create_app",
+            "securecommerce",
+        )
+
+        if response.status == 200 and any(
+            marker.lower() in response.body.lower()
+            for marker in traversal_markers
+        ):
+            return self._result(
+                request=request,
+                outcome=ValidationOutcome.CONFIRMED,
+                message=(
+                    "Controlled path traversal exposed "
+                    "application source content."
+                ),
+                evidence=ValidationEvidence(
+                    method=ValidationMethod.HTTP,
+                    description=(
+                        "Controlled path-traversal validation."
+                    ),
+                    request=response.request,
+                    response=response.body,
+                    expected=(
+                        "File paths must remain confined "
+                        "to the intended upload directory."
+                    ),
+                    observed=(
+                        "Application source content was returned."
+                    ),
+                ),
+            )
+
+        if response.status in {400, 403, 404}:
+            return self._result(
+                request=request,
+                outcome=ValidationOutcome.REJECTED,
+                message=(
+                    "The controlled traversal request did not "
+                    "return the targeted application file."
+                ),
+                evidence=ValidationEvidence(
+                    method=ValidationMethod.HTTP,
+                    description=(
+                        "Controlled path-traversal validation."
+                    ),
+                    request=response.request,
+                    response=response.body,
+                    expected="No traversal-controlled file access.",
+                    observed=f"HTTP {response.status}",
+                ),
+            )
+
+        return self._inconclusive(
+            request=request,
+            message=(
+                "The path-traversal response was inconclusive."
+            ),
+            response=response,
+        )
+
     def _request(
         self,
         *,
@@ -494,7 +742,7 @@ class SecureCommerceValidator(BaseValidator):
         parameter: str | None = None,
         payload: str | None = None,
     ) -> "_HTTPResponse":
-        """Perform one controlled HTTP request."""
+        """Perform a controlled HTTP request."""
         if request.method not in {
             ValidationMethod.HTTP,
             ValidationMethod.API,
@@ -510,7 +758,11 @@ class SecureCommerceValidator(BaseValidator):
         )
 
         if parameter and payload is not None:
-            separator = "&" if "?" in url else "?"
+            separator = (
+                "&"
+                if "?" in url
+                else "?"
+            )
 
             url = (
                 f"{url}{separator}"
@@ -518,14 +770,46 @@ class SecureCommerceValidator(BaseValidator):
                 f"{quote(payload, safe='')}"
             )
 
-        headers = {
+        return self._request_raw(
+            request=request,
+            endpoint=url,
+            method=method,
+            absolute_url=True,
+        )
+
+    def _request_raw(
+        self,
+        *,
+        request: ValidationRequest,
+        endpoint: str,
+        method: str,
+        body: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        absolute_url: bool = False,
+    ) -> "_HTTPResponse":
+        """Perform one controlled raw HTTP request."""
+        if absolute_url:
+            url = endpoint
+        else:
+            url = self._build_url(
+                target=request.target,
+                endpoint=endpoint,
+            )
+
+        request_headers = {
             "User-Agent": "SecureForge-Validator/0.1",
         }
 
+        if headers:
+            request_headers.update(
+                headers
+            )
+
         http_request = Request(
             url,
+            data=body,
             method=method,
-            headers=headers,
+            headers=request_headers,
         )
 
         try:
@@ -533,14 +817,14 @@ class SecureCommerceValidator(BaseValidator):
                 http_request,
                 timeout=5,
             ) as response:
-                body = response.read().decode(
+                response_body = response.read().decode(
                     "utf-8",
                     errors="replace",
                 )
 
                 return _HTTPResponse(
                     status=response.status,
-                    body=body,
+                    body=response_body,
                     headers=dict(
                         response.headers.items()
                     ),
@@ -548,14 +832,14 @@ class SecureCommerceValidator(BaseValidator):
                 )
 
         except HTTPError as exc:
-            body = exc.read().decode(
+            response_body = exc.read().decode(
                 "utf-8",
                 errors="replace",
             )
 
             return _HTTPResponse(
                 status=exc.code,
-                body=body,
+                body=response_body,
                 headers=dict(
                     exc.headers.items()
                 ),
@@ -583,6 +867,16 @@ class SecureCommerceValidator(BaseValidator):
             f"{target.rstrip('/')}/"
             f"{endpoint.lstrip('/')}"
         )
+
+    @staticmethod
+    def _validation_method(
+        request: ValidationRequest,
+    ) -> ValidationMethod:
+        """Return the evidence method for an HTTP request."""
+        if request.method == ValidationMethod.API:
+            return ValidationMethod.API
+
+        return ValidationMethod.HTTP
 
     @staticmethod
     def _result(
@@ -618,11 +912,7 @@ class SecureCommerceValidator(BaseValidator):
             outcome=ValidationOutcome.INCONCLUSIVE,
             message=message,
             evidence=ValidationEvidence(
-                method=(
-                    ValidationMethod.API
-                    if request.method == ValidationMethod.API
-                    else ValidationMethod.HTTP
-                ),
+                method=self._validation_method(request),
                 description=(
                     "Controlled SecureCommerce validation."
                 ),
