@@ -99,6 +99,36 @@ class ToolExecutionResult(BaseModel):
         }
 
 
+class ScanExecution(BaseModel):
+    """Execution metadata produced by the scan runner."""
+
+    model_config = ConfigDict(extra="allow")
+
+    scan_id: str
+    profile: str
+    application: str
+    version: str
+    commit_sha: str | None = None
+    environment: str = "lab"
+
+    started_at: str
+    completed_at: str
+
+    status: ScanStatus | str = ScanStatus.COMPLETED
+
+    tools: list[ToolExecutionResult] = Field(
+        default_factory=list
+    )
+
+    tool_errors: list[str] = Field(
+        default_factory=list
+    )
+
+    metadata: dict[str, Any] = Field(
+        default_factory=dict
+    )
+
+
 class ScanSummary(BaseModel):
     """Summary statistics for a SecureForge scan."""
 
@@ -336,23 +366,27 @@ class ScanRun(BaseModel):
 
 
 class SecurityScanResult(BaseModel):
-    """Public result returned by the SecureForge scan service."""
+    """Public result returned by the SecureForge scan orchestrator."""
 
     model_config = ConfigDict(extra="allow")
 
-    scan_id: str
-    application: str
-    version: str
-    profile: ScanProfile
-    environment: str
-
-    status: ScanStatus = ScanStatus.CREATED
-
-    commit_sha: str | None = None
+    execution: ScanExecution
 
     findings: list[Finding] = Field(
         default_factory=list
     )
+
+    pipeline: Any | None = None
+
+    scan_id: str | None = None
+    application: str | None = None
+    version: str | None = None
+    profile: str | None = None
+    environment: str | None = None
+
+    status: ScanStatus | str = ScanStatus.COMPLETED
+
+    commit_sha: str | None = None
 
     risk_assessments: list[RiskAssessment] = Field(
         default_factory=list
@@ -404,6 +438,7 @@ class SecurityScanResult(BaseModel):
 
 __all__ = [
     "ScanConfiguration",
+    "ScanExecution",
     "ScanProfile",
     "ScanRun",
     "ScanStatus",
