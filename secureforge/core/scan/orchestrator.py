@@ -1,4 +1,3 @@
-```python id="6m2q8v"
 """Scan orchestration for SecureForge."""
 
 from __future__ import annotations
@@ -131,4 +130,3 @@ class ScanOrchestrator:
         )
 
         return list(plan.requests)
-```
