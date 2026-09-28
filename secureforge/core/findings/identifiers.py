@@ -1,100 +1,59 @@
-"""Deterministic finding identifier generation for SecureForge."""
+"""Finding identifier helpers for SecureForge."""
 
 from __future__ import annotations
 
 import hashlib
 import re
 
-class FindingIdentifier:
-"""Generate stable SecureForge finding identifiers."""
 
-```
-PREFIX = "SF"
+class FindingIdentifierError(ValueError):
+    """Raised when a finding identifier cannot be generated."""
 
-@classmethod
-def generate(
-    cls,
+
+def build_finding_id(
     *,
     source: str,
     title: str,
     asset: str,
     endpoint: str | None = None,
     parameter: str | None = None,
-    cwe: str | None = None,
 ) -> str:
-    """Generate a deterministic identifier from finding attributes."""
-    canonical_parts = [
-        cls._normalize(source),
-        cls._normalize(title),
-        cls._normalize(asset),
-        cls._normalize(endpoint),
-        cls._normalize(parameter),
-        cls._normalize(cwe),
+    """Generate a stable SecureForge finding identifier."""
+    values = [
+        source,
+        title,
+        asset,
+        endpoint or "",
+        parameter or "",
     ]
 
-    canonical_value = "|".join(canonical_parts)
-
-    digest = hashlib.sha256(
-        canonical_value.encode("utf-8")
-    ).hexdigest()[:12].upper()
-
-    return f"{cls.PREFIX}-{digest}"
-
-@classmethod
-def from_finding_data(
-    cls,
-    finding_data: dict[str, object],
-) -> str:
-    """Generate an ID from normalized finding data."""
-    return cls.generate(
-        source=str(
-            finding_data.get(
-                "source",
-                "",
-            )
-        ),
-        title=str(
-            finding_data.get(
-                "title",
-                "",
-            )
-        ),
-        asset=str(
-            finding_data.get(
-                "asset",
-                "",
-            )
-        ),
-        endpoint=cls._optional_string(
-            finding_data.get("endpoint")
-        ),
-        parameter=cls._optional_string(
-            finding_data.get("parameter")
-        ),
-        cwe=cls._optional_string(
-            finding_data.get("cwe")
-        ),
+    normalized = "|".join(
+        _normalize_identifier_component(value)
+        for value in values
     )
 
-@staticmethod
-def _optional_string(
-    value: object,
-) -> str | None:
-    """Convert an optional value into a string."""
-    if value is None:
-        return None
+    digest = hashlib.sha256(
+        normalized.encode("utf-8")
+    ).hexdigest()[:12]
 
-    return str(value)
+    source_prefix = _normalize_identifier_component(
+        source
+    ).upper()
 
-@staticmethod
-def _normalize(
-    value: str | None,
+    if not source_prefix:
+        source_prefix = "UNKNOWN"
+
+    return f"{source_prefix}-{digest}"
+
+
+def _normalize_identifier_component(
+    value: str,
 ) -> str:
-    """Normalize an identifier input for deterministic hashing."""
-    if value is None:
-        return ""
-
+    """Normalize a value before identifier generation."""
     normalized = value.strip().lower()
+
+    if not normalized:
+        return ""
 
     normalized = re.sub(
         r"\s+",
@@ -103,4 +62,3 @@ def _normalize(
     )
 
     return normalized
-```
