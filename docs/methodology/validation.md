@@ -1,4 +1,3 @@
-```markdown
 # SecureForge Validation Methodology
 
 ## Purpose
@@ -314,4 +313,3 @@
 	- Retest
 	- Gate
 	- Prevent recurrence
-```
