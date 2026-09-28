@@ -8,23 +8,26 @@ from typing import Any
 
 from secureforge.core.scan.models import SecurityScanResult
 from secureforge.validation.serialization import (
-    assessment_to_dict,
     gate_decision_to_dict,
-    retest_result_to_dict,
     validation_result_to_dict,
     validation_summary_to_dict,
 )
 
 from .models import (
     DecisionReport,
+    PolicyReport,
     RegressionGateReport,
     RegressionReport,
     RegressionTestReport,
+    ReleaseMetadata,
     RemediationReport,
     ReportFinding,
     RiskReport,
     ScanMetadata,
     SecurityReport,
+    ValidationGateReport,
+    ValidationReport,
+    ValidationResultReport,
 )
 
 
@@ -40,39 +43,34 @@ def build_scan_report(
         for finding in pipeline.findings
     ]
 
-    validation_report = None
-
-    if pipeline.validation is not None:
-        validation_report = validation_summary_to_dict(
-            pipeline.validation
-        )
-
-    validation_gate_report = None
-
-    if pipeline.validation_gate is not None:
-        validation_gate_report = gate_decision_to_dict(
-            pipeline.validation_gate
-        )
-
-    validation_results = []
-
-    if pipeline.validation_results is not None:
-        validation_results = [
-            validation_result_to_dict(item)
-            for item in pipeline.validation_results
-        ]
-
-    regression_report = _build_regression_report(
-        pipeline.regression
+    validation_report = _build_validation_report(
+        pipeline.validation
     )
 
-    regression_gate_report = _build_regression_gate_report(
-        pipeline.regression_gate
+    validation_results = [
+        ValidationResultReport(
+            **validation_result_to_dict(item)
+        )
+        for item in (
+            pipeline.validation_results
+            if pipeline.validation_results is not None
+            else []
+        )
+    ]
+
+    validation_gate_report = _build_validation_gate_report(
+        pipeline.validation_gate
     )
 
     return SecurityReport(
-        release=_build_release_metadata(
-            result
+        release=ReleaseMetadata(
+            scan_id=execution.scan_id,
+            application=execution.application,
+            version=execution.version,
+            commit_sha=execution.commit_sha,
+            environment=execution.environment,
+            release_allowed=pipeline.release_allowed,
+            release_blocked=pipeline.release_blocked,
         ),
         scan=ScanMetadata(
             scan_id=execution.scan_id,
@@ -102,8 +100,12 @@ def build_scan_report(
         remediation=_build_remediation_report(
             findings
         ),
-        regression=regression_report,
-        regression_gate=regression_gate_report,
+        regression=_build_regression_report(
+            pipeline.regression
+        ),
+        regression_gate=_build_regression_gate_report(
+            pipeline.regression_gate
+        ),
         validation=validation_report,
         validation_results=validation_results,
         validation_gate=validation_gate_report,
@@ -111,23 +113,6 @@ def build_scan_report(
             timezone.utc
         ).isoformat(),
     )
-
-
-def _build_release_metadata(
-    result: SecurityScanResult,
-) -> dict[str, Any]:
-    """Build release metadata for the report."""
-    execution = result.execution
-
-    return {
-        "scan_id": execution.scan_id,
-        "application": execution.application,
-        "version": execution.version,
-        "commit_sha": execution.commit_sha,
-        "environment": execution.environment,
-        "release_allowed": result.pipeline.release_allowed,
-        "release_blocked": result.pipeline.release_blocked,
-    }
 
 
 def _build_finding_report(
@@ -183,21 +168,21 @@ def _build_risk_report(
 
 def _build_policy_report(
     policy,
-) -> dict[str, Any]:
-    """Convert the policy decision into report data."""
-    return {
-        "allowed": policy.allowed,
-        "status": policy.status,
-        "reason": policy.reason,
-        "actions": [
+) -> PolicyReport:
+    """Convert the policy decision into a report model."""
+    return PolicyReport(
+        allowed=policy.allowed,
+        status=policy.status,
+        reason=policy.reason,
+        actions=[
             action.model_dump(mode="json")
             for action in policy.actions
         ],
-        "exceptions": [
+        exceptions=[
             exception.model_dump(mode="json")
             for exception in policy.exceptions
         ],
-    }
+    )
 
 
 def _build_remediation_report(
@@ -327,6 +312,53 @@ def _build_regression_gate_report(
         failures=list(
             decision.failures
         ),
+    )
+
+
+def _build_validation_report(
+    summary,
+) -> ValidationReport | None:
+    """Build the validation summary report."""
+    if summary is None:
+        return None
+
+    data = validation_summary_to_dict(summary)
+
+    return ValidationReport(
+        total=data["total"],
+        confirmed=data["confirmed"],
+        rejected=data["rejected"],
+        inconclusive=data["inconclusive"],
+        errors=data["errors"],
+        remediated=data["remediated"],
+        all_validated=data["all_validated"],
+        results=[
+            ValidationResultReport(**result)
+            for result in data["results"]
+        ],
+    )
+
+
+def _build_validation_gate_report(
+    decision,
+) -> ValidationGateReport | None:
+    """Build the validation-gate report."""
+    if decision is None:
+        return None
+
+    data = gate_decision_to_dict(decision)
+
+    return ValidationGateReport(
+        allowed=data["allowed"],
+        blocked=data["blocked"],
+        status=data["status"],
+        reason=data["reason"],
+        confirmed_findings=data["confirmed_findings"],
+        unresolved_findings=data["unresolved_findings"],
+        remediation_verified=data["remediation_verified"],
+        inconclusive_findings=data["inconclusive_findings"],
+        errored_findings=data["errored_findings"],
+        requires_attention=data["requires_attention"],
     )
 
 
