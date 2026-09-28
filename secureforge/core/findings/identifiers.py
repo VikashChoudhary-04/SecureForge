@@ -1,64 +1,89 @@
-"""Finding identifier helpers for SecureForge."""
+"""Finding persistence helpers for SecureForge."""
 
 from __future__ import annotations
 
-import hashlib
-import re
+import json
+from pathlib import Path
+
+from .models import Finding
 
 
-class FindingIdentifierError(ValueError):
-    """Raised when a finding identifier cannot be generated."""
+class FindingStoreError(RuntimeError):
+    """Raised when finding persistence fails."""
 
 
-def build_finding_id(
-    *,
-    source: str,
-    title: str,
-    asset: str,
-    endpoint: str | None = None,
-    parameter: str | None = None,
-) -> str:
-    """Generate a stable SecureForge finding identifier."""
-    values = [
-        source,
-        title,
-        asset,
-        endpoint or "",
-        parameter or "",
-    ]
+class FindingStore:
+    """Persist normalized findings as JSON."""
 
-    normalized = "|".join(
-        _normalize_identifier_component(value)
-        for value in values
-    )
+    filename = "findings.json"
 
-    digest = hashlib.sha256(
-        normalized.encode("utf-8")
-    ).hexdigest()[:12]
+    def save(
+        self,
+        findings: list[Finding],
+        directory: Path,
+    ) -> Path:
+        """Save findings to a JSON file."""
+        directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
-    source_prefix = _normalize_identifier_component(
-        source
-    ).upper()
+        path = directory / self.filename
 
-    if not source_prefix:
-        source_prefix = "UNKNOWN"
+        try:
+            payload = [
+                finding.model_dump(
+                    mode="json"
+                )
+                for finding in findings
+            ]
 
-    return f"{source_prefix}-{digest}"
+            path.write_text(
+                json.dumps(
+                    payload,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            raise FindingStoreError(
+                f"Unable to save findings: {exc}"
+            ) from exc
 
+        return path
 
-def _normalize_identifier_component(
-    value: str,
-) -> str:
-    """Normalize a value before identifier generation."""
-    normalized = value.strip().lower()
+    def load(
+        self,
+        path: Path,
+    ) -> list[Finding]:
+        """Load findings from a JSON file."""
+        if not path.exists():
+            raise FindingStoreError(
+                f"Finding file does not exist: {path}"
+            )
 
-    if not normalized:
-        return ""
+        try:
+            payload = json.loads(
+                path.read_text(
+                    encoding="utf-8"
+                )
+            )
+        except (OSError, json.JSONDecodeError) as exc:
+            raise FindingStoreError(
+                f"Unable to read findings: {exc}"
+            ) from exc
 
-    normalized = re.sub(
-        r"\s+",
-        " ",
-        normalized,
-    )
+        if not isinstance(payload, list):
+            raise FindingStoreError(
+                "Finding store must contain a JSON list."
+            )
 
-    return normalized
+        try:
+            return [
+                Finding.model_validate(item)
+                for item in payload
+            ]
+        except (TypeError, ValueError) as exc:
+            raise FindingStoreError(
+                f"Invalid finding data: {exc}"
+            ) from exc
