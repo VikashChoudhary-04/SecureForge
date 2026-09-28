@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import typer
 
 from secureforge.cli.main import _validate_scan_options
+
+
+SOURCE_PATH = Path(".")
 
 
 def test_ci_profile_accepts_ci_environment() -> None:
@@ -14,7 +19,7 @@ def test_ci_profile_accepts_ci_environment() -> None:
         profile="ci",
         environment="ci",
         target=None,
-        source_path=None,
+        source_path=SOURCE_PATH,
         validate=False,
         validation_finding=[],
         validation_endpoint=[],
@@ -29,7 +34,7 @@ def test_ci_profile_accepts_test_environment() -> None:
         profile="ci",
         environment="test",
         target=None,
-        source_path=None,
+        source_path=SOURCE_PATH,
         validate=False,
         validation_finding=[],
         validation_endpoint=[],
@@ -45,7 +50,7 @@ def test_ci_profile_rejects_lab_environment() -> None:
             profile="ci",
             environment="lab",
             target=None,
-            source_path=None,
+            source_path=SOURCE_PATH,
             validate=False,
             validation_finding=[],
             validation_endpoint=[],
@@ -77,7 +82,7 @@ def test_ci_profile_rejects_regression_option() -> None:
             profile="ci",
             environment="ci",
             target=None,
-            source_path=None,
+            source_path=SOURCE_PATH,
             validate=False,
             validation_finding=[],
             validation_endpoint=[],
@@ -93,7 +98,7 @@ def test_invalid_profile_is_rejected() -> None:
             profile="unknown",
             environment="ci",
             target=None,
-            source_path=None,
+            source_path=SOURCE_PATH,
             validate=False,
             validation_finding=[],
             validation_endpoint=[],
