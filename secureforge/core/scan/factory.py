@@ -1,6 +1,6 @@
 """Factory for creating SecureForge scan runs."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -12,7 +12,6 @@ from .models import ScanRun
 class ScanRunFactory:
 """Create initialized ScanRun objects from SecureForge configuration."""
 
-```
 def __init__(
     self,
     identifier_generator: type[ScanIdentifier] = ScanIdentifier,
@@ -75,4 +74,3 @@ def validate_configuration(
         raise ValueError(
             "Scan target name cannot be empty."
         )
-```
