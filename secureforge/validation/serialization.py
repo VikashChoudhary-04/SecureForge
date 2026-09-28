@@ -1,4 +1,3 @@
-```python
 # Validation serialization helpers
 
 from __future__ import annotations
@@ -192,4 +191,3 @@ __all__ = [
     "validation_results_to_dict",
     "validation_summary_to_dict",
 ]
-```
