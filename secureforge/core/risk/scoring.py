@@ -1,6 +1,6 @@
 """Transparent contextual risk scoring rules for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.findings import Finding, Severity
 
