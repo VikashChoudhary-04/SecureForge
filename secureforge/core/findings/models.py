@@ -1,153 +1,162 @@
-"""Core finding models used throughout SecureForge."""
+"""Core finding models for SecureForge."""
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+
 
 def utc_now() -> datetime:
-"""Return the current UTC timestamp."""
-return datetime.now(timezone.utc)
+    """Return the current UTC timestamp."""
+    return datetime.now(UTC)
 
-class Severity(str, Enum):
-"""Normalized finding severity."""
 
-```
-CRITICAL = "critical"
-HIGH = "high"
-MEDIUM = "medium"
-LOW = "low"
-INFO = "info"
-```
+class Severity(StrEnum):
+    """Finding severity."""
 
-class Confidence(str, Enum):
-"""Confidence level assigned to a finding."""
+    INFO = "info"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
 
-```
-CONFIRMED = "confirmed"
-HIGH = "high"
-MEDIUM = "medium"
-LOW = "low"
-UNKNOWN = "unknown"
-```
 
-class FindingStatus(str, Enum):
-"""Lifecycle status of a finding."""
+class Confidence(StrEnum):
+    """Confidence level of a finding."""
 
-```
-OPEN = "open"
-IN_PROGRESS = "in_progress"
-REMEDIATED = "remediated"
-VERIFIED = "verified"
-REOPENED = "reopened"
-ACCEPTED = "accepted"
-```
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
-class ValidationStatus(str, Enum):
-"""Validation state of a finding."""
 
-```
-NOT_VALIDATED = "not_validated"
-PENDING = "pending"
-CONFIRMED = "confirmed"
-REJECTED = "rejected"
-PARTIAL = "partial"
-```
+class FindingStatus(StrEnum):
+    """Lifecycle status of a finding."""
+
+    OPEN = "open"
+    VALIDATED = "validated"
+    REJECTED = "rejected"
+    REMEDIATED = "remediated"
+    VERIFIED = "verified"
+
+
+class ValidationStatus(StrEnum):
+    """Validation status of a finding."""
+
+    NOT_VALIDATED = "not_validated"
+    INCONCLUSIVE = "inconclusive"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+
 
 class Evidence(BaseModel):
-"""Evidence supporting a security finding."""
+    """Evidence supporting a finding."""
 
-```
-model_config = ConfigDict(extra="allow")
+    evidence_id: str
+    source: str
+    evidence_type: str
+    collected_at: datetime = Field(
+        default_factory=utc_now
+    )
+    data: dict[str, Any] = Field(
+        default_factory=dict
+    )
 
-evidence_id: str
-source: str
-source_reference: str | None = None
-description: str
-data: dict[str, Any] = Field(default_factory=dict)
-collected_at: datetime = Field(default_factory=utc_now)
-```
 
 class Finding(BaseModel):
-"""Normalized security finding used by SecureForge."""
+    """Normalized security finding."""
 
-```
-model_config = ConfigDict(extra="allow")
+    finding_id: str
+    title: str
+    source: str
+    asset: str
+    application: str = "SecureCommerce"
+    endpoint: str | None = None
+    parameter: str | None = None
+    cwe: str | None = None
+    owasp: str | None = None
+    security_requirement: str | None = None
+    severity: Severity = Severity.INFO
+    confidence: Confidence = Confidence.MEDIUM
+    evidence: list[Evidence] = Field(
+        default_factory=list
+    )
+    description: str = ""
+    impact: str = ""
+    remediation: str = ""
+    status: FindingStatus = FindingStatus.OPEN
+    validation_status: ValidationStatus = (
+        ValidationStatus.NOT_VALIDATED
+    )
+    first_seen: datetime = Field(
+        default_factory=utc_now
+    )
+    last_seen: datetime = Field(
+        default_factory=utc_now
+    )
+    correlation_ids: list[str] = Field(
+        default_factory=list
+    )
+    regression_test: str | None = None
+    metadata: dict[str, Any] = Field(
+        default_factory=dict
+    )
 
-finding_id: str
-title: str
+    def add_evidence(
+        self,
+        evidence: Evidence | dict[str, Any],
+    ) -> None:
+        """Attach supporting evidence."""
+        if isinstance(evidence, dict):
+            evidence = Evidence.model_validate(
+                evidence
+            )
 
-source: str
-source_finding_id: str | None = None
+        self.evidence.append(evidence)
+        self.last_seen = utc_now()
 
-application: str
-asset: str
+    def add_correlation(
+        self,
+        correlation_id: str,
+    ) -> None:
+        """Attach a correlation identifier."""
+        if correlation_id not in self.correlation_ids:
+            self.correlation_ids.append(
+                correlation_id
+            )
 
-endpoint: str | None = None
-parameter: str | None = None
+    def mark_validated(self) -> None:
+        """Mark the finding as validated."""
+        self.validation_status = (
+            ValidationStatus.CONFIRMED
+        )
+        self.status = FindingStatus.VALIDATED
+        self.last_seen = utc_now()
 
-cwe: str | None = None
-owasp: str | None = None
-security_requirement: str | None = None
+    def mark_rejected(self) -> None:
+        """Mark the finding as rejected."""
+        self.validation_status = (
+            ValidationStatus.REJECTED
+        )
+        self.status = FindingStatus.REJECTED
+        self.last_seen = utc_now()
 
-severity: Severity
-confidence: Confidence = Confidence.UNKNOWN
+    def mark_remediated(self) -> None:
+        """Mark the finding as remediated."""
+        self.status = FindingStatus.REMEDIATED
+        self.last_seen = utc_now()
 
-description: str
-impact: str
-remediation: str
+    def mark_verified(self) -> None:
+        """Mark a remediated finding as verified."""
+        self.status = FindingStatus.VERIFIED
+        self.last_seen = utc_now()
 
-evidence: list[Evidence] = Field(default_factory=list)
-
-status: FindingStatus = FindingStatus.OPEN
-validation_status: ValidationStatus = ValidationStatus.NOT_VALIDATED
-
-first_seen: datetime = Field(default_factory=utc_now)
-last_seen: datetime = Field(default_factory=utc_now)
-
-regression_test: str | None = None
-
-correlated_finding_ids: list[str] = Field(default_factory=list)
-
-metadata: dict[str, Any] = Field(default_factory=dict)
-
-def add_evidence(self, evidence: Evidence) -> None:
-    """Add evidence to the finding."""
-    self.evidence.append(evidence)
-    self.last_seen = utc_now()
-
-def add_correlation(self, finding_id: str) -> None:
-    """Record another finding correlated with this finding."""
-    if finding_id != self.finding_id and finding_id not in self.correlated_finding_ids:
-        self.correlated_finding_ids.append(finding_id)
-
-def mark_validated(self) -> None:
-    """Mark the finding as confirmed through validation."""
-    self.validation_status = ValidationStatus.CONFIRMED
-    self.confidence = Confidence.CONFIRMED
-    self.last_seen = utc_now()
-
-def mark_rejected(self) -> None:
-    """Mark the finding as rejected during validation."""
-    self.validation_status = ValidationStatus.REJECTED
-    self.last_seen = utc_now()
-
-def mark_remediated(self) -> None:
-    """Mark the finding as remediated."""
-    self.status = FindingStatus.REMEDIATED
-    self.last_seen = utc_now()
-
-def mark_verified(self) -> None:
-    """Mark the finding as verified after remediation."""
-    self.status = FindingStatus.VERIFIED
-    self.validation_status = ValidationStatus.CONFIRMED
-    self.last_seen = utc_now()
-
-def reopen(self) -> None:
-    """Reopen a previously remediated or verified finding."""
-    self.status = FindingStatus.REOPENED
-    self.last_seen = utc_now()
-```
+    def reopen(self) -> None:
+        """Reopen a previously closed finding."""
+        self.status = FindingStatus.OPEN
+        self.validation_status = (
+            ValidationStatus.INCONCLUSIVE
+        )
+        self.last_seen = utc_now()
