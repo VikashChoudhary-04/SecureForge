@@ -1,193 +1,292 @@
-"""Data models for SecureForge security reporting."""
+```python id="4j7p2s"
+"""Reporting models for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class ReleaseMetadata(BaseModel):
-"""Metadata describing the release being evaluated."""
+    """Release information represented in a security report."""
 
-```
-release_id: str
-application: str
-version: str
-commit_sha: str
-environment: str
-timestamp: str
-```
+    model_config = ConfigDict(extra="forbid")
+
+    scan_id: str
+    application: str
+    version: str
+    commit_sha: str | None = None
+    environment: str
+    release_allowed: bool
+    release_blocked: bool
+
 
 class ScanMetadata(BaseModel):
-"""Metadata describing the security scan."""
+    """Metadata describing a SecureForge scan."""
 
-```
-scan_id: str
-profile: str
-status: str
-tools: list[str] = Field(
-    default_factory=list
-)
-started_at: str
-completed_at: str
-duration_seconds: float
-```
+    model_config = ConfigDict(extra="forbid")
+
+    scan_id: str
+    profile: str
+    application: str
+    version: str
+    commit_sha: str | None = None
+    environment: str
+    started_at: str
+    completed_at: str
+    tools: list[str] = Field(default_factory=list)
+    tool_errors: list[str] = Field(default_factory=list)
+
 
 class ReportFinding(BaseModel):
-"""Finding representation used in security reports."""
+    """Finding representation used by security reports."""
 
-```
-finding_id: str
-title: str
-source: str
-asset: str
-application: str | None = None
-endpoint: str | None = None
-parameter: str | None = None
-severity: str
-confidence: str
-status: str
-validation_status: str
-cwe: str | None = None
-owasp_mapping: str | None = None
-security_requirement: str | None = None
-description: str
-impact: str
-remediation: str
-evidence: list[dict[str, Any]] = Field(
-    default_factory=list
-)
-correlations: list[str] = Field(
-    default_factory=list
-)
-regression_test: str | None = None
-```
+    model_config = ConfigDict(extra="forbid")
+
+    finding_id: str
+    title: str
+    source: str
+    asset: str
+    application: str
+    endpoint: str | None = None
+    parameter: str | None = None
+    cwe: str | None = None
+    owasp_mapping: str | None = None
+    security_requirement: str | None = None
+    severity: str
+    confidence: str
+    evidence: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+    description: str
+    impact: str
+    remediation: str
+    status: str
+    validation_status: str
+    first_seen: str
+    last_seen: str
+    regression_test: str | None = None
+    correlation_ids: list[str] = Field(
+        default_factory=list
+    )
+
 
 class RiskReport(BaseModel):
-"""Risk assessment section of the report."""
+    """Risk information represented in a security report."""
 
-```
-score: float
-highest_severity: str
-confirmed_critical: int
-confirmed_high: int
-factors: list[Any] = Field(
-    default_factory=list
-)
-```
+    model_config = ConfigDict(extra="forbid")
+
+    overall_score: float
+    overall_severity: str
+    blocked: bool
+    factors: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+    evaluated_at: str
+
 
 class PolicyReport(BaseModel):
-"""Policy evaluation section of the report."""
+    """Policy evaluation represented in a security report."""
 
-```
-policy_name: str
-actions: list[Any] = Field(
-    default_factory=list
-)
-tool_errors: list[str] = Field(
-    default_factory=list
-)
-regression_failures: list[str] = Field(
-    default_factory=list
-)
-exceptions: list[Any] = Field(
-    default_factory=list
-)
-```
+    model_config = ConfigDict(extra="forbid")
+
+    allowed: bool
+    status: str
+    reason: str
+    actions: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+    exceptions: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+
+
+class RemediationItem(BaseModel):
+    """Remediation information for a finding."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    finding_id: str
+    title: str
+    status: str
+    remediation: str
+
 
 class RemediationReport(BaseModel):
-"""Remediation summary section."""
+    """Remediation summary represented in a report."""
 
-```
-total: int
-open: int
-in_progress: int
-resolved: int
-verified: int
-items: list[Any] = Field(
-    default_factory=list
-)
-```
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    open_count: int
+    remediated_count: int
+    findings: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+
 
 class RegressionTestReport(BaseModel):
-"""Individual regression test result."""
+    """Individual regression-test result."""
 
-```
-test_id: str
-status: str
-expected: str
-actual: str
-message: str
-evidence: dict[str, Any] = Field(
-    default_factory=dict
-)
-```
+    model_config = ConfigDict(extra="forbid")
+
+    test_id: str
+    status: str
+    message: str = ""
+
 
 class RegressionReport(BaseModel):
-"""Regression testing section of the report."""
+    """Regression suite results represented in a report."""
 
-```
-suite_id: str
-suite_name: str
-status: str
-total: int
-passed: int
-failed: int
-errors: int
-skipped: int
-tests: list[RegressionTestReport] = Field(
-    default_factory=list
-)
-started_at: str | None = None
-completed_at: str | None = None
-duration_seconds: float = 0.0
-```
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    passed: int
+    failed: int
+    errored: int
+    skipped: int
+    tests: list[RegressionTestReport] = Field(
+        default_factory=list
+    )
+
 
 class RegressionGateReport(BaseModel):
-"""Regression-specific release-gate decision."""
+    """Regression-gate decision represented in a report."""
 
-```
-allowed: bool
-blocked: bool
-status: str
-reason: str
-failed_tests: list[str] = Field(
-    default_factory=list
-)
-errored_tests: list[str] = Field(
-    default_factory=list
-)
-skipped_tests: list[str] = Field(
-    default_factory=list
-)
-failures: list[str] = Field(
-    default_factory=list
-)
-```
+    model_config = ConfigDict(extra="forbid")
+
+    allowed: bool
+    blocked: bool
+    status: str
+    reason: str
+    failed_tests: list[str] = Field(
+        default_factory=list
+    )
+    errored_tests: list[str] = Field(
+        default_factory=list
+    )
+    skipped_tests: list[str] = Field(
+        default_factory=list
+    )
+    failures: list[str] = Field(
+        default_factory=list
+    )
+
+
+class ValidationResultReport(BaseModel):
+    """Individual validation result represented in a report."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    finding_id: str
+    outcome: str
+    message: str
+    validator: str
+    validated_at: str
+    remediation_verified: bool
+    confirmed: bool
+    rejected: bool
+    inconclusive: bool
+    failed: bool
+    evidence: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+
+
+class ValidationReport(BaseModel):
+    """Validation summary represented in a report."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    confirmed: int
+    rejected: int
+    inconclusive: int
+    errors: int
+    remediated: int
+    all_validated: bool
+    results: list[ValidationResultReport] = Field(
+        default_factory=list
+    )
+
+
+class ValidationGateReport(BaseModel):
+    """Validation-gate decision represented in a report."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    allowed: bool
+    blocked: bool
+    status: str
+    reason: str
+    confirmed_findings: list[str] = Field(
+        default_factory=list
+    )
+    unresolved_findings: list[str] = Field(
+        default_factory=list
+    )
+    remediation_verified: list[str] = Field(
+        default_factory=list
+    )
+    inconclusive_findings: list[str] = Field(
+        default_factory=list
+    )
+    errored_findings: list[str] = Field(
+        default_factory=list
+    )
+    requires_attention: bool
+
 
 class DecisionReport(BaseModel):
-"""Final release-gate decision."""
+    """Final release decision represented in a report."""
 
-```
-status: str
-reason: str
-release_allowed: bool
-```
+    model_config = ConfigDict(extra="forbid")
+
+    allowed: bool
+    blocked: bool
+    status: str
+    reason: str
+
 
 class SecurityReport(BaseModel):
-"""Complete SecureForge security report."""
+    """Complete SecureForge security report."""
 
-```
-release: ReleaseMetadata
-scan: ScanMetadata
-findings: list[ReportFinding] = Field(
-    default_factory=list
-)
-risk: RiskReport
-policy: PolicyReport
-remediation: RemediationReport
-regression: RegressionReport
-regression_gate: RegressionGateReport | None = None
-decision: DecisionReport
-generated_at: str
+    model_config = ConfigDict(extra="forbid")
+
+    release: ReleaseMetadata
+    scan: ScanMetadata
+    findings: list[ReportFinding] = Field(
+        default_factory=list
+    )
+    risk: RiskReport
+    policy: PolicyReport
+    decision: DecisionReport
+    remediation: RemediationReport
+    regression: RegressionReport | None = None
+    regression_gate: RegressionGateReport | None = None
+    validation: ValidationReport | None = None
+    validation_results: list[ValidationResultReport] = Field(
+        default_factory=list
+    )
+    validation_gate: ValidationGateReport | None = None
+    generated_at: str
+
+
+__all__ = [
+    "DecisionReport",
+    "RegressionGateReport",
+    "RegressionReport",
+    "RegressionTestReport",
+    "ReleaseMetadata",
+    "RemediationItem",
+    "RemediationReport",
+    "ReportFinding",
+    "RiskReport",
+    "ScanMetadata",
+    "SecurityReport",
+    "ValidationGateReport",
+    "ValidationReport",
+    "ValidationResultReport",
+]
 ```
