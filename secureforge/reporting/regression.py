@@ -1,6 +1,6 @@
 """Regression reporting adapters for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from .models import (
 RegressionReport,
@@ -41,4 +41,3 @@ return RegressionReport(
     completed_at=result.completed_at,
     duration_seconds=result.duration_seconds,
 )
-```
