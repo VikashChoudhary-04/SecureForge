@@ -1,5 +1,5 @@
-```python id="c9m4xw"
-"""Security verification pipeline for SecureForge."""
+```python
+"""End-to-end security verification pipeline for SecureForge."""
 
 from __future__ import annotations
 
@@ -12,22 +12,27 @@ from secureforge.core.policy.engine import PolicyEngine
 from secureforge.core.policy.models import PolicyDecision
 from secureforge.core.release_gate.engine import ReleaseGateEngine
 from secureforge.core.release_gate.models import ReleaseGateDecision
-from secureforge.core.release_gate.regression import (
-    build_regression_gate_result,
-)
 from secureforge.core.risk.engine import RiskEngine
 from secureforge.core.risk.models import RiskAssessment
-from secureforge.regression import (
-    RegressionGateDecision,
-    RegressionSuiteResult,
-    assess_regression_result,
-    evaluate_regression_gate,
+from secureforge.regression.engine import RegressionEngine
+from secureforge.regression.gate import RegressionGateDecision
+from secureforge.regression.models import RegressionSuiteResult
+from secureforge.validation.engine import ValidationEngine
+from secureforge.validation.gate import (
+    ValidationGateDecision,
+    evaluate_validation_run,
 )
+from secureforge.validation.models import (
+    ValidationRequest,
+    ValidationResult,
+    ValidationSummary,
+)
+from secureforge.validation.service import ValidationService
 
 
 @dataclass(frozen=True)
 class SecurityPipelineResult:
-    """Complete result produced by the SecureForge security pipeline."""
+    """Complete result produced by the security pipeline."""
 
     findings: list[Finding]
     risk: RiskAssessment
@@ -35,10 +40,13 @@ class SecurityPipelineResult:
     regression: RegressionSuiteResult | None
     regression_gate: RegressionGateDecision | None
     release_gate: ReleaseGateDecision
+    validation: ValidationSummary | None = None
+    validation_gate: ValidationGateDecision | None = None
+    validation_results: list[ValidationResult] | None = None
 
     @property
     def release_allowed(self) -> bool:
-        """Return whether the release is allowed."""
+        """Return whether the release gate allows progression."""
         return self.release_gate.release_allowed
 
     @property
@@ -46,130 +54,191 @@ class SecurityPipelineResult:
         """Return whether the release is blocked."""
         return not self.release_allowed
 
+    @property
+    def validation_completed(self) -> bool:
+        """Return whether validation was executed."""
+        return self.validation is not None
+
+    @property
+    def validation_blocked(self) -> bool:
+        """Return whether validation blocks progression."""
+        return (
+            self.validation_gate is not None
+            and self.validation_gate.blocked
+        )
+
     def to_dict(self) -> dict[str, Any]:
-        """Serialize the pipeline result."""
-        payload: dict[str, Any] = {
+        """Serialize the complete pipeline result."""
+        return {
             "findings": [
-                finding.model_dump(
-                    mode="json"
-                )
+                finding.model_dump(mode="json")
                 for finding in self.findings
             ],
-            "risk": self.risk.model_dump(
+            "risk": self.risk.model_dump(mode="json"),
+            "policy": self.policy.model_dump(mode="json"),
+            "regression": (
+                self.regression.model_dump(mode="json")
+                if self.regression is not None
+                else None
+            ),
+            "regression_gate": (
+                {
+                    "allowed": self.regression_gate.allowed,
+                    "blocked": self.regression_gate.blocked,
+                    "status": self.regression_gate.status,
+                    "reason": self.regression_gate.reason,
+                    "failed_tests": list(
+                        self.regression_gate.failed_tests
+                    ),
+                    "errored_tests": list(
+                        self.regression_gate.errored_tests
+                    ),
+                    "skipped_tests": list(
+                        self.regression_gate.skipped_tests
+                    ),
+                    "failures": list(
+                        self.regression_gate.failures
+                    ),
+                }
+                if self.regression_gate is not None
+                else None
+            ),
+            "validation": (
+                self.validation.model_dump(mode="json")
+                if self.validation is not None
+                else None
+            ),
+            "validation_results": (
+                [
+                    result.model_dump(mode="json")
+                    for result in self.validation_results
+                ]
+                if self.validation_results is not None
+                else None
+            ),
+            "validation_gate": (
+                {
+                    "allowed": self.validation_gate.allowed,
+                    "blocked": self.validation_gate.blocked,
+                    "status": self.validation_gate.status,
+                    "reason": self.validation_gate.reason,
+                    "confirmed_findings": list(
+                        self.validation_gate.confirmed_findings
+                    ),
+                    "unresolved_findings": list(
+                        self.validation_gate.unresolved_findings
+                    ),
+                    "remediation_verified": list(
+                        self.validation_gate.remediation_verified
+                    ),
+                    "inconclusive_findings": list(
+                        self.validation_gate.inconclusive_findings
+                    ),
+                    "errored_findings": list(
+                        self.validation_gate.errored_findings
+                    ),
+                    "requires_attention": (
+                        self.validation_gate.requires_attention
+                    ),
+                }
+                if self.validation_gate is not None
+                else None
+            ),
+            "release_gate": self.release_gate.model_dump(
                 mode="json"
             ),
-            "policy": self.policy.model_dump(
-                mode="json"
-            ),
-            "release_gate": (
-                self.release_gate.model_dump(
-                    mode="json"
-                )
-            ),
+            "release_allowed": self.release_allowed,
+            "release_blocked": self.release_blocked,
         }
-
-        if self.regression is not None:
-            payload["regression"] = (
-                self.regression.model_dump(
-                    mode="json"
-                )
-            )
-
-        if self.regression_gate is not None:
-            payload["regression_gate"] = (
-                self.regression_gate.to_dict()
-            )
-
-        return payload
 
 
 class SecurityPipeline:
-    """Run correlation, risk, policy, regression, and release evaluation."""
+    """Coordinate correlation, risk, policy, validation and release."""
 
     def __init__(
         self,
         *,
-        correlation_engine: CorrelationEngine | None = None,
-        risk_engine: RiskEngine | None = None,
-        policy_engine: PolicyEngine | None = None,
-        release_gate_engine: ReleaseGateEngine | None = None,
+        correlation_engine: CorrelationEngine,
+        risk_engine: RiskEngine,
+        policy_engine: PolicyEngine,
+        release_gate_engine: ReleaseGateEngine,
+        regression_engine: RegressionEngine | None = None,
+        validation_engine: ValidationEngine | None = None,
     ) -> None:
-        self.correlation_engine = (
-            correlation_engine
-            if correlation_engine is not None
-            else CorrelationEngine()
-        )
+        self.correlation_engine = correlation_engine
+        self.risk_engine = risk_engine
+        self.policy_engine = policy_engine
+        self.release_gate_engine = release_gate_engine
+        self.regression_engine = regression_engine
+        self.validation_engine = validation_engine
 
-        self.risk_engine = (
-            risk_engine
-            if risk_engine is not None
-            else RiskEngine()
-        )
-
-        self.policy_engine = (
-            policy_engine
-            if policy_engine is not None
-            else PolicyEngine()
-        )
-
-        self.release_gate_engine = (
-            release_gate_engine
-            if release_gate_engine is not None
-            else ReleaseGateEngine()
-        )
-
-    def evaluate(
+    def run(
         self,
         findings: list[Finding],
         *,
-        tool_errors: list[str] | None = None,
-        regression: RegressionSuiteResult | None = None,
-        regression_gate: RegressionGateDecision | None = None,
+        validation_requests: list[ValidationRequest] | None = None,
+        run_regression: bool = False,
     ) -> SecurityPipelineResult:
-        """Evaluate findings and optional regression results."""
-        finding_list = list(
-            findings
-        )
+        """Run the complete security verification pipeline."""
+        correlated_findings = self._correlate(findings)
 
-        correlated_findings = (
-            self.correlation_engine.correlate(
-                finding_list
-            )
-        )
-
-        risk = self.risk_engine.assess(
+        risk = self.risk_engine.evaluate(
             correlated_findings
         )
 
         policy = self.policy_engine.evaluate(
+            correlated_findings,
+            risk,
+        )
+
+        validation_summary: ValidationSummary | None = None
+        validation_results: list[ValidationResult] | None = None
+        validation_gate: ValidationGateDecision | None = None
+
+        if validation_requests is not None:
+            if self.validation_engine is None:
+                raise RuntimeError(
+                    "Validation requests were supplied, but no "
+                    "ValidationEngine is configured."
+                )
+
+            validation_service = ValidationService(
+                self.validation_engine
+            )
+
+            validation_summary = validation_service.validate_many(
+                validation_requests
+            )
+            validation_results = validation_summary.results
+            validation_gate = evaluate_validation_run(
+                self._build_validation_run(
+                    validation_summary
+                )
+            )
+
+        regression: RegressionSuiteResult | None = None
+        regression_gate: RegressionGateDecision | None = None
+
+        if run_regression:
+            if self.regression_engine is None:
+                raise RuntimeError(
+                    "Regression execution was requested, but no "
+                    "RegressionEngine is configured."
+                )
+
+            regression = self.regression_engine.run(
+                correlated_findings
+            )
+            regression_gate = self.regression_engine.evaluate_gate(
+                regression
+            )
+
+        release_gate = self._evaluate_release_gate(
             findings=correlated_findings,
             risk=risk,
-            tool_errors=(
-                tool_errors
-                if tool_errors is not None
-                else []
-            ),
-        )
-
-        resolved_regression_gate = (
-            self._resolve_regression_gate(
-                regression=regression,
-                regression_gate=regression_gate,
-            )
-        )
-
-        release_regression = (
-            build_regression_gate_result(
-                resolved_regression_gate
-            )
-            if resolved_regression_gate is not None
-            else None
-        )
-
-        release_gate = self.release_gate_engine.evaluate(
-            risk=risk,
             policy=policy,
-            regression=release_regression,
+            regression_gate=regression_gate,
+            validation_gate=validation_gate,
         )
 
         return SecurityPipelineResult(
@@ -177,68 +246,53 @@ class SecurityPipeline:
             risk=risk,
             policy=policy,
             regression=regression,
-            regression_gate=resolved_regression_gate,
+            regression_gate=regression_gate,
             release_gate=release_gate,
+            validation=validation_summary,
+            validation_gate=validation_gate,
+            validation_results=validation_results,
         )
 
-    @staticmethod
-    def _resolve_regression_gate(
+    def _correlate(
+        self,
+        findings: list[Finding],
+    ) -> list[Finding]:
+        """Correlate related findings."""
+        result = self.correlation_engine.correlate(
+            findings
+        )
+
+        if hasattr(result, "findings"):
+            return result.findings
+
+        return result
+
+    def _evaluate_release_gate(
+        self,
         *,
-        regression: RegressionSuiteResult | None,
+        findings: list[Finding],
+        risk: RiskAssessment,
+        policy: PolicyDecision,
         regression_gate: RegressionGateDecision | None,
-    ) -> RegressionGateDecision | None:
-        """Resolve a regression gate from supplied results."""
-        if regression_gate is not None:
-            return regression_gate
-
-        if regression is None:
-            return None
-
-        assessment = assess_regression_result(
-            regression
-        )
-
-        return evaluate_regression_gate(
-            assessment
+        validation_gate: ValidationGateDecision | None,
+    ) -> ReleaseGateDecision:
+        """Evaluate the final release decision."""
+        return self.release_gate_engine.evaluate(
+            findings=findings,
+            risk=risk,
+            policy=policy,
+            regression_gate=regression_gate,
+            validation_gate=validation_gate,
         )
 
     @staticmethod
-    def summarize(
-        result: SecurityPipelineResult,
-    ) -> dict[str, Any]:
-        """Return a compact, serializable pipeline summary."""
-        summary: dict[str, Any] = {
-            "finding_count": len(
-                result.findings
-            ),
-            "risk_score": result.risk.score,
-            "highest_severity": (
-                result.risk.highest_severity.value
-            ),
-            "policy": result.policy.policy_name,
-            "release_status": (
-                result.release_gate.status.value
-            ),
-            "release_allowed": (
-                result.release_gate.release_allowed
-            ),
-        }
+    def _build_validation_run(
+        summary: ValidationSummary,
+    ):
+        """Build the lightweight run object required by the gate."""
+        from secureforge.validation.runner import ValidationRun
 
-        if result.regression is not None:
-            summary["regression"] = {
-                "suite_id": result.regression.suite_id,
-                "status": result.regression.status.value,
-                "total": result.regression.total,
-                "passed": result.regression.passed,
-                "failed": result.regression.failed,
-                "errors": result.regression.errors,
-                "skipped": result.regression.skipped,
-            }
-
-        if result.regression_gate is not None:
-            summary["regression_gate"] = (
-                result.regression_gate.to_dict()
-            )
-
-        return summary
+        return ValidationRun(
+            summary=summary
+        )
 ```
