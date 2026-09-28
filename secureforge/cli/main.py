@@ -7,12 +7,16 @@ from pathlib import Path
 import typer
 
 from secureforge import __version__
-from secureforge.cli.scan import ScanCommandConfig, ScanCommandService
+from secureforge.cli.scan import (
+    ScanCommandConfig,
+    ScanCommandService,
+)
 from secureforge.config.factory import create_runtime
 from secureforge.validation.models import (
     ValidationMethod,
     ValidationRequest,
 )
+
 
 app = typer.Typer(
     name="secureforge",
@@ -22,22 +26,12 @@ app = typer.Typer(
     ),
 )
 
-VALID_PROFILES = {
-    "quick",
-    "standard",
-    "full",
-    "ci",
-}
-
 
 @app.command()
 def scan(
     profile: str = typer.Option(
         "standard",
-        help=(
-            "Security scan profile: quick, standard, "
-            "full, or ci."
-        ),
+        help="Security scan profile: quick, standard, or full.",
     ),
     target: str | None = typer.Option(
         None,
@@ -122,19 +116,14 @@ def scan(
     ),
 ) -> None:
     """Run a SecureForge security verification scan."""
-    profile = profile.strip().lower()
-    environment = environment.strip().lower()
-
     _validate_scan_options(
         profile=profile,
-        environment=environment,
         target=target,
         source_path=source_path,
         validate=validate,
         validation_finding=validation_finding,
         validation_endpoint=validation_endpoint,
         validation_payload=validation_payload,
-        regression=regression,
     )
 
     try:
@@ -206,14 +195,12 @@ def version() -> None:
 def _validate_scan_options(
     *,
     profile: str,
-    environment: str,
     target: str | None,
     source_path: Path | None,
     validate: bool,
     validation_finding: list[str],
     validation_endpoint: list[str],
     validation_payload: list[str],
-    regression: bool,
 ) -> None:
     """Validate scan command options."""
     if not target and not source_path:
@@ -221,39 +208,19 @@ def _validate_scan_options(
             "Provide at least one of --target or --source-path."
         )
 
-    if profile not in VALID_PROFILES:
-        available = ", ".join(
-            sorted(VALID_PROFILES)
-        )
-        raise typer.BadParameter(
-            f"Profile must be one of: {available}."
-        )
-
-    if profile == "ci" and environment not in {
-        "ci",
-        "test",
+    if profile not in {
+        "quick",
+        "standard",
+        "full",
     }:
         raise typer.BadParameter(
-            "The ci profile requires --environment to be "
-            "'ci' or 'test'."
+            "Profile must be one of: quick, standard, full."
         )
 
     if validate and not target:
         raise typer.BadParameter(
             "--validate requires --target because active "
             "finding validation targets an application."
-        )
-
-    if profile == "ci" and validate:
-        raise typer.BadParameter(
-            "The ci profile is deterministic and does not "
-            "perform active finding validation."
-        )
-
-    if profile == "ci" and regression:
-        raise typer.BadParameter(
-            "The ci profile does not run application regression "
-            "tests."
         )
 
     if len(validation_endpoint) > len(
@@ -326,6 +293,18 @@ def _build_validation_requests(
 def _print_scan_summary(result) -> None:
     """Print a concise scan summary."""
     pipeline = result.pipeline
+    decision = pipeline.release_gate
+
+    status = decision.status.lower()
+
+    if status == "passed":
+        display_status = "PASS"
+    elif status == "review":
+        display_status = "REVIEW"
+    elif status == "blocked":
+        display_status = "BLOCK"
+    else:
+        display_status = status.upper()
 
     typer.echo("")
     typer.echo("SecureForge Scan Complete")
@@ -335,7 +314,7 @@ def _print_scan_summary(result) -> None:
     )
 
     typer.echo(
-        f"Release: {pipeline.release_gate.status.upper()}"
+        f"Release: {display_status}"
     )
 
     if pipeline.validation is not None:
@@ -360,13 +339,14 @@ def _print_scan_summary(result) -> None:
         )
 
     typer.echo(
-        f"Decision: {pipeline.release_gate.status}"
+        f"Decision: {decision.status}"
     )
 
     typer.echo(
-        f"Reason: {pipeline.release_gate.reason}"
+        f"Reason: {decision.reason}"
     )
 
 
 if __name__ == "__main__":
     app()
+
