@@ -23,8 +23,6 @@ ValidationAssessment = namedtuple(
 def assess_validation(result: ValidationResult) -> ValidationAssessment:
 """Convert a validation result into an actionable assessment."""
     outcome = result.outcome
-    
-    
     confirmed = outcome == ValidationOutcome.CONFIRMED
     rejected = outcome == ValidationOutcome.REJECTED
     inconclusive = outcome == ValidationOutcome.INCONCLUSIVE
