@@ -1,27 +1,28 @@
 """Release-gate components for SecureForge."""
 
 from .engine import (
-ReleaseGateEngine,
+    ReleaseGateEngine,
 )
 from .evaluator import (
-ReleaseGateEvaluator,
+    ReleaseGateEvaluator,
 )
 from .models import (
-ReleaseGateAction,
-ReleaseGateDecision,
-ReleaseGateStatus,
+    ReleaseGateAction,
+    ReleaseGateDecision,
+    ReleaseGateStatus,
 )
 from .regression import (
-RegressionGateResult,
-build_regression_gate_result,
+    RegressionGateResult,
+    build_regression_gate_result,
 )
 
-**all** = [
-"ReleaseGateAction",
-"ReleaseGateDecision",
-"ReleaseGateEngine",
-"ReleaseGateEvaluator",
-"ReleaseGateStatus",
-"RegressionGateResult",
-"build_regression_gate_result",
+
+__all__ = [
+    "ReleaseGateAction",
+    "ReleaseGateDecision",
+    "ReleaseGateEngine",
+    "ReleaseGateEvaluator",
+    "ReleaseGateStatus",
+    "RegressionGateResult",
+    "build_regression_gate_result",
 ]
