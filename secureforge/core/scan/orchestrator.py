@@ -1,133 +1,82 @@
-```python id="r6k2mv"
+```python id="8k4n1q"
 """Scan orchestration for SecureForge."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
+from pathlib import Path
 
-from secureforge.core.findings.models import Finding
-from secureforge.core.scan.models import (
-    ScanExecution,
-)
-from secureforge.regression import (
-    RegressionGateDecision,
-    RegressionSuiteResult,
-)
+from secureforge.validation.models import ValidationRequest
 
+from .models import ScanExecution, SecurityScanResult
 from .runner import ScanRunner
-from .security_pipeline import (
-    SecurityPipeline,
-    SecurityPipelineResult,
-)
-
-
-@dataclass(frozen=True)
-class SecurityScanResult:
-    """Complete result of a SecureForge security scan."""
-
-    execution: ScanExecution
-    findings: list[Finding]
-    pipeline: SecurityPipelineResult
-
-    @property
-    def release_allowed(self) -> bool:
-        """Return whether the release is allowed."""
-        return self.pipeline.release_allowed
-
-    @property
-    def release_blocked(self) -> bool:
-        """Return whether the release is blocked."""
-        return self.pipeline.release_blocked
-
-    @property
-    def release_status(self) -> str:
-        """Return the final release-gate status."""
-        return self.pipeline.release_gate.status.value
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize the complete scan result."""
-        return {
-            "scan": self.execution.model_dump(),
-            "findings": [
-                finding.model_dump(
-                    mode="json"
-                )
-                for finding in self.findings
-            ],
-            "pipeline": (
-                self.pipeline.summarize(
-                    self.pipeline
-                )
-            ),
-        }
+from .security_pipeline import SecurityPipeline
 
 
 class ScanOrchestrator:
-    """Coordinate scan execution and security evaluation."""
+    """Coordinate tool execution and security verification."""
 
     def __init__(
         self,
         *,
         runner: ScanRunner,
-        pipeline: SecurityPipeline | None = None,
+        pipeline: SecurityPipeline,
     ) -> None:
         self.runner = runner
-        self.pipeline = (
-            pipeline
-            if pipeline is not None
-            else SecurityPipeline()
-        )
+        self.pipeline = pipeline
 
     def run(
         self,
         *,
         scan_id: str,
         profile: str,
-        target: str,
-        source_path: str | None = None,
-        regression_result: RegressionSuiteResult | None = None,
-        regression_gate: RegressionGateDecision | None = None,
+        target: str | None = None,
+        source_path: str | Path | None = None,
+        application: str = "unknown",
+        version: str = "unknown",
+        commit_sha: str | None = None,
+        environment: str = "lab",
+        validation_requests: list[ValidationRequest] | None = None,
+        run_regression: bool = False,
     ) -> SecurityScanResult:
-        """Run a scan and evaluate its security results."""
-        started_at = datetime.now(
-            timezone.utc
-        )
+        """Execute a scan and process its findings."""
+        started_at = datetime.now(timezone.utc)
 
         execution = self.runner.run(
             scan_id=scan_id,
             profile=profile,
             target=target,
             source_path=source_path,
+            application=application,
+            version=version,
+            commit_sha=commit_sha,
+            environment=environment,
         )
 
-        findings = list(
-            execution.findings
+        pipeline_result = self.pipeline.run(
+            execution.findings,
+            validation_requests=validation_requests,
+            run_regression=run_regression,
         )
 
-        pipeline_result = self.pipeline.evaluate(
-            findings,
-            tool_errors=list(
-                execution.errors
-            ),
-            regression=regression_result,
-            regression_gate=regression_gate,
-        )
+        completed_at = datetime.now(timezone.utc)
 
-        completed_at = datetime.now(
-            timezone.utc
-        )
-
-        execution.started_at = (
-            started_at.isoformat()
-        )
-        execution.completed_at = (
-            completed_at.isoformat()
+        scan_execution = ScanExecution(
+            scan_id=scan_id,
+            profile=profile,
+            application=application,
+            version=version,
+            commit_sha=commit_sha,
+            environment=environment,
+            started_at=started_at.isoformat(),
+            completed_at=completed_at.isoformat(),
+            status=execution.status,
+            tools=execution.tools,
+            tool_errors=execution.tool_errors,
         )
 
         return SecurityScanResult(
-            execution=execution,
+            execution=scan_execution,
             findings=pipeline_result.findings,
             pipeline=pipeline_result,
         )
