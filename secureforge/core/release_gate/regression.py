@@ -1,6 +1,6 @@
 """Regression-gate integration helpers for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
