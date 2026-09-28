@@ -1,4 +1,4 @@
-```python id="9c4v7n"
+```python id="8q2m6r"
 """Command-line interface for SecureForge."""
 
 from __future__ import annotations
@@ -7,13 +7,20 @@ from pathlib import Path
 
 import typer
 
+from secureforge import __version__
 from secureforge.cli.scan import ScanCommandConfig, ScanCommandService
-from secureforge.config.factory import build_runtime
-from secureforge.validation.models import ValidationMethod, ValidationRequest
+from secureforge.config.factory import create_runtime
+from secureforge.validation.models import (
+    ValidationMethod,
+    ValidationRequest,
+)
 
 app = typer.Typer(
     name="secureforge",
-    help="Continuous security verification and release gate for web/API applications.",
+    help=(
+        "Continuous security verification and release gate "
+        "for web/API applications."
+    ),
 )
 
 
@@ -84,7 +91,10 @@ def scan(
     ),
     validation_method: str = typer.Option(
         "http",
-        help="Validation method: http, api, command, script, or manual.",
+        help=(
+            "Validation method: http, api, command, "
+            "script, or manual."
+        ),
     ),
     regression: bool = typer.Option(
         False,
@@ -93,32 +103,15 @@ def scan(
     ),
 ) -> None:
     """Run a SecureForge security verification scan."""
-    if not target and not source_path:
-        raise typer.BadParameter(
-            "Provide at least one of --target or --source-path."
-        )
-
-    if profile not in {"quick", "standard", "full"}:
-        raise typer.BadParameter(
-            "Profile must be one of: quick, standard, full."
-        )
-
-    if validate and not validation_finding:
-        raise typer.BadParameter(
-            "--validate requires at least one --validation-finding."
-        )
-
-    if len(validation_endpoint) > len(validation_finding):
-        raise typer.BadParameter(
-            "Number of --validation-endpoint values cannot exceed "
-            "the number of --validation-finding values."
-        )
-
-    if len(validation_payload) > len(validation_finding):
-        raise typer.BadParameter(
-            "Number of --validation-payload values cannot exceed "
-            "the number of --validation-finding values."
-        )
+    _validate_scan_options(
+        profile=profile,
+        target=target,
+        source_path=source_path,
+        validate=validate,
+        validation_finding=validation_finding,
+        validation_endpoint=validation_endpoint,
+        validation_payload=validation_payload,
+    )
 
     try:
         method = ValidationMethod(validation_method)
@@ -136,42 +129,102 @@ def scan(
         target=target,
     )
 
-    runtime = build_runtime(
-        profile=profile,
-        target=target,
-        source_path=source_path,
-    )
-
-    service = ScanCommandService(
-        orchestrator=runtime.orchestrator,
-        store=runtime.store,
-    )
-
-    config = ScanCommandConfig(
-        scan_id=scan_id,
-        profile=profile,
-        target=target,
-        source_path=source_path,
-        application=application,
-        version=version_label,
-        commit_sha=commit_sha,
-        environment=environment,
-        output_directory=output,
-        scan_storage_directory=scan_storage,
-        validation_requests=tuple(validation_requests),
-        run_regression=regression,
-    )
-
     try:
+        runtime = create_runtime(
+            profile=profile,
+            target=target,
+            source_path=source_path,
+        )
+
+        service = ScanCommandService(
+            orchestrator=runtime.orchestrator,
+            store=runtime.store,
+        )
+
+        config = ScanCommandConfig(
+            scan_id=scan_id,
+            profile=profile,
+            target=target,
+            source_path=source_path,
+            application=application,
+            version=version_label,
+            commit_sha=commit_sha,
+            environment=environment,
+            output_directory=output,
+            scan_storage_directory=scan_storage,
+            validation_requests=tuple(
+                validation_requests
+            ),
+            run_regression=regression,
+        )
+
         result = service.run(config)
+
     except Exception as exc:
         typer.echo(
-            f"SecureForge scan failed: {type(exc).__name__}: {exc}",
+            f"SecureForge scan failed: "
+            f"{type(exc).__name__}: {exc}",
             err=True,
         )
         raise typer.Exit(code=1) from exc
 
     _print_scan_summary(result)
+
+
+@app.command()
+def version() -> None:
+    """Display the SecureForge version."""
+    typer.echo(f"SecureForge {__version__}")
+
+
+def _validate_scan_options(
+    *,
+    profile: str,
+    target: str | None,
+    source_path: Path | None,
+    validate: bool,
+    validation_finding: list[str],
+    validation_endpoint: list[str],
+    validation_payload: list[str],
+) -> None:
+    """Validate scan command options."""
+    if not target and not source_path:
+        raise typer.BadParameter(
+            "Provide at least one of --target or --source-path."
+        )
+
+    if profile not in {
+        "quick",
+        "standard",
+        "full",
+    }:
+        raise typer.BadParameter(
+            "Profile must be one of: quick, standard, full."
+        )
+
+    if validate and not validation_finding:
+        raise typer.BadParameter(
+            "--validate requires at least one "
+            "--validation-finding."
+        )
+
+    if len(validation_endpoint) > len(
+        validation_finding
+    ):
+        raise typer.BadParameter(
+            "Number of --validation-endpoint values "
+            "cannot exceed the number of "
+            "--validation-finding values."
+        )
+
+    if len(validation_payload) > len(
+        validation_finding
+    ):
+        raise typer.BadParameter(
+            "Number of --validation-payload values "
+            "cannot exceed the number of "
+            "--validation-finding values."
+        )
 
 
 def _build_validation_requests(
@@ -193,7 +246,9 @@ def _build_validation_requests(
 
     requests: list[ValidationRequest] = []
 
-    for index, finding_id in enumerate(finding_ids):
+    for index, finding_id in enumerate(
+        finding_ids
+    ):
         endpoint = (
             endpoints[index]
             if index < len(endpoints)
@@ -226,9 +281,12 @@ def _print_scan_summary(result) -> None:
     typer.echo("")
     typer.echo("SecureForge Scan Complete")
     typer.echo("-------------------------")
-    typer.echo(f"Findings: {len(pipeline.findings)}")
     typer.echo(
-        f"Release: "
+        f"Findings: {len(pipeline.findings)}"
+    )
+
+    typer.echo(
+        "Release: "
         f"{'PASS' if pipeline.release_allowed else 'BLOCK'}"
     )
 
@@ -241,26 +299,25 @@ def _print_scan_summary(result) -> None:
             f"{pipeline.validation.errors} errors"
         )
 
+    if pipeline.validation_gate is not None:
+        typer.echo(
+            "Validation Gate: "
+            f"{pipeline.validation_gate.status}"
+        )
+
     if pipeline.regression_gate is not None:
         typer.echo(
-            "Regression: "
+            "Regression Gate: "
             f"{pipeline.regression_gate.status}"
         )
 
     typer.echo(
         f"Decision: {pipeline.release_gate.status}"
     )
+
     typer.echo(
         f"Reason: {pipeline.release_gate.reason}"
     )
-
-
-@app.command()
-def version() -> None:
-    """Display the SecureForge version."""
-    from secureforge import __version__
-
-    typer.echo(f"SecureForge {__version__}")
 
 
 if __name__ == "__main__":
