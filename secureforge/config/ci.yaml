@@ -1,0 +1,23 @@
+# SecureForge deterministic CI profile
+
+profile:
+  name: ci
+  description: >
+    Deterministic CI verification profile for testing the
+    SecureForge security pipeline without requiring external
+    scanner executables.
+
+integrations:
+  - ci
+
+security:
+  validation: false
+  regression: false
+
+release_gate:
+  enabled: true
+
+output:
+  formats:
+    - json
+    - html
