@@ -1,6 +1,6 @@
 """Regression gate reporting adapters for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.regression import RegressionGateDecision
 
