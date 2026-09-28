@@ -1,4 +1,3 @@
-```python
 """Validation and retesting models for SecureForge."""
 
 from __future__ import annotations
@@ -64,34 +63,22 @@ class ValidationResult(BaseModel):
     @property
     def confirmed(self) -> bool:
         """Return whether the finding was confirmed."""
-        return (
-            self.outcome
-            == ValidationOutcome.CONFIRMED
-        )
+        return self.outcome == ValidationOutcome.CONFIRMED
 
     @property
     def rejected(self) -> bool:
         """Return whether the finding was rejected."""
-        return (
-            self.outcome
-            == ValidationOutcome.REJECTED
-        )
+        return self.outcome == ValidationOutcome.REJECTED
 
     @property
     def inconclusive(self) -> bool:
         """Return whether validation was inconclusive."""
-        return (
-            self.outcome
-            == ValidationOutcome.INCONCLUSIVE
-        )
+        return self.outcome == ValidationOutcome.INCONCLUSIVE
 
     @property
     def failed(self) -> bool:
         """Return whether validation encountered an error."""
-        return (
-            self.outcome
-            == ValidationOutcome.ERROR
-        )
+        return self.outcome == ValidationOutcome.ERROR
 
 
 class ValidationRequest(BaseModel):
@@ -103,9 +90,7 @@ class ValidationRequest(BaseModel):
 
     finding_id: str
     target: str
-    method: ValidationMethod = (
-        ValidationMethod.HTTP
-    )
+    method: ValidationMethod = ValidationMethod.HTTP
     endpoint: str | None = None
     parameter: str | None = None
     payload: str | None = None
@@ -137,10 +122,7 @@ class RetestResult(BaseModel):
     @property
     def regression_required(self) -> bool:
         """Return whether regression protection should remain active."""
-        return (
-            self.current_outcome
-            == ValidationOutcome.CONFIRMED
-        )
+        return self.current_outcome == ValidationOutcome.CONFIRMED
 
 
 class ValidationSummary(BaseModel):
@@ -173,4 +155,14 @@ class ValidationSummary(BaseModel):
             )
             == self.total
         )
-```
+
+
+__all__ = [
+    "RetestResult",
+    "ValidationEvidence",
+    "ValidationMethod",
+    "ValidationOutcome",
+    "ValidationRequest",
+    "ValidationResult",
+    "ValidationSummary",
+]
