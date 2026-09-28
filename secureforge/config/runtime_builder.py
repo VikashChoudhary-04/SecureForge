@@ -1,6 +1,6 @@
 """Build typed SecureForge scan configuration from runtime YAML."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -20,13 +20,12 @@ profile = _parse_profile(runtime.profile)
 target = _build_target(runtime.target)
 integrations = _build_integrations(runtime.integrations)
 
-```
 return ScanConfiguration(
     profile=profile,
     target=target,
     integrations=integrations,
 )
-```
+
 
 def _parse_profile(
 value: str,
@@ -40,12 +39,11 @@ profile.value
 for profile in ScanProfile
 )
 
-```
+
     raise RuntimeConfigurationError(
         f"Unsupported scan profile '{value}'. "
         f"Choose from: {allowed}."
     ) from exc
-```
 
 def _build_target(
 data: dict[str, Any],
@@ -74,7 +72,6 @@ data: dict[str, Any],
 """Build typed integration configuration objects."""
 integrations: dict[str, IntegrationConfig] = {}
 
-```
 for name, raw_config in data.items():
     if not isinstance(raw_config, dict):
         raise RuntimeConfigurationError(
@@ -109,4 +106,3 @@ for name, raw_config in data.items():
         ) from exc
 
 return integrations
-```
