@@ -1,4 +1,4 @@
-```python id="6p2r8m"
+```python id="7p4m2k"
 """Scan service used by the SecureForge CLI."""
 
 from __future__ import annotations
@@ -9,7 +9,11 @@ from pathlib import Path
 from secureforge.core.scan.models import SecurityScanResult
 from secureforge.core.scan.orchestrator import ScanOrchestrator
 from secureforge.core.scan.store import ScanResultStore
-from secureforge.validation.models import ValidationRequest
+from secureforge.reporting.service import ReportingService
+from secureforge.validation.models import (
+    ValidationMethod,
+    ValidationRequest,
+)
 
 
 @dataclass(frozen=True)
@@ -27,6 +31,8 @@ class ScanCommandConfig:
     output_directory: Path
     scan_storage_directory: Path
     validation_requests: tuple[ValidationRequest, ...] = ()
+    validate_findings: bool = False
+    validation_method: ValidationMethod = ValidationMethod.HTTP
     run_regression: bool = False
 
 
@@ -38,9 +44,15 @@ class ScanCommandService:
         *,
         orchestrator: ScanOrchestrator,
         store: ScanResultStore,
+        reporting: ReportingService | None = None,
     ) -> None:
         self.orchestrator = orchestrator
         self.store = store
+        self.reporting = (
+            reporting
+            if reporting is not None
+            else ReportingService()
+        )
 
     def run(
         self,
@@ -61,6 +73,8 @@ class ScanCommandService:
                 if config.validation_requests
                 else None
             ),
+            validate_findings=config.validate_findings,
+            validation_method=config.validation_method,
             run_regression=config.run_regression,
         )
 
@@ -77,7 +91,7 @@ class ScanCommandService:
         result: SecurityScanResult,
         config: ScanCommandConfig,
     ) -> None:
-        """Persist the scan result and generate report artifacts."""
+        """Persist scan data and generate security reports."""
         config.scan_storage_directory.mkdir(
             parents=True,
             exist_ok=True,
@@ -93,58 +107,8 @@ class ScanCommandService:
             config.scan_storage_directory,
         )
 
-        self._write_json_report(
-            result=result,
-            output_directory=config.output_directory,
+        self.reporting.generate(
+            result,
+            config.output_directory,
         )
-
-        self._write_html_report(
-            result=result,
-            output_directory=config.output_directory,
-        )
-
-    @staticmethod
-    def _write_json_report(
-        *,
-        result: SecurityScanResult,
-        output_directory: Path,
-    ) -> Path:
-        """Write the complete scan result as JSON."""
-        import json
-
-        output_path = output_directory / "security-report.json"
-
-        output_path.write_text(
-            json.dumps(
-                result.pipeline.to_dict(),
-                indent=2,
-                default=str,
-            ),
-            encoding="utf-8",
-        )
-
-        return output_path
-
-    @staticmethod
-    def _write_html_report(
-        *,
-        result: SecurityScanResult,
-        output_directory: Path,
-    ) -> Path:
-        """Write an HTML representation of the scan result."""
-        from secureforge.reporting.html import HTMLReportRenderer
-
-        output_path = output_directory / "security-report.html"
-
-        renderer = HTMLReportRenderer()
-        html = renderer.render(
-            result.pipeline.to_dict()
-        )
-
-        output_path.write_text(
-            html,
-            encoding="utf-8",
-        )
-
-        return output_path
 ```
