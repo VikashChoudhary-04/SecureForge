@@ -10,19 +10,15 @@ def test_help_command_succeeds() -> None:
 """Verify the CLI exposes help successfully."""
 result = runner.invoke(app, ["--help"])
 
-```
 assert result.exit_code == 0
 assert "SecureForge" in result.stdout
-```
 
 def test_version_command_succeeds() -> None:
 """Verify the CLI reports its installed version."""
 result = runner.invoke(app, ["--version"])
 
-```
 assert result.exit_code == 0
 assert "SecureForge 0.1.0" in result.stdout
-```
 
 def test_scan_accepts_quick_profile() -> None:
 """Verify the quick scan profile is accepted."""
@@ -35,10 +31,9 @@ app,
 ],
 )
 
-```
 assert result.exit_code == 0
 assert "Profile: quick" in result.stdout
-```
+
 
 def test_scan_accepts_standard_profile() -> None:
 """Verify the standard scan profile is accepted."""
@@ -51,10 +46,10 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 0
 assert "Profile: standard" in result.stdout
-```
+
 
 def test_scan_accepts_full_profile() -> None:
 """Verify the full scan profile is accepted."""
@@ -67,10 +62,10 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 0
 assert "Profile: full" in result.stdout
-```
+
 
 def test_scan_rejects_invalid_profile() -> None:
 """Verify unsupported scan profiles return a CLI error."""
@@ -83,10 +78,10 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 2
 assert "unsupported profile" in result.stdout
-```
+
 
 def test_report_accepts_json_format() -> None:
 """Verify JSON reporting format is accepted."""
@@ -99,10 +94,10 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 0
 assert "Report format: json" in result.stdout
-```
+
 
 def test_report_accepts_html_format() -> None:
 """Verify HTML reporting format is accepted."""
@@ -115,10 +110,10 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 0
 assert "Report format: html" in result.stdout
-```
+
 
 def test_report_rejects_invalid_format() -> None:
 """Verify unsupported report formats return a CLI error."""
@@ -131,10 +126,10 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 2
 assert "unsupported report format" in result.stdout
-```
+
 
 def test_policy_command_succeeds() -> None:
 """Verify the current policy command is exposed."""
@@ -143,10 +138,10 @@ app,
 ["policy"],
 )
 
-```
+
 assert result.exit_code == 0
 assert "SecureForge Policy Evaluation" in result.stdout
-```
+
 
 def test_regression_command_succeeds() -> None:
 """Verify the regression command is exposed."""
@@ -155,10 +150,10 @@ app,
 ["regression"],
 )
 
-```
+
 assert result.exit_code == 0
 assert "SecureForge Security Regression" in result.stdout
-```
+
 
 def test_validate_requires_finding_id() -> None:
 """Verify finding validation requires a finding identifier."""
@@ -167,9 +162,9 @@ app,
 ["validate"],
 )
 
-```
+
 assert result.exit_code != 0
-```
+
 
 def test_validate_accepts_finding_id() -> None:
 """Verify finding validation accepts a finding identifier."""
@@ -182,7 +177,6 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 0
 assert "Finding: SF-0001" in result.stdout
-```
