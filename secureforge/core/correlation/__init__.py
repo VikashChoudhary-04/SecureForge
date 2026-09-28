@@ -9,7 +9,7 @@ CorrelationLink,
 CorrelationType,
 )
 
-**all** = [
+__all__ = [
 "CorrelationConfidence",
 "CorrelationEngine",
 "CorrelationLink",
