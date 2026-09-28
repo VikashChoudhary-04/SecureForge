@@ -1,4 +1,3 @@
-```python id="4j7p2s"
 """Reporting models for SecureForge."""
 
 from __future__ import annotations
@@ -289,4 +288,3 @@ __all__ = [
     "ValidationReport",
     "ValidationResultReport",
 ]
-```
