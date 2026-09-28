@@ -9,14 +9,15 @@ from secureforge.core.risk import RiskAssessment
 
 from .evaluator import PolicyEvaluator
 from .models import (
-PolicyAction,
-PolicyConfig,
-PolicyDecision,
-PolicyEvaluation,
+    PolicyAction,
+    PolicyConfig,
+    PolicyDecision,
+    PolicyEvaluation,
 )
 
+
 class PolicyEngine:
-"""Evaluate security findings against a configured policy."""
+    """Evaluate security findings against a configured policy."""
 
     _decision_priority = {
         PolicyDecision.PASS: 0,
@@ -43,7 +44,7 @@ class PolicyEngine:
         finding_list = list(findings)
         assessment_list = list(assessments)
         regression_failures = list(
-        failed_regressions or []
+            failed_regressions or []
         )
 
         assessment_map = {
@@ -99,7 +100,7 @@ class PolicyEngine:
                 reasons.append(
                     f"Policy exception "
                     f"'{exception.exception_id}' "
-                f"was applied to {finding.finding_id}."
+                    f"was applied to {finding.finding_id}."
                 )
 
                 continue
@@ -254,7 +255,7 @@ class PolicyEngine:
         return PolicyDecision(
             action.value
         )
-    
+
     def _higher_decision(
         self,
         current: PolicyDecision,
@@ -266,9 +267,9 @@ class PolicyEngine:
             > self._decision_priority[current]
         ):
             return candidate
-    
+
         return current
-    
+
     @staticmethod
     def _unique(
         values: list[str],
@@ -277,14 +278,14 @@ class PolicyEngine:
         return list(
             dict.fromkeys(values)
         )
-    
+
     @staticmethod
     def risk_level_from_string(
         value: str,
     ):
         """Convert a risk-level string into a normalized enum."""
         from secureforge.core.risk import RiskLevel
-    
+
         return RiskLevel(
             value.strip().lower()
         )
