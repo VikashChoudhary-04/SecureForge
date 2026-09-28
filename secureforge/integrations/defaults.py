@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+
 DEFAULT_INTEGRATIONS = (
     "api",
-    "ci",
     "container",
     "dast",
     "iac",
@@ -18,5 +18,11 @@ DEFAULT_INTEGRATIONS = (
 
 
 def default_integration_names() -> tuple[str, ...]:
-    """Return the names of all built-in integrations."""
+    """Return the names of all built-in security integrations."""
     return DEFAULT_INTEGRATIONS
+
+
+__all__ = [
+    "DEFAULT_INTEGRATIONS",
+    "default_integration_names",
+]
