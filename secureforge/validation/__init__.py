@@ -1,7 +1,8 @@
-```python id="6wq2nt"
+```python
 """Security validation and retesting for SecureForge."""
 
 from .api import APIValidator
+from .assessment import ValidationAssessment, assess_many, assess_validation
 from .base import BaseValidator, ValidationError
 from .command import CommandValidator
 from .engine import ValidationEngine
@@ -34,6 +35,7 @@ __all__ = [
     "RetestResult",
     "RetestService",
     "ScriptValidator",
+    "ValidationAssessment",
     "ValidationEngine",
     "ValidationError",
     "ValidationEvidence",
@@ -45,6 +47,8 @@ __all__ = [
     "ValidationSummary",
     "ValidatorRegistry",
     "ValidatorRegistryError",
+    "assess_many",
+    "assess_validation",
     "build_validation_engine",
     "build_validation_registry",
 ]
