@@ -1,4 +1,3 @@
-```python id="9k4m2p"
 """Service layer for SecureForge validation and retesting."""
 
 from __future__ import annotations
@@ -184,4 +183,3 @@ class ValidationService:
 __all__ = [
     "ValidationService",
 ]
-```
