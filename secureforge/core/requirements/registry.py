@@ -1,6 +1,6 @@
 """Registry for SecureForge security requirements."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from collections.abc import Iterable
 
@@ -9,7 +9,6 @@ from .models import RequirementStatus, SecurityRequirement
 class RequirementRegistry:
 """Store and retrieve security requirements by requirement ID."""
 
-```
 def __init__(
     self,
     requirements: Iterable[SecurityRequirement] | None = None,
@@ -168,4 +167,3 @@ def _normalize_id(
 ) -> str:
     """Normalize a requirement identifier."""
     return requirement_id.strip().upper()
-```
