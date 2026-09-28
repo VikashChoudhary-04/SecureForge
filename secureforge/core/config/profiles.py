@@ -24,64 +24,64 @@ class ProfileDefinition:
         
         
         QUICK_PROFILE = ProfileDefinition(
-        profile=ScanProfile.QUICK,
-        description=(
-        "Fast application security verification using "
-        "static analysis, dependency analysis, and secret detection."
-        ),
-        integrations=(
-        "sast",
-        "sca",
-        "secrets",
-        ),
-        )
+                profile=ScanProfile.QUICK,
+                description=(
+                "Fast application security verification using "
+                "static analysis, dependency analysis, and secret detection."
+                ),
+                integrations=(
+                "sast",
+                "sca",
+                "secrets",
+                ),
+                )
         
         STANDARD_PROFILE = ProfileDefinition(
-        profile=ScanProfile.STANDARD,
-        description=(
-        "Balanced security verification covering application, "
-        "API, dynamic, and container security."
-        ),
-        integrations=(
-        "sast",
-        "sca",
-        "secrets",
-        "api",
-        "dast",
-        "container",
-        ),
-        validation_enabled=True,
-        regression_enabled=True,
-        )
+                profile=ScanProfile.STANDARD,
+                description=(
+                "Balanced security verification covering application, "
+                "API, dynamic, and container security."
+                ),
+                integrations=(
+                "sast",
+                "sca",
+                "secrets",
+                "api",
+                "dast",
+                "container",
+                ),
+                validation_enabled=True,
+                regression_enabled=True,
+                )
         
         FULL_PROFILE = ProfileDefinition(
-        profile=ScanProfile.FULL,
-        description=(
-        "Comprehensive verification including application, "
-        "API, infrastructure, container, network, and "
-        "additional security assessment integrations."
-        ),
-        integrations=(
-        "sast",
-        "sca",
-        "secrets",
-        "api",
-        "dast",
-        "container",
-        "iac",
-        "nessus",
-        "nmap",
-        "manual",
-        ),
-        validation_enabled=True,
-        regression_enabled=True,
-        )
+                profile=ScanProfile.FULL,
+                description=(
+                "Comprehensive verification including application, "
+                "API, infrastructure, container, network, and "
+                "additional security assessment integrations."
+                ),
+                integrations=(
+                "sast",
+                "sca",
+                "secrets",
+                "api",
+                "dast",
+                "container",
+                "iac",
+                "nessus",
+                "nmap",
+                "manual",
+                ),
+                validation_enabled=True,
+                regression_enabled=True,
+                )
         
         _PROFILE_MAP: dict[ScanProfile, ProfileDefinition] = {
-        ScanProfile.QUICK: QUICK_PROFILE,
-        ScanProfile.STANDARD: STANDARD_PROFILE,
-        ScanProfile.FULL: FULL_PROFILE,
-        }
+                ScanProfile.QUICK: QUICK_PROFILE,
+                ScanProfile.STANDARD: STANDARD_PROFILE,
+                ScanProfile.FULL: FULL_PROFILE,
+                }
         
         def get_profile(profile: ScanProfile | str) -> ProfileDefinition:
                 """Return the definition for a SecureForge scan profile."""
