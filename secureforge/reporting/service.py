@@ -1,188 +1,137 @@
-```python id="h6q2wr"
-"""Service layer for SecureForge security reporting."""
+```python id="1k6v3p"
+"""Reporting service for SecureForge."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
 from pathlib import Path
 
-from secureforge.core.findings.models import Finding
-from secureforge.core.policy.models import PolicyDecision
-from secureforge.core.release_gate.models import (
-    ReleaseGateDecision,
-)
-from secureforge.core.risk.models import RiskAssessment
-from secureforge.core.scan.orchestrator import (
-    SecurityScanResult,
-)
-from secureforge.regression import (
-    RegressionGateDecision,
-    RegressionSuiteResult,
-)
+from secureforge.core.scan.models import SecurityScanResult
 
-from .builder import SecurityReportBuilder
-from .html import SecurityHTMLReportRenderer
-from .models import (
-    ReleaseMetadata,
-    RemediationReport,
-    ScanMetadata,
-    SecurityReport,
-)
+from .html import HTMLReportRenderer
+from .loader import SecurityReportLoader
+from .models import SecurityReport
 from .scan import build_scan_report
-from .serializers import SecurityReportSerializer
 
 
-@dataclass(frozen=True)
-class ReportPaths:
-    """Output paths for generated security reports."""
-
-    json_path: Path
-    html_path: Path
+class ReportingError(Exception):
+    """Raised when report generation fails."""
 
 
-class SecurityReportService:
-    """Generate complete JSON and HTML security reports."""
+class ReportingService:
+    """Generate and persist SecureForge security reports."""
 
     def __init__(
         self,
         *,
-        builder: SecurityReportBuilder | None = None,
-        serializer: SecurityReportSerializer | None = None,
-        renderer: SecurityHTMLReportRenderer | None = None,
+        renderer: HTMLReportRenderer | None = None,
+        loader: SecurityReportLoader | None = None,
     ) -> None:
-        self.builder = (
-            builder
-            if builder is not None
-            else SecurityReportBuilder()
-        )
-
-        self.serializer = (
-            serializer
-            if serializer is not None
-            else SecurityReportSerializer()
-        )
-
         self.renderer = (
             renderer
             if renderer is not None
-            else SecurityHTMLReportRenderer()
+            else HTMLReportRenderer()
+        )
+        self.loader = (
+            loader
+            if loader is not None
+            else SecurityReportLoader()
         )
 
-    def build_report(
+    def build(
         self,
-        *,
-        release: ReleaseMetadata,
-        scan: ScanMetadata,
-        findings: list[Finding],
-        risk: RiskAssessment,
-        policy: PolicyDecision,
-        decision: ReleaseGateDecision,
-        remediation: RemediationReport | None = None,
-        regression: RegressionSuiteResult | None = None,
-        regression_gate: RegressionGateDecision | None = None,
-        generated_at: str | None = None,
-    ) -> SecurityReport:
-        """Build a report from domain results."""
-        return self.builder.build(
-            release=release,
-            scan=scan,
-            findings=findings,
-            risk=risk,
-            policy=policy,
-            decision=decision,
-            remediation=remediation,
-            regression=regression,
-            regression_gate=regression_gate,
-            generated_at=generated_at,
-        )
-
-    def build_from_scan_result(
-        self,
-        *,
         result: SecurityScanResult,
-        release: ReleaseMetadata,
-        scan: ScanMetadata,
-        generated_at: str | None = None,
     ) -> SecurityReport:
-        """Build a report directly from a completed scan result."""
-        return build_scan_report(
-            result,
-            release=release,
-            scan=scan,
-            generated_at=generated_at,
+        """Build a validated security report."""
+        return build_scan_report(result)
+
+    def write_json(
+        self,
+        report: SecurityReport,
+        output_path: Path,
+    ) -> Path:
+        """Write a security report as JSON."""
+        output_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
         )
+
+        try:
+            output_path.write_text(
+                json.dumps(
+                    report.model_dump(mode="json"),
+                    indent=2,
+                    sort_keys=True,
+                ),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            raise ReportingError(
+                f"Unable to write JSON report: {exc}"
+            ) from exc
+
+        return output_path
+
+    def write_html(
+        self,
+        report: SecurityReport,
+        output_path: Path,
+    ) -> Path:
+        """Render and write a security report as HTML."""
+        output_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        try:
+            html = self.renderer.render(report)
+
+            output_path.write_text(
+                html,
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            raise ReportingError(
+                f"Unable to write HTML report: {exc}"
+            ) from exc
+
+        return output_path
 
     def generate(
         self,
-        report: SecurityReport,
-        paths: ReportPaths,
-    ) -> ReportPaths:
-        """Write both JSON and HTML report files."""
-        self.serializer.write_json(
-            report,
-            paths.json_path,
-        )
-
-        self.renderer.write_html(
-            report,
-            paths.html_path,
-        )
-
-        return paths
-
-    def generate_from_results(
-        self,
-        *,
-        release: ReleaseMetadata,
-        scan: ScanMetadata,
-        findings: list[Finding],
-        risk: RiskAssessment,
-        policy: PolicyDecision,
-        decision: ReleaseGateDecision,
-        paths: ReportPaths,
-        remediation: RemediationReport | None = None,
-        regression: RegressionSuiteResult | None = None,
-        regression_gate: RegressionGateDecision | None = None,
-        generated_at: str | None = None,
-    ) -> ReportPaths:
-        """Build and write a complete security report."""
-        report = self.build_report(
-            release=release,
-            scan=scan,
-            findings=findings,
-            risk=risk,
-            policy=policy,
-            decision=decision,
-            remediation=remediation,
-            regression=regression,
-            regression_gate=regression_gate,
-            generated_at=generated_at,
-        )
-
-        return self.generate(
-            report,
-            paths,
-        )
-
-    def generate_from_scan_result(
-        self,
-        *,
         result: SecurityScanResult,
-        release: ReleaseMetadata,
-        scan: ScanMetadata,
-        paths: ReportPaths,
-        generated_at: str | None = None,
-    ) -> ReportPaths:
-        """Build and write reports directly from a scan result."""
-        report = self.build_from_scan_result(
-            result=result,
-            release=release,
-            scan=scan,
-            generated_at=generated_at,
+        output_directory: Path,
+    ) -> SecurityReport:
+        """Build and persist both JSON and HTML reports."""
+        output_directory.mkdir(
+            parents=True,
+            exist_ok=True,
         )
 
-        return self.generate(
+        report = self.build(result)
+
+        self.write_json(
             report,
-            paths,
+            output_directory / "security-report.json",
         )
+
+        self.write_html(
+            report,
+            output_directory / "security-report.html",
+        )
+
+        return report
+
+    def load(
+        self,
+        input_path: Path,
+    ) -> SecurityReport:
+        """Load and validate an existing security report."""
+        return self.loader.load(input_path)
+
+
+__all__ = [
+    "ReportingError",
+    "ReportingService",
+]
 ```
