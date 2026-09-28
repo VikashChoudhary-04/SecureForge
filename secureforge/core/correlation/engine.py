@@ -1,6 +1,6 @@
 """Correlation engine for combining related SecureForge findings."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from collections.abc import Iterable
 
@@ -209,4 +209,3 @@ def _build_correlated_id(
     )
 
     return f"CORR-{first}-{second}"
-```
