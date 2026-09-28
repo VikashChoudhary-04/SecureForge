@@ -1,6 +1,6 @@
 """Policy evaluation engine for SecureForge."""
 
-from __future__ import annotations
+from **future** import annotations
 
 from collections.abc import Iterable
 
@@ -92,12 +92,14 @@ def evaluate(
             exceptions_applied.append(
                 exception.exception_id
             )
+
             passed_findings.append(
                 finding.finding_id
             )
 
             reasons.append(
-                f"Policy exception '{exception.exception_id}' "
+                f"Policy exception "
+                f"'{exception.exception_id}' "
                 f"was applied to {finding.finding_id}."
             )
 
@@ -140,8 +142,8 @@ def evaluate(
             )
 
             reasons.append(
-                f"{finding.finding_id} triggered blocking "
-                f"rule {rule.rule_id}."
+                f"{finding.finding_id} triggered "
+                f"blocking rule {rule.rule_id}."
             )
 
         elif decision == PolicyDecision.REVIEW:
@@ -150,8 +152,8 @@ def evaluate(
             )
 
             reasons.append(
-                f"{finding.finding_id} triggered review "
-                f"rule {rule.rule_id}."
+                f"{finding.finding_id} triggered "
+                f"review rule {rule.rule_id}."
             )
 
         else:
@@ -160,8 +162,8 @@ def evaluate(
             )
 
             reasons.append(
-                f"{finding.finding_id} passed rule "
-                f"{rule.rule_id}."
+                f"{finding.finding_id} passed "
+                f"rule {rule.rule_id}."
             )
 
         final_decision = self._higher_decision(
@@ -181,6 +183,7 @@ def evaluate(
                 + ", ".join(regression_failures)
                 + "."
             )
+
         else:
             final_decision = self._higher_decision(
                 final_decision,
@@ -205,6 +208,7 @@ def evaluate(
                 f"{tool_errors} security tool execution "
                 "error(s) were encountered."
             )
+
         else:
             final_decision = self._higher_decision(
                 final_decision,
@@ -285,4 +289,3 @@ def risk_level_from_string(
     return RiskLevel(
         value.strip().lower()
     )
-```
