@@ -1,4 +1,3 @@
-```yaml
 # SecureForge CI security verification
 
 name: SecureForge Security Verification
@@ -40,16 +39,16 @@ jobs:
         run: |
           pytest -q
 
-      - name: Run SecureForge quick verification
+      - name: Run deterministic SecureForge CI verification
         run: |
           secureforge scan \
-            --profile quick \
+            --profile ci \
             --source-path . \
             --scan-id "github-${{ github.run_id }}" \
             --application "SecureForge" \
             --version "${{ github.sha }}" \
             --commit-sha "${{ github.sha }}" \
-            --environment "ci" \
+            --environment ci \
             --output reports/ci \
             --scan-storage .secureforge/scans
 
@@ -62,4 +61,4 @@ jobs:
             reports/ci/
             .secureforge/scans/
           if-no-files-found: ignore
-```
+
