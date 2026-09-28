@@ -1,38 +1,22 @@
-"""Default SecureForge integration registry."""
+"""Default SecureForge integration definitions."""
 
-from **future** import annotations
+from __future__ import annotations
 
-from secureforge.integrations.api import GenericAPIIntegration
-from secureforge.integrations.container import GenericContainerIntegration
-from secureforge.integrations.dast import GenericDASTIntegration
-from secureforge.integrations.iac import GenericIACIntegration
-from secureforge.integrations.manual import ManualEvidenceIntegration
-from secureforge.integrations.nessus import GenericNessusIntegration
-from secureforge.integrations.nmap import GenericNmapIntegration
-from secureforge.integrations.registry import IntegrationRegistry
-from secureforge.integrations.sast import GenericSASTIntegration
-from secureforge.integrations.sca import GenericSCAIntegration
-from secureforge.integrations.secrets import GenericSecretsIntegration
-
-def build_default_registry() -> IntegrationRegistry:
-"""Build a registry containing all built-in integrations."""
-registry = IntegrationRegistry()
-
-```
-registry.register_many(
-    [
-        GenericSASTIntegration(),
-        GenericSCAIntegration(),
-        GenericSecretsIntegration(),
-        GenericAPIIntegration(),
-        GenericDASTIntegration(),
-        GenericContainerIntegration(),
-        GenericIACIntegration(),
-        GenericNessusIntegration(),
-        GenericNmapIntegration(),
-        ManualEvidenceIntegration(),
-    ]
+DEFAULT_INTEGRATIONS = (
+    "api",
+    "ci",
+    "container",
+    "dast",
+    "iac",
+    "manual",
+    "nessus",
+    "nmap",
+    "sast",
+    "sca",
+    "secrets",
 )
 
-return registry
-```
+
+def default_integration_names() -> tuple[str, ...]:
+    """Return the names of all built-in integrations."""
+    return DEFAULT_INTEGRATIONS
