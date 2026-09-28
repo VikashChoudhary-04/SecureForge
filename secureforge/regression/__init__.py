@@ -51,7 +51,7 @@ RegressionServiceConfiguration,
 build_regression_service,
 )
 
-**all** = [
+__all__ = [
 "DuplicateRegressionTestError",
 "RegressionAssessment",
 "RegressionConfigurationError",
