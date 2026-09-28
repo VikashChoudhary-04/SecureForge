@@ -1,4 +1,4 @@
-```python id="8k4n1q"
+```python id="6m2q8v"
 """Scan orchestration for SecureForge."""
 
 from __future__ import annotations
@@ -6,7 +6,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from secureforge.validation.models import ValidationRequest
+from secureforge.validation.models import (
+    ValidationMethod,
+    ValidationRequest,
+)
+from secureforge.validation.planner import ValidationPlanner
 
 from .models import ScanExecution, SecurityScanResult
 from .runner import ScanRunner
@@ -21,9 +25,15 @@ class ScanOrchestrator:
         *,
         runner: ScanRunner,
         pipeline: SecurityPipeline,
+        validation_planner: ValidationPlanner | None = None,
     ) -> None:
         self.runner = runner
         self.pipeline = pipeline
+        self.validation_planner = (
+            validation_planner
+            if validation_planner is not None
+            else ValidationPlanner()
+        )
 
     def run(
         self,
@@ -37,6 +47,8 @@ class ScanOrchestrator:
         commit_sha: str | None = None,
         environment: str = "lab",
         validation_requests: list[ValidationRequest] | None = None,
+        validate_findings: bool = False,
+        validation_method: ValidationMethod = ValidationMethod.HTTP,
         run_regression: bool = False,
     ) -> SecurityScanResult:
         """Execute a scan and process its findings."""
@@ -53,9 +65,29 @@ class ScanOrchestrator:
             environment=environment,
         )
 
+        planned_validation_requests = (
+            self._plan_validation_requests(
+                findings=execution.findings,
+                target=target,
+                method=validation_method,
+            )
+            if validate_findings
+            else []
+        )
+
+        effective_validation_requests = (
+            validation_requests
+            if validation_requests is not None
+            else planned_validation_requests
+        )
+
         pipeline_result = self.pipeline.run(
             execution.findings,
-            validation_requests=validation_requests,
+            validation_requests=(
+                effective_validation_requests
+                if effective_validation_requests
+                else None
+            ),
             run_regression=run_regression,
         )
 
@@ -80,4 +112,23 @@ class ScanOrchestrator:
             findings=pipeline_result.findings,
             pipeline=pipeline_result,
         )
+
+    def _plan_validation_requests(
+        self,
+        *,
+        findings,
+        target: str | None,
+        method: ValidationMethod,
+    ) -> list[ValidationRequest]:
+        """Build validation requests from scanner findings."""
+        if not target:
+            return []
+
+        plan = self.validation_planner.plan(
+            findings,
+            target=target,
+            method=method,
+        )
+
+        return list(plan.requests)
 ```
