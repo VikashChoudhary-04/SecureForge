@@ -1,88 +1,46 @@
-"""Release-gate models used by SecureForge."""
+"""Release-gate decision models for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
+from dataclasses import dataclass
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
 
-def utc_now() -> datetime:
-"""Return the current UTC timestamp."""
-return datetime.now(timezone.utc)
+@dataclass(frozen=True)
+class ReleaseGateDecision:
+    """Final decision produced by the SecureForge release gate."""
 
-class ReleaseDecision(str, Enum):
-"""Final SecureForge release decision."""
+    release_allowed: bool
+    status: str
+    reason: str
 
-```
-PASS = "pass"
-REVIEW = "review"
-BLOCK = "block"
-```
+    @property
+    def blocked(self) -> bool:
+        """Return whether the release is blocked."""
+        return not self.release_allowed
 
-class ReleaseGateInput(BaseModel):
-"""Inputs consumed by the release gate."""
+    @property
+    def passed(self) -> bool:
+        """Return whether the release passed."""
+        return self.release_allowed and self.status == "passed"
 
-```
-model_config = ConfigDict(extra="allow")
+    @property
+    def review_required(self) -> bool:
+        """Return whether the release requires review."""
+        return self.release_allowed and self.status == "review"
 
-application: str
-version: str
-commit_sha: str | None = None
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the decision into report-friendly data."""
+        return {
+            "release_allowed": self.release_allowed,
+            "status": self.status,
+            "reason": self.reason,
+            "blocked": self.blocked,
+            "passed": self.passed,
+            "review_required": self.review_required,
+        }
 
-policy_decision: ReleaseDecision
 
-blocking_findings: list[str] = Field(default_factory=list)
-review_findings: list[str] = Field(default_factory=list)
-
-failed_regressions: list[str] = Field(default_factory=list)
-
-tool_errors: list[str] = Field(default_factory=list)
-
-exceptions_applied: list[str] = Field(default_factory=list)
-
-metadata: dict[str, Any] = Field(default_factory=dict)
-```
-
-class ReleaseDecisionRecord(BaseModel):
-"""Complete and traceable release-gate decision."""
-
-```
-model_config = ConfigDict(extra="allow")
-
-application: str
-version: str
-commit_sha: str | None = None
-
-decision: ReleaseDecision
-
-reasons: list[str] = Field(default_factory=list)
-
-blocking_findings: list[str] = Field(default_factory=list)
-review_findings: list[str] = Field(default_factory=list)
-
-failed_regressions: list[str] = Field(default_factory=list)
-tool_errors: list[str] = Field(default_factory=list)
-
-exceptions_applied: list[str] = Field(default_factory=list)
-
-evaluated_at: datetime = Field(default_factory=utc_now)
-
-metadata: dict[str, Any] = Field(default_factory=dict)
-
-@property
-def is_blocked(self) -> bool:
-    """Return whether the release is blocked."""
-    return self.decision == ReleaseDecision.BLOCK
-
-@property
-def requires_review(self) -> bool:
-    """Return whether human review is required."""
-    return self.decision == ReleaseDecision.REVIEW
-
-@property
-def passed(self) -> bool:
-    """Return whether the release passed the gate."""
-    return self.decision == ReleaseDecision.PASS
-```
+__all__ = [
+    "ReleaseGateDecision",
+]
