@@ -1,289 +1,110 @@
-```python id="p4x7nm"
-"""Persistent storage for SecureForge scan results."""
+"""Persistence helpers for SecureForge scan results."""
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
+from copy import deepcopy
+from threading import RLock
 from typing import Any
 
-from secureforge.core.scan.orchestrator import (
-    SecurityScanResult,
-)
-
-
-class ScanResultStoreError(Exception):
-    """Raised when a scan result cannot be stored or loaded."""
+from .models import SecurityScanResult
 
 
 class ScanResultStore:
-    """Persist completed SecureForge scan results as JSON."""
+    """In-memory store for scan results.
 
-    def __init__(
-        self,
-        directory: Path = Path("reports/scans"),
-    ) -> None:
-        self.directory = directory
+    The store provides a small persistence abstraction for the current
+    SecureForge implementation. It can later be replaced by a database
+    or artifact-backed implementation without changing CLI consumers.
+    """
+
+    def __init__(self) -> None:
+        self._results: dict[str, SecurityScanResult] = {}
+        self._lock = RLock()
 
     def save(
         self,
         result: SecurityScanResult,
-        *,
-        scan_id: str | None = None,
-    ) -> Path:
-        """Save a complete scan result and return its file path."""
-        identifier = (
-            scan_id
-            if scan_id is not None
-            else result.execution.scan_id
-        )
+    ) -> SecurityScanResult:
+        """Save a scan result and return the stored result."""
+        scan_id = self._scan_id(result)
 
-        self._validate_identifier(
-            identifier
-        )
+        with self._lock:
+            stored = deepcopy(result)
+            self._results[scan_id] = stored
+            return deepcopy(stored)
 
-        self.directory.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        path = self.path_for(
-            identifier
-        )
-
-        try:
-            payload = self._serialize(
-                result
-            )
-
-            path.write_text(
-                json.dumps(
-                    payload,
-                    indent=2,
-                    sort_keys=True,
-                    default=str,
-                ),
-                encoding="utf-8",
-            )
-        except (OSError, TypeError, ValueError) as exc:
-            raise ScanResultStoreError(
-                f"Unable to save scan result: {exc}"
-            ) from exc
-
-        return path
-
-    def load(
+    def get(
         self,
         scan_id: str,
-    ) -> dict[str, Any]:
-        """Load a persisted scan result."""
-        self._validate_identifier(
-            scan_id
-        )
+    ) -> SecurityScanResult | None:
+        """Return a scan result by scan ID."""
+        with self._lock:
+            result = self._results.get(scan_id)
 
-        path = self.path_for(
-            scan_id
-        )
+            if result is None:
+                return None
 
-        if not path.exists():
-            raise ScanResultStoreError(
-                f"Scan result not found: {path}"
+            return deepcopy(result)
+
+    def require(
+        self,
+        scan_id: str,
+    ) -> SecurityScanResult:
+        """Return a scan result or raise KeyError."""
+        result = self.get(scan_id)
+
+        if result is None:
+            raise KeyError(
+                f"Scan result '{scan_id}' was not found."
             )
 
-        if not path.is_file():
-            raise ScanResultStoreError(
-                f"Scan result path is not a file: {path}"
-            )
+        return result
 
-        try:
-            payload = json.loads(
-                path.read_text(
-                    encoding="utf-8"
-                )
-            )
-        except OSError as exc:
-            raise ScanResultStoreError(
-                f"Unable to read scan result: {exc}"
-            ) from exc
-        except json.JSONDecodeError as exc:
-            raise ScanResultStoreError(
-                f"Scan result contains invalid JSON: {exc}"
-            ) from exc
+    def delete(
+        self,
+        scan_id: str,
+    ) -> bool:
+        """Delete a stored scan result."""
+        with self._lock:
+            return self._results.pop(
+                scan_id,
+                None,
+            ) is not None
 
-        if not isinstance(
-            payload,
-            dict,
-        ):
-            raise ScanResultStoreError(
-                "Stored scan result must contain a JSON object."
-            )
+    def list(
+        self,
+    ) -> list[SecurityScanResult]:
+        """Return all stored scan results."""
+        with self._lock:
+            return [
+                deepcopy(result)
+                for result in self._results.values()
+            ]
 
-        self._validate_payload(
-            payload
-        )
-
-        return payload
+    def clear(self) -> None:
+        """Remove all stored scan results."""
+        with self._lock:
+            self._results.clear()
 
     def exists(
         self,
         scan_id: str,
     ) -> bool:
-        """Return whether a stored scan result exists."""
-        self._validate_identifier(
-            scan_id
-        )
-
-        return self.path_for(
-            scan_id
-        ).is_file()
-
-    def path_for(
-        self,
-        scan_id: str,
-    ) -> Path:
-        """Return the storage path for a scan identifier."""
-        self._validate_identifier(
-            scan_id
-        )
-
-        return (
-            self.directory
-            / f"{scan_id}.json"
-        )
+        """Return whether a scan result exists."""
+        with self._lock:
+            return scan_id in self._results
 
     @staticmethod
-    def _serialize(
+    def _scan_id(
         result: SecurityScanResult,
-    ) -> dict[str, Any]:
-        """Serialize the complete scan result."""
-        payload = result.to_dict()
+    ) -> str:
+        """Extract the canonical scan ID from a result."""
+        if result.scan_id:
+            return result.scan_id
 
-        pipeline = result.pipeline.to_dict()
+        if result.execution.scan_id:
+            return result.execution.scan_id
 
-        payload["pipeline"] = pipeline
-
-        return payload
-
-    @staticmethod
-    def _validate_identifier(
-        identifier: str,
-    ) -> None:
-        """Validate a scan-result identifier."""
-        if not isinstance(
-            identifier,
-            str,
-        ):
-            raise ScanResultStoreError(
-                "Scan result identifier must be a string."
-            )
-
-        if not identifier.strip():
-            raise ScanResultStoreError(
-                "Scan result identifier must not be empty."
-            )
-
-        if (
-            "/" in identifier
-            or "\\" in identifier
-            or identifier in {".", ".."}
-        ):
-            raise ScanResultStoreError(
-                "Scan result identifier contains an invalid path component."
-            )
-
-    @staticmethod
-    def _validate_payload(
-        payload: dict[str, Any],
-    ) -> None:
-        """Validate the persisted scan-result structure."""
-        required_sections = {
-            "scan",
-            "findings",
-            "pipeline",
-        }
-
-        missing = (
-            required_sections
-            - payload.keys()
+        raise ValueError(
+            "SecurityScanResult must contain a scan ID."
         )
-
-        if missing:
-            missing_values = ", ".join(
-                sorted(missing)
-            )
-
-            raise ScanResultStoreError(
-                "Stored scan result is missing required "
-                f"sections: {missing_values}"
-            )
-
-        if not isinstance(
-            payload["scan"],
-            dict,
-        ):
-            raise ScanResultStoreError(
-                "Stored scan result 'scan' section must be an object."
-            )
-
-        if not isinstance(
-            payload["findings"],
-            list,
-        ):
-            raise ScanResultStoreError(
-                "Stored scan result 'findings' section must be a list."
-            )
-
-        if not isinstance(
-            payload["pipeline"],
-            dict,
-        ):
-            raise ScanResultStoreError(
-                "Stored scan result 'pipeline' section must be an object."
-            )
-
-        pipeline = payload["pipeline"]
-
-        required_pipeline_sections = {
-            "findings",
-            "risk",
-            "policy",
-            "release_gate",
-        }
-
-        missing_pipeline = (
-            required_pipeline_sections
-            - pipeline.keys()
-        )
-
-        if missing_pipeline:
-            missing_values = ", ".join(
-                sorted(missing_pipeline)
-            )
-
-            raise ScanResultStoreError(
-                "Stored pipeline is missing required "
-                f"sections: {missing_values}"
-            )
-
-        if not isinstance(
-            pipeline["findings"],
-            list,
-        ):
-            raise ScanResultStoreError(
-                "Stored pipeline 'findings' must be a list."
-            )
-
-        for section in (
-            "risk",
-            "policy",
-            "release_gate",
-        ):
-            if not isinstance(
-                pipeline[section],
-                dict,
-            ):
-                raise ScanResultStoreError(
-                    "Stored pipeline "
-                    f"'{section}' must be an object."
-                )
-```
