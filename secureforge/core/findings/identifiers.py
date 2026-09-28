@@ -1,6 +1,6 @@
 """Deterministic finding identifier generation for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import hashlib
 import re
