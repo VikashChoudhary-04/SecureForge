@@ -1,6 +1,6 @@
 """Release decision evaluation rules for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from .models import (
 ReleaseDecision,
