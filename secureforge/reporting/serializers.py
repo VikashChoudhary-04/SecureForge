@@ -1,6 +1,6 @@
 """Serialization helpers for SecureForge security reports."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -58,4 +58,3 @@ def write_json(
     )
 
     return output_path
-```
