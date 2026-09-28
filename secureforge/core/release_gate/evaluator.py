@@ -33,7 +33,6 @@ class ReleaseDecisionEvaluator:
                 decision,
                 ReleaseDecision.BLOCK,
             )
-
             reasons.append(
                 "One or more findings triggered "
                 "release-blocking policy conditions."
@@ -44,7 +43,6 @@ class ReleaseDecisionEvaluator:
                 decision,
                 ReleaseDecision.BLOCK,
             )
-
             reasons.append(
                 "One or more security regression tests failed."
             )
@@ -54,7 +52,6 @@ class ReleaseDecisionEvaluator:
                 decision,
                 ReleaseDecision.REVIEW,
             )
-
             reasons.append(
                 "One or more security integrations "
                 "reported execution errors."
@@ -65,7 +62,6 @@ class ReleaseDecisionEvaluator:
                 decision,
                 ReleaseDecision.REVIEW,
             )
-
             reasons.append(
                 "One or more findings require security review."
             )
@@ -92,6 +88,9 @@ class ReleaseDecisionEvaluator:
         decision,
     ) -> ReleaseDecision:
         """Convert a policy decision into a release decision."""
+        if isinstance(decision, ReleaseDecision):
+            return decision
+
         return ReleaseDecision(
             decision.value
         )
@@ -110,3 +109,12 @@ class ReleaseDecisionEvaluator:
             return candidate
 
         return current
+
+
+ReleaseGateEvaluator = ReleaseDecisionEvaluator
+
+
+__all__ = [
+    "ReleaseDecisionEvaluator",
+    "ReleaseGateEvaluator",
+]
