@@ -1,4 +1,3 @@
-```python
 # Validation gate evaluation
 
 from __future__ import annotations
@@ -256,4 +255,3 @@ __all__ = [
     "evaluate_retest_run",
     "evaluate_validation_run",
 ]
-```
