@@ -1,6 +1,6 @@
 """Models for SecureForge security regression testing."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
