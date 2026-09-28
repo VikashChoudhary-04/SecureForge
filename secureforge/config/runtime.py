@@ -1,4 +1,4 @@
-```python id="4m8q2k"
+```python id="8n4m2q"
 """Runtime construction for SecureForge."""
 
 from __future__ import annotations
@@ -14,13 +14,14 @@ from secureforge.core.risk.engine import RiskEngine
 from secureforge.core.scan.orchestrator import ScanOrchestrator
 from secureforge.core.scan.planner import ScanPlanner
 from secureforge.core.scan.runner import ScanRunner
-from secureforge.core.scan.store import ScanResultStore
 from secureforge.core.scan.security_pipeline import SecurityPipeline
+from secureforge.core.scan.store import ScanResultStore
 from secureforge.integrations.registry_factory import (
     build_default_registry,
 )
 from secureforge.regression.engine import RegressionEngine
 from secureforge.validation.factory import build_validation_engine
+from secureforge.validation.planner import ValidationPlanner
 
 
 @dataclass(frozen=True)
@@ -63,14 +64,22 @@ def build_runtime(
 
     correlation_engine = CorrelationEngine()
     risk_engine = RiskEngine()
+
     policy_engine = PolicyEngine(
         configuration.policy
     )
+
     release_gate_engine = ReleaseGateEngine()
+
     regression_engine = RegressionEngine(
         configuration.regression
     )
+
     validation_engine = build_validation_engine()
+
+    validation_planner = ValidationPlanner(
+        validator="secureforge",
+    )
 
     pipeline = SecurityPipeline(
         correlation_engine=correlation_engine,
@@ -84,6 +93,7 @@ def build_runtime(
     orchestrator = ScanOrchestrator(
         runner=runner,
         pipeline=pipeline,
+        validation_planner=validation_planner,
     )
 
     store = ScanResultStore()
@@ -93,4 +103,10 @@ def build_runtime(
         store=store,
         pipeline=pipeline,
     )
+
+
+__all__ = [
+    "SecureForgeRuntime",
+    "build_runtime",
+]
 ```
