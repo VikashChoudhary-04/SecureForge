@@ -1,4 +1,3 @@
-```python id="h6v3q1"
 """Tests for SecureForge configuration loading."""
 
 from __future__ import annotations
@@ -128,4 +127,3 @@ def test_loader_loads_arbitrary_file(
     loaded = loader.load_file(config_path)
 
     assert loaded == configuration
-```
