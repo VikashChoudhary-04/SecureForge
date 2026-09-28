@@ -1,6 +1,6 @@
 """Execution engine for SecureForge security regression tests."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime, timezone
