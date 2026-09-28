@@ -1,5 +1,5 @@
-```python id="6r9v2m"
-"""Serialization helpers for SecureForge validation results."""
+```python
+# Validation serialization helpers
 
 from __future__ import annotations
 
@@ -18,8 +18,10 @@ from .models import (
 def validation_result_to_dict(
     result: ValidationResult,
 ) -> dict[str, Any]:
-    """Convert a validation result to a JSON-compatible dictionary."""
-    data = result.model_dump(mode="json")
+    """Convert a validation result into report-safe data."""
+    data = result.model_dump(
+        mode="json"
+    )
 
     data["confirmed"] = result.confirmed
     data["rejected"] = result.rejected
@@ -29,10 +31,32 @@ def validation_result_to_dict(
     return data
 
 
+def retest_result_to_dict(
+    result: RetestResult,
+) -> dict[str, Any]:
+    """Convert a retest result into report-safe data."""
+    data = result.model_dump(
+        mode="json"
+    )
+
+    data["fixed"] = result.fixed
+    data["regression_required"] = (
+        result.regression_required
+    )
+
+    data["validation"] = (
+        validation_result_to_dict(
+            result.validation
+        )
+    )
+
+    return data
+
+
 def validation_summary_to_dict(
     summary: ValidationSummary,
 ) -> dict[str, Any]:
-    """Convert a validation summary to a JSON-compatible dictionary."""
+    """Convert a validation summary into report-safe data."""
     return {
         "total": summary.total,
         "confirmed": summary.confirmed,
@@ -42,34 +66,18 @@ def validation_summary_to_dict(
         "remediated": summary.remediated,
         "all_validated": summary.all_validated,
         "results": [
-            validation_result_to_dict(result)
+            validation_result_to_dict(
+                result
+            )
             for result in summary.results
         ],
     }
 
 
-def retest_result_to_dict(
-    result: RetestResult,
-) -> dict[str, Any]:
-    """Convert a retest result to a JSON-compatible dictionary."""
-    data = result.model_dump(mode="json")
-
-    data["fixed"] = result.fixed
-    data["regression_required"] = (
-        result.regression_required
-    )
-
-    data["validation"] = validation_result_to_dict(
-        result.validation
-    )
-
-    return data
-
-
 def assessment_to_dict(
     assessment: ValidationAssessment,
 ) -> dict[str, Any]:
-    """Convert a validation assessment to a dictionary."""
+    """Convert a validation assessment into report-safe data."""
     return {
         "finding_id": assessment.finding_id,
         "outcome": assessment.outcome.value,
@@ -77,8 +85,12 @@ def assessment_to_dict(
         "rejected": assessment.rejected,
         "inconclusive": assessment.inconclusive,
         "errored": assessment.errored,
-        "remediation_verified": assessment.remediation_verified,
-        "regression_required": assessment.regression_required,
+        "remediation_verified": (
+            assessment.remediation_verified
+        ),
+        "regression_required": (
+            assessment.regression_required
+        ),
         "status": assessment.status,
         "reason": assessment.reason,
         "resolved": assessment.resolved,
@@ -89,7 +101,7 @@ def assessment_to_dict(
 def gate_decision_to_dict(
     decision: ValidationGateDecision,
 ) -> dict[str, Any]:
-    """Convert a validation-gate decision to a dictionary."""
+    """Convert a validation-gate decision into report-safe data."""
     return {
         "allowed": decision.allowed,
         "blocked": decision.blocked,
@@ -110,45 +122,74 @@ def gate_decision_to_dict(
         "errored_findings": list(
             decision.errored_findings
         ),
-        "requires_attention": decision.requires_attention,
+        "requires_attention": (
+            decision.requires_attention
+        ),
     }
+
+
+def validation_results_to_dict(
+    results: list[ValidationResult],
+) -> list[dict[str, Any]]:
+    """Convert multiple validation results."""
+    return [
+        validation_result_to_dict(result)
+        for result in results
+    ]
+
+
+def retest_results_to_dict(
+    results: list[RetestResult],
+) -> list[dict[str, Any]]:
+    """Convert multiple retest results."""
+    return [
+        retest_result_to_dict(result)
+        for result in results
+    ]
+
+
+def assessments_to_dict(
+    assessments: list[ValidationAssessment],
+) -> list[dict[str, Any]]:
+    """Convert multiple validation assessments."""
+    return [
+        assessment_to_dict(assessment)
+        for assessment in assessments
+    ]
 
 
 def dumps_validation_result(
     result: ValidationResult,
-    *,
-    indent: int = 2,
 ) -> str:
-    """Serialize a validation result as JSON."""
+    """Serialize one validation result to JSON."""
     return json.dumps(
         validation_result_to_dict(result),
-        indent=indent,
+        indent=2,
         sort_keys=True,
     )
 
 
 def dumps_validation_summary(
     summary: ValidationSummary,
-    *,
-    indent: int = 2,
 ) -> str:
-    """Serialize a validation summary as JSON."""
+    """Serialize a validation summary to JSON."""
     return json.dumps(
         validation_summary_to_dict(summary),
-        indent=indent,
+        indent=2,
         sort_keys=True,
     )
 
 
-def dumps_retest_result(
-    result: RetestResult,
-    *,
-    indent: int = 2,
-) -> str:
-    """Serialize a retest result as JSON."""
-    return json.dumps(
-        retest_result_to_dict(result),
-        indent=indent,
-        sort_keys=True,
-    )
+__all__ = [
+    "assessment_to_dict",
+    "assessments_to_dict",
+    "dumps_validation_result",
+    "dumps_validation_summary",
+    "gate_decision_to_dict",
+    "retest_result_to_dict",
+    "retest_results_to_dict",
+    "validation_result_to_dict",
+    "validation_results_to_dict",
+    "validation_summary_to_dict",
+]
 ```
