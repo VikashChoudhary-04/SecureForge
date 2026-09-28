@@ -1,251 +1,150 @@
-```python id="n6v4xr"
-"""SecureForge scan command service."""
+```python id="6p2r8m"
+"""Scan service used by the SecureForge CLI."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from datetime import datetime
 
-from secureforge.config.runtime_builder import (
-    RuntimeConfigurationError,
-)
-from secureforge.core.config.models import ScanProfile
-from secureforge.core.scan import (
-    ScanOrchestrator,
-    ScanResultStore,
-    ScanRunner,
-    SecurityScanResult,
-)
-from secureforge.integrations.registry_factory import (
-    build_default_integration_registry,
-)
-from secureforge.reporting import (
-    ReleaseMetadata,
-    ReportPaths,
-    ScanMetadata,
-    SecurityReportService,
-)
+from secureforge.core.scan.models import SecurityScanResult
+from secureforge.core.scan.orchestrator import ScanOrchestrator
+from secureforge.core.scan.store import ScanResultStore
+from secureforge.validation.models import ValidationRequest
 
 
 @dataclass(frozen=True)
-class ScanCommandConfiguration:
-    """Configuration supplied to the SecureForge scan command."""
+class ScanCommandConfig:
+    """Configuration for a SecureForge scan command."""
 
     scan_id: str
-    profile: ScanProfile
-    target: str
-    source_path: Path | None = None
-    application: str = "secureforge-target"
-    version: str = "unknown"
-    commit_sha: str = "unknown"
-    environment: str = "local"
-    output_directory: Path = Path("reports")
-    scan_storage_directory: Path = Path(
-        "reports/scans"
-    )
+    profile: str
+    target: str | None
+    source_path: Path | None
+    application: str
+    version: str
+    commit_sha: str | None
+    environment: str
+    output_directory: Path
+    scan_storage_directory: Path
+    validation_requests: tuple[ValidationRequest, ...] = ()
+    run_regression: bool = False
 
 
 class ScanCommandService:
-    """Execute SecureForge scans and persist their results."""
+    """Execute scans and persist their results."""
 
     def __init__(
         self,
         *,
-        orchestrator: ScanOrchestrator | None = None,
-        reporting_service: SecurityReportService | None = None,
-        scan_store: ScanResultStore | None = None,
+        orchestrator: ScanOrchestrator,
+        store: ScanResultStore,
     ) -> None:
-        if orchestrator is not None:
-            self.orchestrator = orchestrator
-        else:
-            registry = (
-                build_default_integration_registry()
-            )
-
-            runner = ScanRunner(
-                registry=registry
-            )
-
-            self.orchestrator = ScanOrchestrator(
-                runner=runner
-            )
-
-        self.reporting_service = (
-            reporting_service
-            if reporting_service is not None
-            else SecurityReportService()
-        )
-
-        self.scan_store = (
-            scan_store
-            if scan_store is not None
-            else ScanResultStore()
-        )
+        self.orchestrator = orchestrator
+        self.store = store
 
     def run(
         self,
-        configuration: ScanCommandConfiguration,
+        config: ScanCommandConfig,
     ) -> SecurityScanResult:
-        """Execute, persist, and report a configured security scan."""
-        self._validate_configuration(
-            configuration
-        )
-
+        """Execute and persist a configured scan."""
         result = self.orchestrator.run(
-            scan_id=configuration.scan_id,
-            profile=configuration.profile.value,
-            target=configuration.target,
-            source_path=(
-                str(configuration.source_path)
-                if configuration.source_path is not None
+            scan_id=config.scan_id,
+            profile=config.profile,
+            target=config.target,
+            source_path=config.source_path,
+            application=config.application,
+            version=config.version,
+            commit_sha=config.commit_sha,
+            environment=config.environment,
+            validation_requests=(
+                list(config.validation_requests)
+                if config.validation_requests
                 else None
             ),
+            run_regression=config.run_regression,
         )
 
-        self._persist_scan_result(
+        self._persist_result(
             result=result,
-            configuration=configuration,
-        )
-
-        self._generate_reports(
-            result=result,
-            configuration=configuration,
+            config=config,
         )
 
         return result
 
-    def _persist_scan_result(
+    def _persist_result(
         self,
         *,
         result: SecurityScanResult,
-        configuration: ScanCommandConfiguration,
-    ) -> Path:
-        """Persist the complete scan result."""
-        store = (
-            self.scan_store
-            if configuration.scan_storage_directory
-            == self.scan_store.directory
-            else ScanResultStore(
-                directory=(
-                    configuration.scan_storage_directory
-                )
-            )
+        config: ScanCommandConfig,
+    ) -> None:
+        """Persist the scan result and generate report artifacts."""
+        config.scan_storage_directory.mkdir(
+            parents=True,
+            exist_ok=True,
         )
 
-        return store.save(
+        config.output_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        self.store.save(
             result,
-            scan_id=configuration.scan_id,
+            config.scan_storage_directory,
         )
 
-    def _generate_reports(
-        self,
-        *,
-        result: SecurityScanResult,
-        configuration: ScanCommandConfiguration,
-    ) -> ReportPaths:
-        """Generate JSON and HTML reports for a completed scan."""
-        started_at = (
-            result.execution.started_at
-            or ""
+        self._write_json_report(
+            result=result,
+            output_directory=config.output_directory,
         )
 
-        completed_at = (
-            result.execution.completed_at
-            or ""
-        )
-
-        duration_seconds = 0.0
-
-        if (
-            result.execution.started_at
-            and result.execution.completed_at
-        ):
-            started = datetime.fromisoformat(
-                result.execution.started_at
-            )
-            completed = datetime.fromisoformat(
-                result.execution.completed_at
-            )
-
-            duration_seconds = max(
-                (
-                    completed - started
-                ).total_seconds(),
-                0.0,
-            )
-
-        release = ReleaseMetadata(
-            release_id=configuration.scan_id,
-            application=configuration.application,
-            version=configuration.version,
-            commit_sha=configuration.commit_sha,
-            environment=configuration.environment,
-            timestamp=completed_at,
-        )
-
-        scan = ScanMetadata(
-            scan_id=configuration.scan_id,
-            profile=configuration.profile.value,
-            status=result.execution.status.value,
-            tools=list(
-                result.execution.tools
-            ),
-            started_at=started_at,
-            completed_at=completed_at,
-            duration_seconds=duration_seconds,
-        )
-
-        report = (
-            self.reporting_service.build_from_scan_result(
-                result=result,
-                release=release,
-                scan=scan,
-            )
-        )
-
-        paths = ReportPaths(
-            json_path=(
-                configuration.output_directory
-                / "security-report.json"
-            ),
-            html_path=(
-                configuration.output_directory
-                / "security-report.html"
-            ),
-        )
-
-        return self.reporting_service.generate(
-            report,
-            paths,
+        self._write_html_report(
+            result=result,
+            output_directory=config.output_directory,
         )
 
     @staticmethod
-    def _validate_configuration(
-        configuration: ScanCommandConfiguration,
-    ) -> None:
-        """Validate scan command configuration."""
-        if not configuration.scan_id.strip():
-            raise RuntimeConfigurationError(
-                "Scan ID must not be empty."
-            )
+    def _write_json_report(
+        *,
+        result: SecurityScanResult,
+        output_directory: Path,
+    ) -> Path:
+        """Write the complete scan result as JSON."""
+        import json
 
-        if not configuration.target.strip():
-            raise RuntimeConfigurationError(
-                "Scan target must not be empty."
-            )
+        output_path = output_directory / "security-report.json"
 
-        if (
-            configuration.source_path is not None
-            and not configuration.source_path.exists()
-        ):
-            raise RuntimeConfigurationError(
-                "Source path does not exist: "
-                f"{configuration.source_path}"
-            )
+        output_path.write_text(
+            json.dumps(
+                result.pipeline.to_dict(),
+                indent=2,
+                default=str,
+            ),
+            encoding="utf-8",
+        )
 
+        return output_path
 
-def build_scan_command_service() -> ScanCommandService:
-    """Build the default scan command service."""
-    return ScanCommandService()
+    @staticmethod
+    def _write_html_report(
+        *,
+        result: SecurityScanResult,
+        output_directory: Path,
+    ) -> Path:
+        """Write an HTML representation of the scan result."""
+        from secureforge.reporting.html import HTMLReportRenderer
+
+        output_path = output_directory / "security-report.html"
+
+        renderer = HTMLReportRenderer()
+        html = renderer.render(
+            result.pipeline.to_dict()
+        )
+
+        output_path.write_text(
+            html,
+            encoding="utf-8",
+        )
+
+        return output_path
 ```
