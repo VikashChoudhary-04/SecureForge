@@ -1,14 +1,9 @@
-```python id="d8m4q2"
 """Validator registry for SecureForge."""
 
 from __future__ import annotations
 
-from .base import (
-    BaseValidator,
-)
-from .models import (
-    ValidationRequest,
-)
+from .base import BaseValidator
+from .models import ValidationRequest
 
 
 class ValidatorRegistryError(Exception):
@@ -26,9 +21,7 @@ class ValidatorRegistry:
 
         if validators is not None:
             for validator in validators:
-                self.register(
-                    validator
-                )
+                self.register(validator)
 
     def register(
         self,
@@ -59,18 +52,14 @@ class ValidatorRegistry:
                 f"Validator not registered: {name}"
             )
 
-        return self._validators.pop(
-            name
-        )
+        return self._validators.pop(name)
 
     def get(
         self,
         name: str,
     ) -> BaseValidator:
         """Return a validator by name."""
-        validator = self._validators.get(
-            name
-        )
+        validator = self._validators.get(name)
 
         if validator is None:
             raise ValidatorRegistryError(
@@ -92,27 +81,14 @@ class ValidatorRegistry:
             "No validator supports the requested validation."
         )
 
-    def list(
-        self,
-    ) -> list[BaseValidator]:
+    def list(self) -> list[BaseValidator]:
         """Return registered validators."""
-        return list(
-            self._validators.values()
-        )
+        return list(self._validators.values())
 
-    def names(
-        self,
-    ) -> list[str]:
+    def names(self) -> list[str]:
         """Return registered validator names."""
-        return list(
-            self._validators.keys()
-        )
+        return list(self._validators.keys())
 
-    def __len__(
-        self,
-    ) -> int:
+    def __len__(self) -> int:
         """Return the number of registered validators."""
-        return len(
-            self._validators
-        )
-```
+        return len(self._validators)
