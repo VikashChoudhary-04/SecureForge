@@ -6,112 +6,107 @@ from dataclasses import dataclass
 from typing import Any
 
 from .models import (
-RegressionStatus,
-RegressionSuiteResult,
+    RegressionStatus,
+    RegressionSuiteResult,
 )
+
 
 @dataclass(frozen=True)
 class RegressionAssessment:
-"""Summarize regression results for release-gate evaluation."""
+    """Summarize regression results for release-gate evaluation."""
 
-```
-suite_id: str
-suite_name: str
-status: RegressionStatus
-total: int
-passed: int
-failed: int
-errors: int
-skipped: int
-failed_tests: tuple[str, ...]
-errored_tests: tuple[str, ...]
-skipped_tests: tuple[str, ...]
-release_blocked: bool
+    suite_id: str
+    suite_name: str
+    status: RegressionStatus
+    total: int
+    passed: int
+    failed: int
+    errors: int
+    skipped: int
+    failed_tests: tuple[str, ...]
+    errored_tests: tuple[str, ...]
+    skipped_tests: tuple[str, ...]
+    release_blocked: bool
 
-@property
-def successful(self) -> bool:
-    """Return whether all enabled regressions completed successfully."""
-    return (
-        self.status == RegressionStatus.PASSED
-        and self.failed == 0
-        and self.errors == 0
-    )
+    @property
+    def successful(self) -> bool:
+        """Return whether all enabled regressions completed successfully."""
+        return (
+            self.status == RegressionStatus.PASSED
+            and self.failed == 0
+            and self.errors == 0
+        )
 
-@property
-def failure_ids(self) -> tuple[str, ...]:
-    """Return regression IDs that failed or errored."""
-    return (
-        self.failed_tests
-        + self.errored_tests
-    )
-
-def to_dict(self) -> dict[str, Any]:
-    """Serialize the assessment into a plain dictionary."""
-    return {
-        "suite_id": self.suite_id,
-        "suite_name": self.suite_name,
-        "status": self.status.value,
-        "total": self.total,
-        "passed": self.passed,
-        "failed": self.failed,
-        "errors": self.errors,
-        "skipped": self.skipped,
-        "failed_tests": list(
+    @property
+    def failure_ids(self) -> tuple[str, ...]:
+        """Return regression IDs that failed or errored."""
+        return (
             self.failed_tests
-        ),
-        "errored_tests": list(
-            self.errored_tests
-        ),
-        "skipped_tests": list(
-            self.skipped_tests
-        ),
-        "release_blocked": self.release_blocked,
-    }
-```
+            + self.errored_tests
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the assessment into a plain dictionary."""
+        return {
+            "suite_id": self.suite_id,
+            "suite_name": self.suite_name,
+            "status": self.status.value,
+            "total": self.total,
+            "passed": self.passed,
+            "failed": self.failed,
+            "errors": self.errors,
+            "skipped": self.skipped,
+            "failed_tests": list(self.failed_tests),
+            "errored_tests": list(self.errored_tests),
+            "skipped_tests": list(self.skipped_tests),
+            "release_blocked": self.release_blocked,
+        }
+
 
 def assess_regression_result(
-result: RegressionSuiteResult,
+    result: RegressionSuiteResult,
 ) -> RegressionAssessment:
-"""Convert a regression suite result into a release-gate assessment."""
-failed_tests = tuple(
-regression_result.test_id
-for regression_result in result.results
-if regression_result.status
-== RegressionStatus.FAILED
-)
+    """Convert a regression suite result into a release-gate assessment."""
+    failed_tests = tuple(
+        regression_result.test_id
+        for regression_result in result.results
+        if regression_result.status == RegressionStatus.FAILED
+    )
 
-```
-errored_tests = tuple(
-    regression_result.test_id
-    for regression_result in result.results
-    if regression_result.status
-    == RegressionStatus.ERROR
-)
+    errored_tests = tuple(
+        regression_result.test_id
+        for regression_result in result.results
+        if regression_result.status == RegressionStatus.ERROR
+    )
 
-skipped_tests = tuple(
-    regression_result.test_id
-    for regression_result in result.results
-    if regression_result.status
-    == RegressionStatus.SKIPPED
-)
+    skipped_tests = tuple(
+        regression_result.test_id
+        for regression_result in result.results
+        if regression_result.status == RegressionStatus.SKIPPED
+    )
 
-release_blocked = (
-    bool(failed_tests)
-    or bool(errored_tests)
-)
+    release_blocked = (
+        bool(failed_tests)
+        or bool(errored_tests)
+    )
 
-return RegressionAssessment(
-    suite_id=result.suite_id,
-    suite_name=result.name,
-    status=result.status,
-    total=result.total,
-    passed=result.passed,
-    failed=result.failed,
-    errors=result.errors,
-    skipped=result.skipped,
-    failed_tests=failed_tests,
-    errored_tests=errored_tests,
-    skipped_tests=skipped_tests,
-    release_blocked=release_blocked,
-)
-```
+    return RegressionAssessment(
+        suite_id=result.suite_id,
+        suite_name=result.name,
+        status=result.status,
+        total=result.total,
+        passed=result.passed,
+        failed=result.failed,
+        errors=result.errors,
+        skipped=result.skipped,
+        failed_tests=failed_tests,
+        errored_tests=errored_tests,
+        skipped_tests=skipped_tests,
+        release_blocked=release_blocked,
+    )
+
+
+__all__ = [
+    "RegressionAssessment",
+    "assess_regression_result",
+]
