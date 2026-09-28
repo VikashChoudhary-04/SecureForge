@@ -7,8 +7,11 @@ from .evaluator import (
     ReleaseGateEvaluator,
 )
 from .models import (
+    ReleaseDecision,
+    ReleaseDecisionRecord,
     ReleaseGateAction,
     ReleaseGateDecision,
+    ReleaseGateInput,
     ReleaseGateStatus,
 )
 from .regression import (
@@ -18,10 +21,13 @@ from .regression import (
 
 
 __all__ = [
+    "ReleaseDecision",
+    "ReleaseDecisionRecord",
     "ReleaseGateAction",
     "ReleaseGateDecision",
     "ReleaseGateEngine",
     "ReleaseGateEvaluator",
+    "ReleaseGateInput",
     "ReleaseGateStatus",
     "RegressionGateResult",
     "build_regression_gate_result",
