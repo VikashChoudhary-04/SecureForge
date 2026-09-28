@@ -1,6 +1,6 @@
 """Risk models used by the SecureForge risk engine."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from enum import Enum
 from typing import Any
