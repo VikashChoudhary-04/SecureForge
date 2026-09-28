@@ -1,4 +1,4 @@
-```python
+```python id="5w8k2r"
 """End-to-end security verification pipeline for SecureForge."""
 
 from __future__ import annotations
@@ -26,6 +26,12 @@ from secureforge.validation.models import (
     ValidationRequest,
     ValidationResult,
     ValidationSummary,
+)
+from secureforge.validation.runner import ValidationRun
+from secureforge.validation.serialization import (
+    gate_decision_to_dict,
+    validation_result_to_dict,
+    validation_summary_to_dict,
 )
 from secureforge.validation.service import ValidationService
 
@@ -82,65 +88,31 @@ class SecurityPipelineResult:
                 else None
             ),
             "regression_gate": (
-                {
-                    "allowed": self.regression_gate.allowed,
-                    "blocked": self.regression_gate.blocked,
-                    "status": self.regression_gate.status,
-                    "reason": self.regression_gate.reason,
-                    "failed_tests": list(
-                        self.regression_gate.failed_tests
-                    ),
-                    "errored_tests": list(
-                        self.regression_gate.errored_tests
-                    ),
-                    "skipped_tests": list(
-                        self.regression_gate.skipped_tests
-                    ),
-                    "failures": list(
-                        self.regression_gate.failures
-                    ),
-                }
+                _regression_gate_to_dict(
+                    self.regression_gate
+                )
                 if self.regression_gate is not None
                 else None
             ),
             "validation": (
-                self.validation.model_dump(mode="json")
+                validation_summary_to_dict(
+                    self.validation
+                )
                 if self.validation is not None
                 else None
             ),
             "validation_results": (
                 [
-                    result.model_dump(mode="json")
+                    validation_result_to_dict(result)
                     for result in self.validation_results
                 ]
                 if self.validation_results is not None
                 else None
             ),
             "validation_gate": (
-                {
-                    "allowed": self.validation_gate.allowed,
-                    "blocked": self.validation_gate.blocked,
-                    "status": self.validation_gate.status,
-                    "reason": self.validation_gate.reason,
-                    "confirmed_findings": list(
-                        self.validation_gate.confirmed_findings
-                    ),
-                    "unresolved_findings": list(
-                        self.validation_gate.unresolved_findings
-                    ),
-                    "remediation_verified": list(
-                        self.validation_gate.remediation_verified
-                    ),
-                    "inconclusive_findings": list(
-                        self.validation_gate.inconclusive_findings
-                    ),
-                    "errored_findings": list(
-                        self.validation_gate.errored_findings
-                    ),
-                    "requires_attention": (
-                        self.validation_gate.requires_attention
-                    ),
-                }
+                gate_decision_to_dict(
+                    self.validation_gate
+                )
                 if self.validation_gate is not None
                 else None
             ),
@@ -209,10 +181,12 @@ class SecurityPipeline:
             validation_summary = validation_service.validate_many(
                 validation_requests
             )
+
             validation_results = validation_summary.results
+
             validation_gate = evaluate_validation_run(
-                self._build_validation_run(
-                    validation_summary
+                ValidationRun(
+                    summary=validation_summary
                 )
             )
 
@@ -229,6 +203,7 @@ class SecurityPipeline:
             regression = self.regression_engine.run(
                 correlated_findings
             )
+
             regression_gate = self.regression_engine.evaluate_gate(
                 regression
             )
@@ -285,14 +260,27 @@ class SecurityPipeline:
             validation_gate=validation_gate,
         )
 
-    @staticmethod
-    def _build_validation_run(
-        summary: ValidationSummary,
-    ):
-        """Build the lightweight run object required by the gate."""
-        from secureforge.validation.runner import ValidationRun
 
-        return ValidationRun(
-            summary=summary
-        )
+def _regression_gate_to_dict(
+    decision: RegressionGateDecision,
+) -> dict[str, Any]:
+    """Serialize a regression-gate decision."""
+    return {
+        "allowed": decision.allowed,
+        "blocked": decision.blocked,
+        "status": decision.status,
+        "reason": decision.reason,
+        "failed_tests": list(
+            decision.failed_tests
+        ),
+        "errored_tests": list(
+            decision.errored_tests
+        ),
+        "skipped_tests": list(
+            decision.skipped_tests
+        ),
+        "failures": list(
+            decision.failures
+        ),
+    }
 ```
