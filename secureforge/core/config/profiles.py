@@ -100,7 +100,7 @@ class ProfileDefinition:
                             f"Choose from: {supported}."
                         ) from exc
         
-        return _PROFILE_MAP[profile]
+                return _PROFILE_MAP[profile]
         
         
         def list_profiles() -> list[ProfileDefinition]:
