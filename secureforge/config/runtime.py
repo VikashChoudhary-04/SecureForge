@@ -1,4 +1,3 @@
-```python id="8n4m2q"
 """Runtime construction for SecureForge."""
 
 from __future__ import annotations
@@ -109,4 +108,3 @@ __all__ = [
     "SecureForgeRuntime",
     "build_runtime",
 ]
-```
