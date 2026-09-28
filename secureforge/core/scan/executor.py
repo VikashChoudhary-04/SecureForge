@@ -1,6 +1,6 @@
 """Security tool subprocess execution for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import subprocess
 import time
@@ -201,4 +201,4 @@ def _decode_output(
 def _utc_now() -> datetime:
     """Return the current UTC timestamp."""
     return datetime.now(timezone.utc)
-```
+
