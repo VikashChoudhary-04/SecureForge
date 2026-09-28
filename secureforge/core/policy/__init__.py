@@ -12,7 +12,7 @@ PolicyException,
 PolicyRule,
 )
 
-**all** = [
+__all__ = [
 "PolicyAction",
 "PolicyConfig",
 "PolicyDecision",
