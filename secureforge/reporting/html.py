@@ -1,4 +1,3 @@
-```python id="7p3m9k"
 """HTML report rendering for SecureForge."""
 
 from __future__ import annotations
@@ -791,4 +790,3 @@ pre {{
 __all__ = [
     "HTMLReportRenderer",
 ]
-```
