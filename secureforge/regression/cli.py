@@ -1,6 +1,6 @@
 """Command-line interface for SecureForge regression testing."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
