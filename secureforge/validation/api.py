@@ -1,4 +1,3 @@
-```python
 """API-based security validation for SecureForge."""
 
 from __future__ import annotations
@@ -6,7 +5,7 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .base import BaseValidator, ValidationError
 from .models import (
@@ -37,13 +36,19 @@ class APIValidator(BaseValidator):
                 "API validation requires an endpoint."
             )
 
-        url = self._build_url(request.target, request.endpoint)
+        url = self._build_url(
+            request.target,
+            request.endpoint,
+        )
 
-        method = request.metadata.get("http_method", "GET").upper()
+        method = request.metadata.get(
+            "http_method",
+            "GET",
+        ).upper()
+
         headers = self._build_headers(request)
         body = self._build_body(request)
-
-        validated_at = datetime.now(timezone.utc).isoformat()
+        validated_at = datetime.now(UTC).isoformat()
 
         api_request = urllib.request.Request(
             url=url,
@@ -70,7 +75,11 @@ class APIValidator(BaseValidator):
             )
             status_code = exc.code
 
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            OSError,
+        ) as exc:
             return ValidationResult(
                 finding_id=request.finding_id,
                 outcome=ValidationOutcome.ERROR,
@@ -78,7 +87,9 @@ class APIValidator(BaseValidator):
                 evidence=[
                     ValidationEvidence(
                         method=ValidationMethod.API,
-                        description="Controlled API security validation.",
+                        description=(
+                            "Controlled API security validation."
+                        ),
                         request=f"{method} {url}",
                         observed=str(exc),
                     )
@@ -87,7 +98,9 @@ class APIValidator(BaseValidator):
                 validated_at=validated_at,
             )
 
-        expected_status = request.metadata.get("expected_status")
+        expected_status = request.metadata.get(
+            "expected_status"
+        )
         observed_status = str(status_code)
 
         if expected_status is not None:
@@ -95,11 +108,13 @@ class APIValidator(BaseValidator):
                 expected_status,
                 status_code,
             )
+
             outcome = (
                 ValidationOutcome.CONFIRMED
                 if confirmed
                 else ValidationOutcome.REJECTED
             )
+
             message = (
                 "API validation matched the expected security behavior."
                 if confirmed
@@ -119,7 +134,9 @@ class APIValidator(BaseValidator):
             evidence=[
                 ValidationEvidence(
                     method=ValidationMethod.API,
-                    description="Controlled API security validation.",
+                    description=(
+                        "Controlled API security validation."
+                    ),
                     request=f"{method} {url}",
                     response=response_body,
                     expected=(
@@ -127,9 +144,7 @@ class APIValidator(BaseValidator):
                         if expected_status is not None
                         else None
                     ),
-                    observed=(
-                        f"HTTP status {observed_status}"
-                    ),
+                    observed=f"HTTP status {observed_status}",
                 )
             ],
             validator=self.name,
@@ -137,7 +152,10 @@ class APIValidator(BaseValidator):
         )
 
     @staticmethod
-    def _build_url(target: str, endpoint: str) -> str:
+    def _build_url(
+        target: str,
+        endpoint: str,
+    ) -> str:
         """Build an API URL from the target and endpoint."""
         base = target.rstrip("/")
         path = endpoint.strip()
@@ -178,7 +196,10 @@ class APIValidator(BaseValidator):
                 )
 
             for key, value in parsed.items():
-                if not isinstance(key, str) or not isinstance(value, str):
+                if (
+                    not isinstance(key, str)
+                    or not isinstance(value, str)
+                ):
                     raise ValidationError(
                         "API header names and values must be strings."
                     )
@@ -221,7 +242,10 @@ class APIValidator(BaseValidator):
         expected = expected.strip()
 
         if "-" in expected:
-            parts = expected.split("-", maxsplit=1)
+            parts = expected.split(
+                "-",
+                maxsplit=1,
+            )
 
             try:
                 lower = int(parts[0])
@@ -235,4 +259,8 @@ class APIValidator(BaseValidator):
             return observed == int(expected)
         except ValueError:
             return False
-```
+
+
+__all__ = [
+    "APIValidator",
+]
