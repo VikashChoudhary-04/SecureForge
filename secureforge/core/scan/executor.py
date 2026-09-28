@@ -16,7 +16,6 @@ ToolExecutionStatus,
 class ToolExecutor:
 """Execute configured security tools as controlled subprocesses."""
 
-```
 def execute(
     self,
     tool: ToolConfiguration,
