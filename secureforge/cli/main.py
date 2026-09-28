@@ -1,4 +1,4 @@
-```python id="8q2m6r"
+```python id="3k7m2q"
 """Command-line interface for SecureForge."""
 
 from __future__ import annotations
@@ -72,22 +72,32 @@ def scan(
     validate: bool = typer.Option(
         False,
         "--validate",
-        help="Run configured security validation requests.",
+        help=(
+            "Automatically validate findings supported by "
+            "the configured validation planners."
+        ),
     ),
     validation_finding: list[str] = typer.Option(
         [],
         "--validation-finding",
-        help="Finding ID to validate.",
+        help=(
+            "Finding ID to validate manually. "
+            "May be supplied multiple times."
+        ),
     ),
     validation_endpoint: list[str] = typer.Option(
         [],
         "--validation-endpoint",
-        help="Endpoint used for validation.",
+        help=(
+            "Endpoint corresponding to a manual validation finding."
+        ),
     ),
     validation_payload: list[str] = typer.Option(
         [],
         "--validation-payload",
-        help="Validation payload.",
+        help=(
+            "Payload corresponding to a manual validation finding."
+        ),
     ),
     validation_method: str = typer.Option(
         "http",
@@ -155,6 +165,8 @@ def scan(
             validation_requests=tuple(
                 validation_requests
             ),
+            validate_findings=validate,
+            validation_method=method,
             run_regression=regression,
         )
 
@@ -202,10 +214,10 @@ def _validate_scan_options(
             "Profile must be one of: quick, standard, full."
         )
 
-    if validate and not validation_finding:
+    if validate and not target:
         raise typer.BadParameter(
-            "--validate requires at least one "
-            "--validation-finding."
+            "--validate requires --target because active "
+            "finding validation targets an application."
         )
 
     if len(validation_endpoint) > len(
@@ -235,13 +247,14 @@ def _build_validation_requests(
     method: ValidationMethod,
     target: str | None,
 ) -> list[ValidationRequest]:
-    """Build controlled validation requests from CLI input."""
+    """Build manually supplied validation requests."""
     if not finding_ids:
         return []
 
     if target is None:
         raise typer.BadParameter(
-            "A --target is required when validation is enabled."
+            "A --target is required when manual validation "
+            "requests are supplied."
         )
 
     requests: list[ValidationRequest] = []
