@@ -1,4 +1,3 @@
-```python
 # Validation planning for SecureForge findings
 
 from __future__ import annotations
@@ -199,4 +198,3 @@ __all__ = [
     "ValidationPlan",
     "ValidationPlanner",
 ]
-```
