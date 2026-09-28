@@ -11,8 +11,9 @@ from .models import ScanRun, ToolExecutionStatus
 from .normalizer import ScanResultNormalizer
 from .planner import ScanPlanner
 
+
 class ScanRunner:
-"""Execute configured tools and normalize their security evidence."""
+    """Execute configured tools and normalize their security evidence."""
 
     def __init__(
         self,
@@ -26,7 +27,7 @@ class ScanRunner:
         self.executor = executor or ToolExecutor()
         self.factory = factory or ScanRunFactory()
         self.normalizer = normalizer
-    
+
     def run(
         self,
         configuration: ScanConfiguration,
@@ -38,39 +39,39 @@ class ScanRunner:
             configuration,
             commit_sha=commit_sha,
         )
-    
+
         scan.start()
-    
+
         try:
             planned_tools = self.planner.plan(
                 configuration
             )
-    
+
             self._record_plan_warnings(
                 scan,
                 configuration,
             )
-    
+
             if not planned_tools:
                 scan.add_warning(
                     "No enabled security tools were available "
                     "for the selected scan profile."
                 )
-    
+
             for planned_tool in planned_tools:
                 result = self.executor.execute(
                     planned_tool.configuration
                 )
-    
+
                 result.metadata.setdefault(
                     "integration",
                     planned_tool.integration,
                 )
-    
+
                 scan.add_tool_result(
                     result
                 )
-    
+
                 if result.status in {
                     ToolExecutionStatus.FAILED,
                     ToolExecutionStatus.TIMEOUT,
@@ -82,22 +83,22 @@ class ScanRunner:
                             f"'{planned_tool.integration}' failed."
                         )
                     )
-    
+
             if self.normalizer is not None:
                 self._normalize_results(
                     scan,
                     configuration,
                 )
-    
+
             scan.complete()
-    
+
         except Exception as exc:
             scan.fail(
                 f"Scan execution failed unexpectedly: {exc}"
             )
-    
+
         return scan
-    
+
     def _normalize_results(
         self,
         scan: ScanRun,
@@ -109,10 +110,10 @@ class ScanRunner:
             for result in scan.tool_results
             if result.succeeded
         ]
-    
+
         if not results:
             return
-    
+
         normalization_results, findings = (
             self.normalizer.findings_from_results(
                 results,
@@ -122,28 +123,28 @@ class ScanRunner:
                 application=configuration.application,
             )
         )
-    
+
         scan.add_findings(
             findings
         )
-    
+
         for result in normalization_results:
             if not result.success:
                 scan.add_warning(
                     f"Normalization failed for "
                     f"integration '{result.source}'."
                 )
-    
+
             for warning in result.warnings:
                 scan.add_warning(
                     warning
                 )
-    
+
             for error in result.errors:
                 scan.add_error(
                     error
                 )
-    
+
     def _record_plan_warnings(
         self,
         scan: ScanRun,
@@ -158,7 +159,7 @@ class ScanRunner:
                 f"by profile '{configuration.profile.value}' "
                 "but no tool is configured."
             )
-    
+
         for integration in self.planner.disabled_integrations(
             configuration
         ):
@@ -166,14 +167,20 @@ class ScanRunner:
                 f"Integration '{integration}' is disabled "
                 "and will be skipped."
             )
-    
+
     @staticmethod
     def _target_reference(
         configuration: ScanConfiguration,
     ) -> str | None:
         """Return the most useful target reference."""
         target = configuration.target
-    
+
+        if target is None:
+            return None
+
+        if isinstance(target, str):
+            return target
+
         return (
             target.base_url
             or target.api_base_url
