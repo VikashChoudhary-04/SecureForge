@@ -1,6 +1,6 @@
 """Factories for loading SecureForge runtime scan configuration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -14,6 +14,4 @@ path: str | Path,
 """Load a YAML configuration and build ScanConfiguration."""
 runtime = load_runtime_configuration(path)
 
-```
 return build_scan_configuration(runtime)
-```
