@@ -122,8 +122,12 @@ def scan(
     ),
 ) -> None:
     """Run a SecureForge security verification scan."""
+    profile = profile.strip().lower()
+    environment = environment.strip().lower()
+
     _validate_scan_options(
         profile=profile,
+        environment=environment,
         target=target,
         source_path=source_path,
         validate=validate,
@@ -202,6 +206,7 @@ def version() -> None:
 def _validate_scan_options(
     *,
     profile: str,
+    environment: str,
     target: str | None,
     source_path: Path | None,
     validate: bool,
@@ -224,10 +229,13 @@ def _validate_scan_options(
             f"Profile must be one of: {available}."
         )
 
-    if profile == "ci" and environment_is_not_ci():
+    if profile == "ci" and environment not in {
+        "ci",
+        "test",
+    }:
         raise typer.BadParameter(
-            "The ci profile requires the execution environment "
-            "to be 'ci' or 'test'."
+            "The ci profile requires --environment to be "
+            "'ci' or 'test'."
         )
 
     if validate and not target:
@@ -265,11 +273,6 @@ def _validate_scan_options(
             "cannot exceed the number of "
             "--validation-finding values."
         )
-
-
-def environment_is_not_ci() -> bool:
-    """Return whether the default CLI environment is non-CI."""
-    return False
 
 
 def _build_validation_requests(
@@ -331,10 +334,8 @@ def _print_scan_summary(result) -> None:
         f"Findings: {len(pipeline.findings)}"
     )
 
-    status = pipeline.release_gate.status.upper()
-
     typer.echo(
-        f"Release: {status}"
+        f"Release: {pipeline.release_gate.status.upper()}"
     )
 
     if pipeline.validation is not None:
