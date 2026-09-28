@@ -1,6 +1,6 @@
 """Security requirement models used by SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from enum import Enum
 from typing import Any
@@ -62,4 +62,3 @@ def is_active(self) -> bool:
 def is_mandatory(self) -> bool:
     """Return whether the requirement is mandatory."""
     return self.mandatory and self.is_active()
-```
