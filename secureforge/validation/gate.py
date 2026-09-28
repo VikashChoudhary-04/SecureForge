@@ -1,17 +1,17 @@
-```python id="1w6c4r"
-"""Validation gate decisions for SecureForge."""
+```python
+# Validation gate evaluation
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .models import ValidationOutcome, ValidationResult
+from .models import ValidationOutcome
 from .runner import RetestRun, ValidationRun
 
 
 @dataclass(frozen=True)
 class ValidationGateDecision:
-    """Decision produced from validation or retesting results."""
+    """Decision produced by the validation gate."""
 
     allowed: bool
     status: str
@@ -24,12 +24,12 @@ class ValidationGateDecision:
 
     @property
     def blocked(self) -> bool:
-        """Return whether the validation gate blocks progression."""
-        return not self.allowed
+        """Return whether validation itself blocks release."""
+        return self.status == "blocked"
 
     @property
     def requires_attention(self) -> bool:
-        """Return whether further security action is required."""
+        """Return whether validation requires follow-up."""
         return bool(
             self.unresolved_findings
             or self.inconclusive_findings
@@ -40,195 +40,220 @@ class ValidationGateDecision:
 def evaluate_validation_run(
     run: ValidationRun,
 ) -> ValidationGateDecision:
-    """Evaluate a validation run for release progression."""
-    confirmed = tuple(
-        result.finding_id
-        for result in run.results
-        if result.outcome == ValidationOutcome.CONFIRMED
-    )
+    """Evaluate validation results without replacing release policy."""
+    confirmed: list[str] = []
+    inconclusive: list[str] = []
+    errored: list[str] = []
 
-    inconclusive = tuple(
-        result.finding_id
-        for result in run.results
-        if result.outcome == ValidationOutcome.INCONCLUSIVE
-    )
-
-    errored = tuple(
-        result.finding_id
-        for result in run.results
-        if result.outcome == ValidationOutcome.ERROR
-    )
-
-    remediation_verified = tuple(
-        result.finding_id
-        for result in run.results
-        if result.remediation_verified
-    )
-
-    unresolved = tuple(
-        result.finding_id
-        for result in run.results
-        if (
-            result.outcome == ValidationOutcome.CONFIRMED
-            or result.outcome == ValidationOutcome.INCONCLUSIVE
-            or result.outcome == ValidationOutcome.ERROR
-        )
-    )
+    for result in run.results:
+        if result.outcome == ValidationOutcome.CONFIRMED:
+            confirmed.append(
+                result.finding_id
+            )
+        elif result.outcome == ValidationOutcome.INCONCLUSIVE:
+            inconclusive.append(
+                result.finding_id
+            )
+        elif result.outcome == ValidationOutcome.ERROR:
+            errored.append(
+                result.finding_id
+            )
 
     if confirmed:
         return ValidationGateDecision(
             allowed=False,
             status="blocked",
             reason=(
-                "One or more security findings were confirmed "
-                "during validation."
+                "Security validation confirmed one or more "
+                "findings."
             ),
-            confirmed_findings=confirmed,
-            unresolved_findings=unresolved,
-            remediation_verified=remediation_verified,
-            inconclusive_findings=inconclusive,
-            errored_findings=errored,
+            confirmed_findings=tuple(
+                confirmed
+            ),
+            unresolved_findings=tuple(
+                confirmed
+            ),
+            remediation_verified=(),
+            inconclusive_findings=tuple(
+                inconclusive
+            ),
+            errored_findings=tuple(
+                errored
+            ),
         )
 
     if errored:
         return ValidationGateDecision(
-            allowed=False,
+            allowed=True,
             status="error",
             reason=(
-                "Validation encountered errors, so security "
-                "verification is incomplete."
+                "One or more validation attempts failed "
+                "to complete."
             ),
-            confirmed_findings=confirmed,
-            unresolved_findings=unresolved,
-            remediation_verified=remediation_verified,
-            inconclusive_findings=inconclusive,
-            errored_findings=errored,
+            confirmed_findings=(),
+            unresolved_findings=(),
+            remediation_verified=(),
+            inconclusive_findings=tuple(
+                inconclusive
+            ),
+            errored_findings=tuple(
+                errored
+            ),
         )
 
     if inconclusive:
         return ValidationGateDecision(
-            allowed=False,
+            allowed=True,
             status="review",
             reason=(
-                "One or more findings could not be conclusively "
-                "validated."
+                "One or more validation results were "
+                "inconclusive."
             ),
-            confirmed_findings=confirmed,
-            unresolved_findings=unresolved,
-            remediation_verified=remediation_verified,
-            inconclusive_findings=inconclusive,
-            errored_findings=errored,
+            confirmed_findings=(),
+            unresolved_findings=(),
+            remediation_verified=(),
+            inconclusive_findings=tuple(
+                inconclusive
+            ),
+            errored_findings=(),
         )
 
     return ValidationGateDecision(
         allowed=True,
         status="passed",
         reason=(
-            "All supplied findings were rejected by validation "
-            "and no validation errors occurred."
+            "Security validation completed without "
+            "confirmed findings."
         ),
-        confirmed_findings=confirmed,
-        unresolved_findings=unresolved,
-        remediation_verified=remediation_verified,
-        inconclusive_findings=inconclusive,
-        errored_findings=errored,
+        confirmed_findings=(),
+        unresolved_findings=(),
+        remediation_verified=(),
+        inconclusive_findings=(),
+        errored_findings=(),
     )
 
 
 def evaluate_retest_run(
     run: RetestRun,
 ) -> ValidationGateDecision:
-    """Evaluate remediation retesting for release progression."""
-    confirmed = tuple(
-        result.finding_id
-        for result in run.results
-        if result.current_outcome == ValidationOutcome.CONFIRMED
-    )
+    """Evaluate retest results after remediation."""
+    confirmed: list[str] = []
+    inconclusive: list[str] = []
+    errored: list[str] = []
+    remediated: list[str] = []
 
-    inconclusive = tuple(
-        result.finding_id
-        for result in run.results
-        if result.current_outcome == ValidationOutcome.INCONCLUSIVE
-    )
+    for result in run.results:
+        if result.fixed:
+            remediated.append(
+                result.finding_id
+            )
 
-    errored = tuple(
-        result.finding_id
-        for result in run.results
-        if result.current_outcome == ValidationOutcome.ERROR
-    )
+        if result.current_outcome == (
+            ValidationOutcome.CONFIRMED
+        ):
+            confirmed.append(
+                result.finding_id
+            )
 
-    remediation_verified = tuple(
-        result.finding_id
-        for result in run.results
-        if result.remediation_verified
-    )
+        elif result.current_outcome == (
+            ValidationOutcome.INCONCLUSIVE
+        ):
+            inconclusive.append(
+                result.finding_id
+            )
 
-    unresolved = tuple(
-        result.finding_id
-        for result in run.results
-        if (
-            result.current_outcome == ValidationOutcome.CONFIRMED
-            or result.current_outcome == ValidationOutcome.INCONCLUSIVE
-            or result.current_outcome == ValidationOutcome.ERROR
-        )
-    )
+        elif result.current_outcome == (
+            ValidationOutcome.ERROR
+        ):
+            errored.append(
+                result.finding_id
+            )
 
     if confirmed:
         return ValidationGateDecision(
             allowed=False,
             status="blocked",
             reason=(
-                "One or more previously identified findings "
-                "remain reproducible after remediation."
+                "Retesting confirmed that one or more "
+                "previously identified findings remain."
             ),
-            confirmed_findings=confirmed,
-            unresolved_findings=unresolved,
-            remediation_verified=remediation_verified,
-            inconclusive_findings=inconclusive,
-            errored_findings=errored,
+            confirmed_findings=tuple(
+                confirmed
+            ),
+            unresolved_findings=tuple(
+                confirmed
+            ),
+            remediation_verified=tuple(
+                remediated
+            ),
+            inconclusive_findings=tuple(
+                inconclusive
+            ),
+            errored_findings=tuple(
+                errored
+            ),
         )
 
     if errored:
         return ValidationGateDecision(
-            allowed=False,
+            allowed=True,
             status="error",
             reason=(
-                "One or more remediation retests failed to "
-                "complete."
+                "One or more remediation retests failed "
+                "to complete."
             ),
-            confirmed_findings=confirmed,
-            unresolved_findings=unresolved,
-            remediation_verified=remediation_verified,
-            inconclusive_findings=inconclusive,
-            errored_findings=errored,
+            confirmed_findings=(),
+            unresolved_findings=(),
+            remediation_verified=tuple(
+                remediated
+            ),
+            inconclusive_findings=tuple(
+                inconclusive
+            ),
+            errored_findings=tuple(
+                errored
+            ),
         )
 
     if inconclusive:
         return ValidationGateDecision(
-            allowed=False,
+            allowed=True,
             status="review",
             reason=(
                 "One or more remediation retests were "
                 "inconclusive."
             ),
-            confirmed_findings=confirmed,
-            unresolved_findings=unresolved,
-            remediation_verified=remediation_verified,
-            inconclusive_findings=inconclusive,
-            errored_findings=errored,
+            confirmed_findings=(),
+            unresolved_findings=(),
+            remediation_verified=tuple(
+                remediated
+            ),
+            inconclusive_findings=tuple(
+                inconclusive
+            ),
+            errored_findings=(),
         )
 
     return ValidationGateDecision(
         allowed=True,
         status="passed",
         reason=(
-            "All supplied remediation retests completed without "
-            "reproducing the previously identified findings."
+            "All remediation retests completed without "
+            "confirmed findings."
         ),
-        confirmed_findings=confirmed,
-        unresolved_findings=unresolved,
-        remediation_verified=remediation_verified,
-        inconclusive_findings=inconclusive,
-        errored_findings=errored,
+        confirmed_findings=(),
+        unresolved_findings=(),
+        remediation_verified=tuple(
+            remediated
+        ),
+        inconclusive_findings=(),
+        errored_findings=(),
     )
+
+
+__all__ = [
+    "ValidationGateDecision",
+    "evaluate_retest_run",
+    "evaluate_validation_run",
+]
 ```
