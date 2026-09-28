@@ -1,6 +1,6 @@
 """Practical executors for SecureForge regression tests."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 import re
