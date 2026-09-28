@@ -1,4 +1,3 @@
-```python
 """Load persisted SecureForge security reports."""
 
 from __future__ import annotations
@@ -72,4 +71,3 @@ def load_security_report(
     """Load a validated security report from a JSON file."""
     loader = SecurityReportLoader()
     return loader.load(path)
-```
