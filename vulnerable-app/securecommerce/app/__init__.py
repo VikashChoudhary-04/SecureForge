@@ -1,61 +1,36 @@
-"""SecureCommerce Flask application factory."""
+```python
+# SecureCommerce application factory
 
-from **future** import annotations
-
-from pathlib import Path
+from __future__ import annotations
 
 from flask import Flask
 
-from .config import Config
-from .database import db
+from .api import api_bp
+from .auth import auth_bp
+from .routes import routes_bp
+from .upload import upload_bp
+from .vulnerable_routes import vulnerable_bp
+
 
 def create_app(
-config_class: type[Config] = Config,
+    config_object=None,
 ) -> Flask:
-"""Create and configure a SecureCommerce application."""
-app = Flask(**name**)
+    """Create and configure the SecureCommerce lab application."""
+    app = Flask(__name__)
 
-```
-app.config.from_object(config_class)
+    if config_object is not None:
+        app.config.from_object(config_object)
 
-_ensure_directories(app)
+    app.register_blueprint(routes_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(api_bp)
+    app.register_blueprint(vulnerable_bp)
+    app.register_blueprint(upload_bp)
 
-db.init_app(app)
+    return app
 
-with app.app_context():
-    db.create_all()
 
-_register_routes(app)
-
-return app
-```
-
-def _ensure_directories(app: Flask) -> None:
-"""Create application directories required at runtime."""
-database_path = Path(
-app.config["DATABASE_PATH"]
-)
-
-```
-database_path.parent.mkdir(
-    parents=True,
-    exist_ok=True,
-)
-
-upload_directory = Path(
-    app.config["UPLOAD_FOLDER"]
-)
-
-upload_directory.mkdir(
-    parents=True,
-    exist_ok=True,
-)
-```
-
-def _register_routes(app: Flask) -> None:
-"""Register application route modules."""
-from .routes import register_routes
-
-```
-register_routes(app)
+__all__ = [
+    "create_app",
+]
 ```
