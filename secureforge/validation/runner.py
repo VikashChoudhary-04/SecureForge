@@ -1,4 +1,3 @@
-```python
 # Validation and retesting runner
 
 from __future__ import annotations
@@ -177,4 +176,3 @@ __all__ = [
     "ValidationRun",
     "ValidationRunner",
 ]
-```
