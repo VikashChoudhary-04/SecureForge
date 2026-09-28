@@ -1,4 +1,3 @@
-```python
 """Controlled command-based security validation for SecureForge."""
 
 from __future__ import annotations
@@ -41,6 +40,7 @@ class CommandValidator(BaseValidator):
     def validate(self, request: ValidationRequest) -> ValidationResult:
         """Execute a controlled command and interpret its exit status."""
         command_text = request.metadata.get("command")
+
         if not command_text:
             raise ValidationError(
                 "Command validation requires a command in request metadata."
@@ -55,6 +55,7 @@ class CommandValidator(BaseValidator):
             )
 
         executable_path = shutil.which(executable)
+
         if executable_path is None:
             raise ValidationError(
                 f"Validation command is not installed: {executable}"
@@ -192,7 +193,9 @@ class CommandValidator(BaseValidator):
         return parsed
 
     @staticmethod
-    def _command_output(completed: subprocess.CompletedProcess[str]) -> str:
+    def _command_output(
+        completed: subprocess.CompletedProcess[str],
+    ) -> str:
         """Return stdout when available, otherwise stderr."""
         stdout = (completed.stdout or "").strip()
         stderr = (completed.stderr or "").strip()
@@ -221,4 +224,3 @@ class CommandValidator(BaseValidator):
             return f"stdout:\n{stdout}\nstderr:\n{stderr}"
 
         return stdout or stderr
-```
