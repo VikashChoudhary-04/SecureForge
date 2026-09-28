@@ -1,4 +1,3 @@
-```python
 """Controlled script-based security validation for SecureForge."""
 
 from __future__ import annotations
@@ -165,4 +164,4 @@ class ScriptValidator(BaseValidator):
             validator=self.name,
             validated_at=validated_at,
         )
-```
+        
