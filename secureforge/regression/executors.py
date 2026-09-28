@@ -1,4 +1,3 @@
-```python
 """Practical executors for SecureForge regression tests."""
 
 from __future__ import annotations
