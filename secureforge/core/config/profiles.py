@@ -104,5 +104,5 @@ class ProfileDefinition:
         
         
         def list_profiles() -> list[ProfileDefinition]:
-        """Return all supported SecureForge scan profiles."""
-        return list(_PROFILE_MAP.values())
+                """Return all supported SecureForge scan profiles."""
+                return list(_PROFILE_MAP.values())
