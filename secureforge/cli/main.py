@@ -1,4 +1,3 @@
-```python id="3k7m2q"
 """Command-line interface for SecureForge."""
 
 from __future__ import annotations
@@ -23,12 +22,22 @@ app = typer.Typer(
     ),
 )
 
+VALID_PROFILES = {
+    "quick",
+    "standard",
+    "full",
+    "ci",
+}
+
 
 @app.command()
 def scan(
     profile: str = typer.Option(
         "standard",
-        help="Security scan profile: quick, standard, or full.",
+        help=(
+            "Security scan profile: quick, standard, "
+            "full, or ci."
+        ),
     ),
     target: str | None = typer.Option(
         None,
@@ -121,6 +130,7 @@ def scan(
         validation_finding=validation_finding,
         validation_endpoint=validation_endpoint,
         validation_payload=validation_payload,
+        regression=regression,
     )
 
     try:
@@ -198,6 +208,7 @@ def _validate_scan_options(
     validation_finding: list[str],
     validation_endpoint: list[str],
     validation_payload: list[str],
+    regression: bool,
 ) -> None:
     """Validate scan command options."""
     if not target and not source_path:
@@ -205,19 +216,36 @@ def _validate_scan_options(
             "Provide at least one of --target or --source-path."
         )
 
-    if profile not in {
-        "quick",
-        "standard",
-        "full",
-    }:
+    if profile not in VALID_PROFILES:
+        available = ", ".join(
+            sorted(VALID_PROFILES)
+        )
         raise typer.BadParameter(
-            "Profile must be one of: quick, standard, full."
+            f"Profile must be one of: {available}."
+        )
+
+    if profile == "ci" and environment_is_not_ci():
+        raise typer.BadParameter(
+            "The ci profile requires the execution environment "
+            "to be 'ci' or 'test'."
         )
 
     if validate and not target:
         raise typer.BadParameter(
             "--validate requires --target because active "
             "finding validation targets an application."
+        )
+
+    if profile == "ci" and validate:
+        raise typer.BadParameter(
+            "The ci profile is deterministic and does not "
+            "perform active finding validation."
+        )
+
+    if profile == "ci" and regression:
+        raise typer.BadParameter(
+            "The ci profile does not run application regression "
+            "tests."
         )
 
     if len(validation_endpoint) > len(
@@ -237,6 +265,11 @@ def _validate_scan_options(
             "cannot exceed the number of "
             "--validation-finding values."
         )
+
+
+def environment_is_not_ci() -> bool:
+    """Return whether the default CLI environment is non-CI."""
+    return False
 
 
 def _build_validation_requests(
@@ -298,9 +331,10 @@ def _print_scan_summary(result) -> None:
         f"Findings: {len(pipeline.findings)}"
     )
 
+    status = pipeline.release_gate.status.upper()
+
     typer.echo(
-        "Release: "
-        f"{'PASS' if pipeline.release_allowed else 'BLOCK'}"
+        f"Release: {status}"
     )
 
     if pipeline.validation is not None:
@@ -335,4 +369,3 @@ def _print_scan_summary(result) -> None:
 
 if __name__ == "__main__":
     app()
-```
