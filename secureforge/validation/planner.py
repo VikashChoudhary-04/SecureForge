@@ -1,5 +1,5 @@
-```python id="8m4q1z"
-"""Validation planning for SecureForge findings."""
+```python
+# Validation planning for SecureForge findings
 
 from __future__ import annotations
 
@@ -47,7 +47,9 @@ class ValidationPlanner:
             )
 
             if request is None:
-                skipped.append(finding.finding_id)
+                skipped.append(
+                    finding.finding_id
+                )
                 continue
 
             requests.append(request)
@@ -78,7 +80,7 @@ class ValidationPlanner:
         target: str,
         method: ValidationMethod,
     ) -> ValidationRequest | None:
-        """Build a request when the finding contains enough context."""
+        """Build a request when sufficient context exists."""
         if not finding.finding_id.strip():
             return None
 
@@ -91,10 +93,15 @@ class ValidationPlanner:
         if method in {
             ValidationMethod.HTTP,
             ValidationMethod.API,
-        } and not endpoint:
-            return None
+        }:
+            if not endpoint and not self._has_default_endpoint(
+                finding.finding_id
+            ):
+                return None
 
-        payload = self._extract_payload(finding)
+        payload = self._extract_explicit_payload(
+            finding
+        )
 
         metadata = self._build_metadata(
             finding=finding,
@@ -113,16 +120,50 @@ class ValidationPlanner:
         )
 
     @staticmethod
-    def _extract_payload(
+    def _has_default_endpoint(
+        finding_id: str,
+    ) -> bool:
+        """Return whether the SecureCommerce validator has a default."""
+        return finding_id.upper() in {
+            "BOLA-001",
+            "SQLI-001",
+            "XSS-001",
+            "AUTHZ-001",
+            "SECRET-001",
+            "MISCONFIG-001",
+            "SSRF-001",
+            "UPLOAD-001",
+            "PATH-TRAVERSAL-001",
+        }
+
+    @staticmethod
+    def _extract_explicit_payload(
         finding: Finding,
     ) -> str | None:
-        """Extract a controlled validation payload from evidence."""
-        for evidence in finding.evidence:
-            if evidence.output:
-                return evidence.output
+        """Extract only an explicitly marked validation payload.
 
-            if evidence.request:
-                return evidence.request
+        Generic evidence such as an HTTP request or scanner output
+        must not automatically become a validation payload because
+        it may contain an entire request rather than the intended
+        test value.
+        """
+        for evidence in finding.evidence:
+            metadata = getattr(
+                evidence,
+                "metadata",
+                None,
+            )
+
+            if isinstance(
+                metadata,
+                dict,
+            ):
+                payload = metadata.get(
+                    "validation_payload"
+                )
+
+                if payload:
+                    return str(payload)
 
         return None
 
@@ -132,7 +173,7 @@ class ValidationPlanner:
         finding: Finding,
         method: ValidationMethod,
     ) -> dict[str, str]:
-        """Build metadata required for validation context."""
+        """Build validation context metadata."""
         metadata: dict[str, str] = {
             "finding_source": finding.source,
             "validation_method": method.value,
