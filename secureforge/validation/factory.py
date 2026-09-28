@@ -1,4 +1,3 @@
-```python id="6q2m8v"
 """Factory functions for SecureForge validation services."""
 
 from __future__ import annotations
@@ -69,4 +68,3 @@ __all__ = [
     "build_validation_engine",
     "build_validation_registry",
 ]
-```
