@@ -17,7 +17,7 @@ get_profile,
 list_profiles,
 )
 
-**all** = [
+__all__ = [
 "ConfigurationLoader",
 "FULL_PROFILE",
 "QUICK_PROFILE",
