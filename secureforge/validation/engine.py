@@ -1,4 +1,3 @@
-```python id="684q2p"
 """Validation engine for SecureForge."""
 
 from __future__ import annotations
@@ -122,4 +121,3 @@ class ValidationEngine:
             return False
 
         return True
-```
