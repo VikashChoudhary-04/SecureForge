@@ -13,7 +13,6 @@ upload_bp = Blueprint(
     url_prefix="/upload",
 )
 
-
 UPLOAD_DIRECTORY = Path("uploads")
 
 
@@ -25,9 +24,9 @@ def upload_file():
     """Demonstrate intentionally insecure file handling.
 
     This endpoint exists only inside the SecureCommerce lab.
-    It intentionally omits several production security controls,
-    including strict extension validation, content-type validation,
-    malware scanning, and safe filename handling.
+    It intentionally omits production controls such as strict
+    extension validation, content validation, malware scanning,
+    size enforcement, and safe filename handling.
     """
     if request.method == "GET":
         return """
@@ -38,16 +37,21 @@ def upload_file():
         </head>
         <body>
             <h1>SecureCommerce File Upload</h1>
+
             <form
                 method="post"
                 enctype="multipart/form-data"
             >
-                <label for="file">Select a file:</label>
+                <label for="file">
+                    Select a file:
+                </label>
+
                 <input
                     id="file"
                     name="file"
                     type="file"
                 >
+
                 <button type="submit">
                     Upload
                 </button>
@@ -56,7 +60,9 @@ def upload_file():
         </html>
         """
 
-    uploaded_file = request.files.get("file")
+    uploaded_file = request.files.get(
+        "file"
+    )
 
     if uploaded_file is None:
         return (
@@ -80,7 +86,9 @@ def upload_file():
         / uploaded_file.filename
     )
 
-    uploaded_file.save(destination)
+    uploaded_file.save(
+        destination
+    )
 
     return {
         "status": "uploaded",
@@ -93,11 +101,14 @@ def upload_file():
     "/download/<path:filename>",
     methods=["GET"],
 )
-def download_file(filename: str):
-    """Expose uploaded files for controlled lab testing.
+def download_file(
+    filename: str,
+):
+    """Download a file from the controlled lab upload directory.
 
-    The endpoint intentionally demonstrates unsafe path handling.
-    It must never be exposed outside the SecureCommerce lab.
+    The endpoint intentionally performs insufficient path
+    validation so path traversal can be demonstrated during
+    authorized SecureCommerce testing.
     """
     requested_path = (
         UPLOAD_DIRECTORY
@@ -108,6 +119,12 @@ def download_file(filename: str):
         return (
             "File not found.",
             404,
+        )
+
+    if not requested_path.is_file():
+        return (
+            "Requested path is not a file.",
+            400,
         )
 
     try:
@@ -122,9 +139,12 @@ def download_file(filename: str):
         content,
         200,
         {
-            "Content-Type": "application/octet-stream",
+            "Content-Type": (
+                "application/octet-stream"
+            ),
             "Content-Disposition": (
-                f'attachment; filename="{filename}"'
+                'attachment; '
+                f'filename="{Path(filename).name}"'
             ),
         },
     )
