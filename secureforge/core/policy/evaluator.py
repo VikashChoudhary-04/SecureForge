@@ -1,6 +1,6 @@
 """Individual policy matching and exception evaluation for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.findings import Finding
 from secureforge.core.risk import RiskAssessment
