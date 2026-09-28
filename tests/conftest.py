@@ -1,4 +1,3 @@
-```python id="q8w4m1"
 """Shared pytest fixtures for SecureForge tests."""
 
 from __future__ import annotations
@@ -532,4 +531,3 @@ def fake_scan_runner(
     return FakeScanRunner(
         sample_findings
     )
-```
