@@ -1,4 +1,3 @@
-```python id="q7v2mx"
 # SecureCommerce-specific security validators
 
 from __future__ import annotations
@@ -940,4 +939,4 @@ class _HTTPResponse:
 __all__ = [
     "SecureCommerceValidator",
 ]
-```
+
