@@ -1,4 +1,3 @@
-```python id="1k6v3p"
 """Reporting service for SecureForge."""
 
 from __future__ import annotations
@@ -134,4 +133,3 @@ __all__ = [
     "ReportingError",
     "ReportingService",
 ]
-```
