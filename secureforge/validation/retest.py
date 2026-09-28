@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .models import (
     RetestResult,
     ValidationOutcome,
     ValidationRequest,
 )
-from .service import ValidationService
+
+if TYPE_CHECKING:
+    from .service import ValidationService
 
 
 class RetestService:
@@ -79,3 +83,7 @@ class RetestService:
             for request, previous_outcome in requests
         ]
 
+
+__all__ = [
+    "RetestService",
+]
