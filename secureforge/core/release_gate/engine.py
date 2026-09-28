@@ -1,5 +1,4 @@
-```python
-# SecureForge release-gate engine
+"""Release-gate engine for SecureForge."""
 
 from __future__ import annotations
 
@@ -206,4 +205,3 @@ class ReleaseGateEngine:
 __all__ = [
     "ReleaseGateEngine",
 ]
-```
