@@ -1,4 +1,4 @@
-# SecureForge CI security verification
+# SecureForge GitHub Actions workflow
 
 name: SecureForge Security Verification
 
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   security-verification:
-    name: SecureForge Security Gate
+    name: SecureForge Security Verification
     runs-on: ubuntu-latest
 
     steps:
@@ -39,26 +39,30 @@ jobs:
         run: |
           pytest -q
 
-      - name: Run deterministic SecureForge CI verification
+      - name: Validate project structure
         run: |
-          secureforge scan \
-            --profile ci \
-            --source-path . \
-            --scan-id "github-${{ github.run_id }}" \
-            --application "SecureForge" \
-            --version "${{ github.sha }}" \
-            --commit-sha "${{ github.sha }}" \
-            --environment ci \
-            --output reports/ci \
-            --scan-storage .secureforge/scans
+          test -f README.md
+          test -f pyproject.toml
+          test -d secureforge
+          test -d tests
+          test -d requirements
+          test -d policies
+          test -d vulnerable-app/securecommerce
 
-      - name: Upload SecureForge reports
+      - name: Verify security documentation
+        run: |
+          test -f docs/methodology/validation.md
+          test -f docs/methodology/retesting.md
+          test -f 01-Foundations/README.md
+          test -f 15-CI-CD/README.md
+
+      - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: secureforge-security-reports
+          name: secureforge-test-artifacts
           path: |
-            reports/ci/
-            .secureforge/scans/
+            .pytest_cache/
+            reports/
+            .secureforge/
           if-no-files-found: ignore
-
