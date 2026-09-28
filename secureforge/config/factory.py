@@ -6,15 +6,14 @@ from pathlib import Path
 from typing import Any
 
 from .loader import ConfigLoader
-from .models import RuntimeConfig
 
 
 def create_runtime(
     config_path: str | Path | None = None,
     *,
     overrides: dict[str, Any] | None = None,
-) -> RuntimeConfig:
-    """Create a runtime configuration from file and optional overrides."""
+) -> Any:
+    """Create the SecureForge runtime configuration."""
     loader = ConfigLoader()
 
     if config_path is None:
@@ -34,9 +33,9 @@ def create_runtime(
 
 
 def _apply_overrides(
-    config: RuntimeConfig,
+    config: Any,
     overrides: dict[str, Any],
-) -> RuntimeConfig:
+) -> Any:
     """Apply runtime configuration overrides."""
     if hasattr(
         config,
@@ -45,6 +44,18 @@ def _apply_overrides(
         return config.model_copy(
             update=overrides
         )
+
+    if isinstance(
+        config,
+        dict,
+    ):
+        updated = dict(
+            config
+        )
+        updated.update(
+            overrides
+        )
+        return updated
 
     for key, value in overrides.items():
         setattr(
