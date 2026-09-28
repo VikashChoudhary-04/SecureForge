@@ -15,11 +15,11 @@ from secureforge.core.release_gate import ReleaseDecisionRecord
 from secureforge.core.risk import RiskAssessment
 
 def utc_now() -> datetime:
-"""Return the current UTC timestamp."""
-return datetime.now(timezone.utc)
+    """Return the current UTC timestamp."""
+    return datetime.now(timezone.utc)
 
 class ScanStatus(str, Enum):
-"""Lifecycle status of a SecureForge scan."""
+    """Lifecycle status of a SecureForge scan."""
 
     CREATED = "created"
     RUNNING = "running"
@@ -28,7 +28,7 @@ class ScanStatus(str, Enum):
 
 
 class ToolExecutionStatus(str, Enum):
-"""Execution status of an individual security integration."""
+    """Execution status of an individual security integration."""
 
     NOT_STARTED = "not_started"
     RUNNING = "running"
@@ -38,7 +38,7 @@ class ToolExecutionStatus(str, Enum):
     TIMEOUT = "timeout"
 
 class ToolExecutionResult(BaseModel):
-"""Result produced by one security integration execution."""
+    """Result produced by one security integration execution."""
 
     model_config = ConfigDict(extra="allow")
     
@@ -70,7 +70,7 @@ def failed(self) -> bool:
     }
 
 class ScanSummary(BaseModel):
-"""Summary statistics for a SecureForge scan."""
+    """Summary statistics for a SecureForge scan."""
 
     model_config = ConfigDict(extra="allow")
     
@@ -122,7 +122,7 @@ class ScanSummary(BaseModel):
         )
 
 class ScanRun(BaseModel):
-"""Complete state and output of a SecureForge verification run."""
+    """Complete state and output of a SecureForge verification run."""
 
     model_config = ConfigDict(extra="allow")
     
