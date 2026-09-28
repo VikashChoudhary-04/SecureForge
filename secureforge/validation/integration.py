@@ -1,4 +1,3 @@
-```python id="n5h8q2"
 """Integration helpers between validation and SecureForge findings."""
 
 from __future__ import annotations
@@ -94,4 +93,3 @@ def apply_validation_results(
         )
 
     return updates
-```
