@@ -1,0 +1,124 @@
+```python id="j8c4p1"
+"""Serialization helpers for SecureForge validation results."""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from .assessment import ValidationAssessment
+from .gate import ValidationGateDecision
+from .models import (
+    RetestResult,
+    ValidationResult,
+    ValidationSummary,
+)
+
+
+def validation_result_to_dict(
+    result: ValidationResult,
+) -> dict[str, Any]:
+    """Serialize a validation result to a JSON-compatible dictionary."""
+    return result.model_dump(mode="json")
+
+
+def validation_summary_to_dict(
+    summary: ValidationSummary,
+) -> dict[str, Any]:
+    """Serialize a validation summary."""
+    return summary.model_dump(mode="json")
+
+
+def retest_result_to_dict(
+    result: RetestResult,
+) -> dict[str, Any]:
+    """Serialize a retest result."""
+    return result.model_dump(mode="json")
+
+
+def assessment_to_dict(
+    assessment: ValidationAssessment,
+) -> dict[str, Any]:
+    """Serialize a validation assessment."""
+    return {
+        "finding_id": assessment.finding_id,
+        "outcome": assessment.outcome.value,
+        "confirmed": assessment.confirmed,
+        "rejected": assessment.rejected,
+        "inconclusive": assessment.inconclusive,
+        "errored": assessment.errored,
+        "remediation_verified": assessment.remediation_verified,
+        "regression_required": assessment.regression_required,
+        "status": assessment.status,
+        "reason": assessment.reason,
+        "resolved": assessment.resolved,
+        "actionable": assessment.actionable,
+    }
+
+
+def gate_decision_to_dict(
+    decision: ValidationGateDecision,
+) -> dict[str, Any]:
+    """Serialize a validation gate decision."""
+    return {
+        "allowed": decision.allowed,
+        "blocked": decision.blocked,
+        "status": decision.status,
+        "reason": decision.reason,
+        "confirmed_findings": list(
+            decision.confirmed_findings
+        ),
+        "unresolved_findings": list(
+            decision.unresolved_findings
+        ),
+        "remediation_verified": list(
+            decision.remediation_verified
+        ),
+        "inconclusive_findings": list(
+            decision.inconclusive_findings
+        ),
+        "errored_findings": list(
+            decision.errored_findings
+        ),
+        "requires_attention": decision.requires_attention,
+    }
+
+
+def dumps_validation_result(
+    result: ValidationResult,
+    *,
+    indent: int = 2,
+) -> str:
+    """Serialize a validation result as JSON."""
+    return json.dumps(
+        validation_result_to_dict(result),
+        indent=indent,
+        sort_keys=True,
+    )
+
+
+def dumps_validation_summary(
+    summary: ValidationSummary,
+    *,
+    indent: int = 2,
+) -> str:
+    """Serialize a validation summary as JSON."""
+    return json.dumps(
+        validation_summary_to_dict(summary),
+        indent=indent,
+        sort_keys=True,
+    )
+
+
+def dumps_retest_result(
+    result: RetestResult,
+    *,
+    indent: int = 2,
+) -> str:
+    """Serialize a retest result as JSON."""
+    return json.dumps(
+        retest_result_to_dict(result),
+        indent=indent,
+        sort_keys=True,
+    )
+```
