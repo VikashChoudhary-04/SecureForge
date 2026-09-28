@@ -1,21 +1,42 @@
-"""Security-tool integration framework for SecureForge."""
+"""Factory for the default SecureForge integration registry."""
 
-from .base import (
-IntegrationConfigurationError,
-IntegrationError,
-IntegrationParseError,
-SecurityIntegration,
-)
-from .defaults import build_default_registry
+from __future__ import annotations
+
+from .api import APIIntegration
+from .ci import CIIntegration
+from .container import ContainerIntegration
+from .dast import DASTIntegration
+from .iac import IaCIntegration
+from .manual import ManualIntegration
+from .nessus import NessusIntegration
+from .nmap import NmapIntegration
 from .registry import IntegrationRegistry
-from .registry_factory import build_registry
+from .sast import SASTIntegration
+from .sca import SCAIntegration
+from .secrets import SecretsIntegration
 
-**all** = [
-"IntegrationConfigurationError",
-"IntegrationError",
-"IntegrationParseError",
-"IntegrationRegistry",
-"SecurityIntegration",
-"build_default_registry",
-"build_registry",
+
+def build_default_integration_registry() -> IntegrationRegistry:
+    """Build the registry containing all built-in integrations."""
+    integrations = [
+        APIIntegration(),
+        CIIntegration(),
+        ContainerIntegration(),
+        DASTIntegration(),
+        IaCIntegration(),
+        ManualIntegration(),
+        NessusIntegration(),
+        NmapIntegration(),
+        SASTIntegration(),
+        SCAIntegration(),
+        SecretsIntegration(),
+    ]
+
+    return IntegrationRegistry(
+        integrations=integrations,
+    )
+
+
+__all__ = [
+    "build_default_integration_registry",
 ]
