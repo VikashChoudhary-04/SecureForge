@@ -8,7 +8,7 @@ SecurityRequirement,
 )
 from .registry import RequirementRegistry
 
-**all** = [
+__all__ = [
 "RequirementCategory",
 "RequirementLoader",
 "RequirementRegistry",
