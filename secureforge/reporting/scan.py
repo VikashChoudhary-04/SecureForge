@@ -1,105 +1,191 @@
-"""Scan service used by the SecureForge CLI."""
+"""Build security scan reports for SecureForge."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
+from typing import Any
 
 from secureforge.core.scan.models import SecurityScanResult
-from secureforge.core.scan.orchestrator import ScanOrchestrator
-from secureforge.core.scan.store import ScanResultStore
-from secureforge.reporting.service import ReportingService
-from secureforge.validation.models import ValidationRequest
 
 
-@dataclass(frozen=True)
-class ScanCommandConfig:
-    """Configuration for a SecureForge scan command."""
+def build_scan_report(
+    result: SecurityScanResult,
+) -> dict[str, Any]:
+    """Convert a security scan result into a report dictionary."""
+    execution = result.execution
 
-    scan_id: str
-    profile: str
-    target: str | None
-    source_path: Path | None
-    application: str
-    version: str
-    commit_sha: str | None
-    environment: str
-    output_directory: Path
-    scan_storage_directory: Path
-    validation_requests: tuple[ValidationRequest, ...] = ()
-    run_regression: bool = False
+    findings = [
+        _finding_to_dict(finding)
+        for finding in result.findings
+    ]
 
+    report: dict[str, Any] = {
+        "scan": {
+            "scan_id": execution.scan_id,
+            "application": execution.application,
+            "version": execution.version,
+            "commit_sha": execution.commit_sha,
+            "profile": execution.profile,
+            "environment": execution.environment,
+            "started_at": execution.started_at,
+            "completed_at": execution.completed_at,
+            "status": str(execution.status),
+        },
+        "tools": [
+            _tool_to_dict(tool)
+            for tool in execution.tools
+        ],
+        "tool_errors": list(
+            execution.tool_errors
+        ),
+        "findings": findings,
+        "summary": _summary_to_dict(
+            result
+        ),
+        "metadata": dict(
+            result.metadata
+        ),
+    }
 
-class ScanCommandService:
-    """Execute scans and persist their results."""
-
-    def __init__(
-        self,
-        *,
-        orchestrator: ScanOrchestrator,
-        store: ScanResultStore,
-        reporting: ReportingService | None = None,
-    ) -> None:
-        self.orchestrator = orchestrator
-        self.store = store
-        self.reporting = (
-            reporting
-            if reporting is not None
-            else ReportingService()
+    if result.policy_evaluation is not None:
+        report["policy_evaluation"] = _to_dict(
+            result.policy_evaluation
         )
 
-    def run(
-        self,
-        config: ScanCommandConfig,
-    ) -> SecurityScanResult:
-        """Execute and persist a configured scan."""
-        result = self.orchestrator.run(
-            scan_id=config.scan_id,
-            profile=config.profile,
-            target=config.target,
-            source_path=config.source_path,
-            application=config.application,
-            version=config.version,
-            commit_sha=config.commit_sha,
-            environment=config.environment,
-            validation_requests=(
-                list(config.validation_requests)
-                if config.validation_requests
-                else None
-            ),
-            run_regression=config.run_regression,
+    if result.release_decision is not None:
+        report["release_decision"] = _to_dict(
+            result.release_decision
         )
 
-        self._persist_result(
-            result=result,
-            config=config,
+    if result.risk_assessments:
+        report["risk_assessments"] = [
+            _to_dict(
+                assessment
+            )
+            for assessment in result.risk_assessments
+        ]
+
+    if result.regression_failures:
+        report["regression_failures"] = list(
+            result.regression_failures
         )
 
-        return result
-
-    def _persist_result(
-        self,
-        *,
-        result: SecurityScanResult,
-        config: ScanCommandConfig,
-    ) -> None:
-        """Persist scan data and generate security reports."""
-        config.scan_storage_directory.mkdir(
-            parents=True,
-            exist_ok=True,
+    if result.errors:
+        report["errors"] = list(
+            result.errors
         )
 
-        config.output_directory.mkdir(
-            parents=True,
-            exist_ok=True,
+    if result.warnings:
+        report["warnings"] = list(
+            result.warnings
         )
 
-        self.store.save(
-            result,
-            config.scan_storage_directory,
+    return report
+
+
+def _finding_to_dict(
+    finding: Any,
+) -> dict[str, Any]:
+    """Convert a finding model into a serializable dictionary."""
+    return _to_dict(
+        finding
+    )
+
+
+def _tool_to_dict(
+    tool: Any,
+) -> dict[str, Any]:
+    """Convert a tool execution result into a dictionary."""
+    return _to_dict(
+        tool
+    )
+
+
+def _summary_to_dict(
+    result: SecurityScanResult,
+) -> dict[str, Any]:
+    """Build a compact finding summary."""
+    findings = result.findings
+
+    severity_counts: dict[str, int] = {}
+
+    for finding in findings:
+        severity = getattr(
+            finding,
+            "severity",
+            "unknown",
         )
 
-        self.reporting.generate(
-            result,
-            config.output_directory,
+        if hasattr(
+            severity,
+            "value",
+        ):
+            severity = severity.value
+
+        key = str(
+            severity
+        ).lower()
+
+        severity_counts[key] = (
+            severity_counts.get(
+                key,
+                0,
+            )
+            + 1
         )
+
+    return {
+        "total_findings": len(
+            findings
+        ),
+        "severity_counts": severity_counts,
+        "risk_assessments": len(
+            result.risk_assessments
+        ),
+        "tool_errors": len(
+            result.execution.tool_errors
+        ),
+        "errors": len(
+            result.errors
+        ),
+        "warnings": len(
+            result.warnings
+        ),
+    }
+
+
+def _to_dict(
+    value: Any,
+) -> dict[str, Any] | Any:
+    """Convert common SecureForge models to dictionaries."""
+    if value is None:
+        return None
+
+    if isinstance(
+        value,
+        dict,
+    ):
+        return value
+
+    if hasattr(
+        value,
+        "model_dump",
+    ):
+        return value.model_dump(
+            mode="json"
+        )
+
+    if hasattr(
+        value,
+        "to_dict",
+    ):
+        return value.to_dict()
+
+    if hasattr(
+        value,
+        "__dict__",
+    ):
+        return dict(
+            value.__dict__
+        )
+
+    return value
