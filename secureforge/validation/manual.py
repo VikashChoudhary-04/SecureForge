@@ -1,4 +1,3 @@
-```python id="842m1x"
 """Manual security validation for SecureForge."""
 
 from __future__ import annotations
@@ -86,4 +85,3 @@ class ManualValidator(BaseValidator):
             validated_at=validated_at,
             remediation_verified=remediation_verified,
         )
-```
