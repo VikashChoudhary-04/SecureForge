@@ -8,6 +8,7 @@ from flask import Flask
 from .api import api_bp
 from .auth import auth_bp
 from .external import external_bp
+from .openapi import openapi_bp
 from .routes import routes_bp
 from .upload import upload_bp
 from .vulnerable_routes import vulnerable_bp
@@ -28,6 +29,7 @@ def create_app(
     app.register_blueprint(vulnerable_bp)
     app.register_blueprint(upload_bp)
     app.register_blueprint(external_bp)
+    app.register_blueprint(openapi_bp)
 
     return app
 
