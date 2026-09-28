@@ -34,7 +34,7 @@ class ProfileDefinition:
                 "sca",
                 "secrets",
                 ),
-                )
+        )
         
         STANDARD_PROFILE = ProfileDefinition(
                 profile=ScanProfile.STANDARD,
@@ -52,7 +52,7 @@ class ProfileDefinition:
                 ),
                 validation_enabled=True,
                 regression_enabled=True,
-                )
+        )
         
         FULL_PROFILE = ProfileDefinition(
                 profile=ScanProfile.FULL,
@@ -75,13 +75,13 @@ class ProfileDefinition:
                 ),
                 validation_enabled=True,
                 regression_enabled=True,
-                )
+        )
         
         _PROFILE_MAP: dict[ScanProfile, ProfileDefinition] = {
                 ScanProfile.QUICK: QUICK_PROFILE,
                 ScanProfile.STANDARD: STANDARD_PROFILE,
                 ScanProfile.FULL: FULL_PROFILE,
-                }
+        }
         
         def get_profile(profile: ScanProfile | str) -> ProfileDefinition:
                 """Return the definition for a SecureForge scan profile."""
