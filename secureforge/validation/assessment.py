@@ -1,6 +1,6 @@
 """Assessment helpers for SecureForge validation results."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -109,14 +109,3 @@ return [
 assess_validation(result)
 for result in results
 ]
-
-````
-
-**Important:** The first line must literally be:
-
-`"""Assessment helpers for SecureForge validation results."""`
-
-There must be **no** ` ```python `, no ` ``` `, no `**future**`, and the class/function bodies must retain their indentation.
-
-After replacing the entire GitHub file and committing it, say **`done`**.
-````
