@@ -1,4 +1,3 @@
-```python
 """Remediation retesting for SecureForge."""
 
 from __future__ import annotations
@@ -79,4 +78,4 @@ class RetestService:
             )
             for request, previous_outcome in requests
         ]
-```
+
