@@ -2,6 +2,6 @@
 
 from .generic import GenericContainerIntegration
 
-**all** = [
+__all__ = [
 "GenericContainerIntegration",
 ]
