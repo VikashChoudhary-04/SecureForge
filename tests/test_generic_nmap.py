@@ -1,6 +1,6 @@
 """Tests for the generic Nmap integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.config import (
 ScanConfiguration,
@@ -44,7 +44,7 @@ integration = GenericNmapIntegration(
 executable="nmap"
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -56,7 +56,7 @@ assert command == [
     "-",
     "127.0.0.1",
 ]
-```
+
 
 def test_build_command_supports_custom_template() -> None:
 integration = GenericNmapIntegration(
@@ -69,7 +69,7 @@ command=[
 ]
 )
 
-```
+
 command = integration.build_command(
     make_configuration(
         network_target="192.168.1.10"
@@ -83,12 +83,12 @@ assert command == [
     "-",
     "192.168.1.10",
 ]
-```
+
 
 def test_build_command_requires_network_target() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 configuration = make_configuration(
     network_target=None
 )
@@ -103,14 +103,14 @@ else:
     raise AssertionError(
         "Expected network target validation to fail."
     )
-```
+
 
 def test_normalize_nmap_xml() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 xml_output = """\
-```
+
 
 <?xml version="1.0"?>
 
@@ -135,7 +135,7 @@ xml_output = """\
 </nmaprun>
 """
 
-```
+
 evidence = make_evidence(
     {
         "xml": xml_output
@@ -171,14 +171,14 @@ assert finding["metadata"]["protocol"] == "tcp"
 assert finding["metadata"]["service"] == "http"
 assert finding["metadata"]["product"] == "Node.js"
 assert finding["metadata"]["version"] == "20.0.0"
-```
+
 
 def test_closed_ports_are_not_normalized_as_findings() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 xml_output = """\
-```
+
 
 <?xml version="1.0"?>
 
@@ -199,7 +199,7 @@ xml_output = """\
 </nmaprun>
 """
 
-```
+
 evidence = make_evidence(
     {
         "xml": xml_output
@@ -215,14 +215,14 @@ assert len(result.findings) == 1
 assert result.findings[0]["endpoint"] == (
     "127.0.0.1:80"
 )
-```
+
 
 def test_multiple_open_services_are_normalized() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 xml_output = """\
-```
+
 
 <nmaprun>
   <host>
@@ -245,7 +245,7 @@ xml_output = """\
 </nmaprun>
 """
 
-```
+
 result = integration.normalize(
     make_evidence(
         {
@@ -266,12 +266,12 @@ assert [
     "10.0.0.5:443",
     "10.0.0.5:8080",
 ]
-```
+
 
 def test_structured_json_output_is_supported() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "services": [
@@ -304,12 +304,12 @@ assert finding["endpoint"] == "10.0.0.10:22"
 assert finding["metadata"]["service"] == "ssh"
 assert finding["metadata"]["product"] == "OpenSSH"
 assert finding["metadata"]["version"] == "9.0"
-```
+
 
 def test_json_closed_service_is_skipped() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "results": [
@@ -332,12 +332,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings == []
-```
+
 
 def test_open_service_is_not_marked_as_vulnerability() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -369,12 +369,12 @@ assert finding["security_requirement"] is None
 assert "not treated as a vulnerability" in (
     finding["impact"].lower()
 )
-```
+
 
 def test_unknown_service_is_supported() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -399,12 +399,12 @@ finding = result.findings[0]
 assert finding["title"] == (
     "Open TCP service: unknown service"
 )
-```
+
 
 def test_invalid_nmap_xml_returns_failure() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "xml": "<nmaprun><host>"
@@ -418,12 +418,12 @@ result = integration.normalize(
 assert result.success is False
 assert result.errors
 assert "could not be parsed" in result.errors[0]
-```
+
 
 def test_unsupported_output_returns_failure() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": "Nmap scan output that is not XML or JSON"
@@ -437,12 +437,12 @@ result = integration.normalize(
 assert result.success is False
 assert result.errors
 assert "supported XML or JSON" in result.errors[0]
-```
+
 
 def test_xml_with_no_hosts_generates_warning() -> None:
 integration = GenericNmapIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "xml": "<nmaprun></nmaprun>"
@@ -459,14 +459,14 @@ assert any(
     "no hosts" in warning.lower()
     for warning in result.warnings
 )
-```
+
 
 def test_integration_metadata() -> None:
 integration = GenericNmapIntegration(
 version="7.97"
 )
 
-```
+
 metadata = integration.integration_metadata()
 
 assert metadata["integration"] == "nmap"
@@ -474,4 +474,4 @@ assert metadata["display_name"] == (
     "Nmap Network Discovery"
 )
 assert metadata["version"] == "7.97"
-```
+
