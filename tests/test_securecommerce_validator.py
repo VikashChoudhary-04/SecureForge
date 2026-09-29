@@ -1,4 +1,3 @@
-```python
 # SecureCommerce validation tests
 
 from __future__ import annotations
@@ -312,4 +311,3 @@ def test_network_failure_is_returned_as_validation_error(
 
     assert result.outcome == ValidationOutcome.ERROR
     assert result.finding_id == "BOLA-001"
-```
