@@ -1,6 +1,6 @@
 """Tests for SecureForge regression models."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from datetime import timezone
 
@@ -48,7 +48,7 @@ def test_regression_test_contains_security_requirement():
 """Regression tests should map to a security requirement."""
 test = build_test()
 
-```
+
 assert test.test_id == "BOLA-001"
 assert test.security_requirement == (
     "SF-AUTHZ-001"
@@ -56,7 +56,7 @@ assert test.security_requirement == (
 assert test.target == "/api/orders/2"
 assert test.method == "GET"
 assert test.expected_result == "HTTP 403"
-```
+
 
 def test_regression_test_can_be_disabled():
 """Regression tests should support explicit disabling."""
@@ -64,9 +64,9 @@ test = build_test(
 enabled=False
 )
 
-```
+
 assert test.enabled is False
-```
+
 
 def test_regression_result_passed_property():
 """Passed results should report passed=True."""
@@ -79,10 +79,10 @@ actual_result="HTTP 403",
 message="Authorization correctly denied.",
 )
 
-```
+
 assert result.passed is True
 assert result.failed is False
-```
+
 
 def test_regression_result_failed_property():
 """Failed results should report failed=True."""
@@ -95,10 +95,10 @@ actual_result="HTTP 200",
 message="Authorization bypass remains.",
 )
 
-```
+
 assert result.passed is False
 assert result.failed is True
-```
+
 
 def test_regression_result_timestamp_is_utc():
 """Regression result timestamps should use UTC."""
@@ -109,9 +109,9 @@ status=RegressionStatus.PASSED,
 expected_result="Parameterized query",
 )
 
-```
+
 assert result.started_at.tzinfo == timezone.utc
-```
+
 
 def test_regression_suite_returns_enabled_tests():
 """Suite should expose only enabled tests when requested."""
@@ -134,7 +134,7 @@ enabled=True,
 ],
 )
 
-```
+
 enabled = suite.enabled_tests()
 
 assert [
@@ -144,7 +144,7 @@ assert [
     "BOLA-001",
     "XSS-001",
 ]
-```
+
 
 def test_suite_result_counts_passed_failed_error_skipped():
 """Suite result should correctly count each execution state."""
@@ -180,13 +180,13 @@ expected_result="No unexpected service",
 ],
 )
 
-```
+
 assert suite_result.total == 4
 assert suite_result.passed == 1
 assert suite_result.failed == 1
 assert suite_result.errors == 1
 assert suite_result.skipped == 1
-```
+
 
 def test_suite_result_is_not_successful_when_test_fails():
 """A failed regression test should make the suite unsuccessful."""
@@ -205,9 +205,9 @@ actual_result="HTTP 200",
 ],
 )
 
-```
+
 assert suite_result.successful is False
-```
+
 
 def test_suite_result_is_not_successful_when_test_errors():
 """A regression execution error should make the suite unsuccessful."""
@@ -226,9 +226,9 @@ message="Executor unavailable.",
 ],
 )
 
-```
+
 assert suite_result.successful is False
-```
+
 
 def test_suite_result_is_successful_when_all_tests_pass():
 """A suite with only passing tests should be successful."""
@@ -254,9 +254,9 @@ actual_result="No SQL injection",
 ],
 )
 
-```
+
 assert suite_result.successful is True
 assert suite_result.passed == 2
 assert suite_result.failed == 0
 assert suite_result.errors == 0
-```
+
