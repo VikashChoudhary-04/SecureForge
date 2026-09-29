@@ -1,6 +1,6 @@
 """Tests for regression rendering in SecureForge HTML reports."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.regression import (
 RegressionResult,
@@ -66,11 +66,9 @@ completed_at="2026-09-27T10:00:02+00:00",
 duration_seconds=2.0,
 )
 
-```
 return build_regression_report(
     result
 )
-```
 
 def test_html_contains_regression_section(
 sample_security_report,
@@ -80,7 +78,6 @@ sample_security_report.regression = (
 build_report()
 )
 
-```
 renderer = SecurityHTMLReportRenderer()
 
 html = renderer.render(
@@ -93,7 +90,6 @@ assert "BOLA-001" in html
 assert "SQLI-001" in html
 assert "failed" in html
 assert "passed" in html
-```
 
 def test_html_contains_regression_summary(
 sample_security_report,
@@ -103,7 +99,6 @@ sample_security_report.regression = (
 build_report()
 )
 
-```
 renderer = SecurityHTMLReportRenderer()
 
 html = renderer.render(
@@ -115,7 +110,6 @@ assert "Passed" in html
 assert "Failed" in html
 assert "Errors" in html
 assert "Skipped" in html
-```
 
 def test_html_contains_regression_expected_and_actual(
 sample_security_report,
@@ -125,7 +119,6 @@ sample_security_report.regression = (
 build_report()
 )
 
-```
 renderer = SecurityHTMLReportRenderer()
 
 html = renderer.render(
@@ -139,7 +132,6 @@ assert (
     "SQL injection input was safely rejected."
     in html
 )
-```
 
 def test_html_renders_regression_evidence(
 sample_security_report,
@@ -149,7 +141,6 @@ sample_security_report.regression = (
 build_report()
 )
 
-```
 renderer = SecurityHTMLReportRenderer()
 
 html = renderer.render(
@@ -158,7 +149,6 @@ html = renderer.render(
 
 assert "status_code" in html
 assert "/api/orders/2" in html
-```
 
 def test_html_escapes_regression_evidence(
 sample_security_report,
@@ -168,7 +158,6 @@ sample_security_report.regression = (
 build_report()
 )
 
-```
 sample_security_report.regression.tests[
     0
 ].evidence = {
@@ -190,7 +179,6 @@ assert (
     "&lt;script&gt;"
     in html
 )
-```
 
 def test_html_handles_no_regression_tests(
 sample_security_report,
@@ -202,7 +190,6 @@ status=RegressionStatus.SKIPPED
 )
 )
 
-```
 sample_security_report.regression.tests = []
 
 renderer = SecurityHTMLReportRenderer()
@@ -213,7 +200,6 @@ html = renderer.render(
 
 assert "No regression tests were executed." in html
 assert "securecommerce-regression" in html
-```
 
 def test_html_write_html_persists_regression_report(
 sample_security_report,
@@ -224,7 +210,6 @@ sample_security_report.regression = (
 build_report()
 )
 
-```
 output = (
     tmp_path
     / "security-report.html"
@@ -247,4 +232,3 @@ content = output.read_text(
 assert "Regression Testing" in content
 assert "BOLA-001" in content
 assert "SecureCommerce Regression Suite" in content
-```
