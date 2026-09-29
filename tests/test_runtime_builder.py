@@ -1,6 +1,6 @@
 """Tests for building typed scan configuration from runtime YAML."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -22,12 +22,10 @@ tmp_path: Path,
 """Create a runtime configuration for testing."""
 path = tmp_path / "secureforge.yaml"
 
-```
 return RuntimeConfiguration(
     path=path,
     data=data,
 )
-```
 
 def base_data() -> dict:
 """Return a minimal valid runtime configuration."""
@@ -69,7 +67,6 @@ base_data(),
 tmp_path,
 )
 
-```
 configuration = build_scan_configuration(runtime)
 
 assert configuration.profile == ScanProfile.STANDARD
@@ -89,7 +86,6 @@ assert configuration.target.openapi_url == (
 assert configuration.target.source_path == (
     "./vulnerable-app/securecommerce"
 )
-```
 
 def test_builds_all_target_fields(
 tmp_path: Path,
@@ -97,7 +93,6 @@ tmp_path: Path,
 """All supported target fields should be transferred."""
 data = base_data()
 
-```
 data["target"].update(
     {
         "container_image": "securecommerce:latest",
@@ -121,7 +116,6 @@ assert target.container_path == "./container"
 assert target.iac_path == "./infra"
 assert target.network_target == "127.0.0.1"
 assert target.evidence_path == "./evidence"
-```
 
 def test_builds_integration_configuration(
 tmp_path: Path,
@@ -132,7 +126,6 @@ base_data(),
 tmp_path,
 )
 
-```
 configuration = build_scan_configuration(runtime)
 
 sast = configuration.integrations["sast"]
@@ -144,7 +137,6 @@ assert sast.command == (
     "--source {source_path} "
     "--format json"
 )
-```
 
 def test_disabled_integration_is_preserved(
 tmp_path: Path,
@@ -155,13 +147,11 @@ base_data(),
 tmp_path,
 )
 
-```
 configuration = build_scan_configuration(runtime)
 
 sca = configuration.integrations["sca"]
 
 assert sca.enabled is False
-```
 
 def test_integration_options_are_preserved(
 tmp_path: Path,
@@ -169,7 +159,6 @@ tmp_path: Path,
 """Additional integration options should not be discarded."""
 data = base_data()
 
-```
 data["integrations"]["sast"].update(
     {
         "timeout": 120,
@@ -188,7 +177,6 @@ options = configuration.integrations["sast"].options
 
 assert options["timeout"] == 120
 assert options["severity_threshold"] == "medium"
-```
 
 def test_quick_profile_is_supported(
 tmp_path: Path,
@@ -197,7 +185,6 @@ tmp_path: Path,
 data = base_data()
 data["scan"]["profile"] = "quick"
 
-```
 runtime = make_runtime(
     data,
     tmp_path,
@@ -206,7 +193,6 @@ runtime = make_runtime(
 configuration = build_scan_configuration(runtime)
 
 assert configuration.profile == ScanProfile.QUICK
-```
 
 def test_full_profile_is_supported(
 tmp_path: Path,
@@ -215,7 +201,6 @@ tmp_path: Path,
 data = base_data()
 data["scan"]["profile"] = "full"
 
-```
 runtime = make_runtime(
     data,
     tmp_path,
@@ -224,7 +209,6 @@ runtime = make_runtime(
 configuration = build_scan_configuration(runtime)
 
 assert configuration.profile == ScanProfile.FULL
-```
 
 def test_profile_is_case_insensitive(
 tmp_path: Path,
@@ -233,7 +217,6 @@ tmp_path: Path,
 data = base_data()
 data["scan"]["profile"] = "FULL"
 
-```
 runtime = make_runtime(
     data,
     tmp_path,
@@ -242,7 +225,6 @@ runtime = make_runtime(
 configuration = build_scan_configuration(runtime)
 
 assert configuration.profile == ScanProfile.FULL
-```
 
 def test_invalid_profile_fails(
 tmp_path: Path,
@@ -251,7 +233,6 @@ tmp_path: Path,
 data = base_data()
 data["scan"]["profile"] = "enterprise"
 
-```
 runtime = make_runtime(
     data,
     tmp_path,
@@ -262,7 +243,6 @@ with pytest.raises(
     match="Unsupported scan profile 'enterprise'",
 ):
     build_scan_configuration(runtime)
-```
 
 def test_invalid_integration_configuration_fails(
 tmp_path: Path,
@@ -271,7 +251,6 @@ tmp_path: Path,
 data = base_data()
 data["integrations"]["sast"] = "invalid"
 
-```
 runtime = make_runtime(
     data,
     tmp_path,
@@ -282,7 +261,6 @@ with pytest.raises(
     match="Integration 'sast' configuration must be a mapping",
 ):
     build_scan_configuration(runtime)
-```
 
 def test_empty_integrations_are_supported_by_builder(
 tmp_path: Path,
@@ -291,7 +269,6 @@ tmp_path: Path,
 data = base_data()
 data["integrations"] = {}
 
-```
 runtime = make_runtime(
     data,
     tmp_path,
@@ -300,7 +277,6 @@ runtime = make_runtime(
 configuration = build_scan_configuration(runtime)
 
 assert configuration.integrations == {}
-```
 
 def test_unknown_target_fields_are_ignored(
 tmp_path: Path,
@@ -308,7 +284,6 @@ tmp_path: Path,
 """Unsupported target fields should not break typed configuration."""
 data = base_data()
 
-```
 data["target"]["custom_target_metadata"] = {
     "owner": "security-team",
 }
@@ -323,4 +298,3 @@ configuration = build_scan_configuration(runtime)
 assert configuration.target.base_url == (
     "http://localhost:5000"
 )
-```
