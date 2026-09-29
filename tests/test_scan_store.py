@@ -1,4 +1,3 @@
-```python id="n6r2k8"
 """Tests for persistent SecureForge scan-result storage."""
 
 import json
@@ -343,4 +342,3 @@ def test_scan_store_rejects_invalid_pipeline(
         store.load(
             "scan-001"
         )
-```
