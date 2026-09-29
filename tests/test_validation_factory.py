@@ -1,4 +1,3 @@
-```python id="x9m2q4"
 """Tests for SecureForge validation factories."""
 
 from secureforge.validation import (
@@ -65,4 +64,3 @@ def test_build_validation_engine_accepts_custom_timeouts() -> None:
     assert engine.registry.get("http").timeout == 6.0
     assert engine.registry.get("script").timeout == 7.0
     assert engine.registry.get("api").timeout == 8.0
-```
