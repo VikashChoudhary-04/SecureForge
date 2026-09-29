@@ -1,6 +1,6 @@
 """Tests for SecureCommerce regression executors."""
 
-from **future** import annotations
+from _future_ import annotations
 
 from pathlib import Path
 
@@ -35,7 +35,7 @@ tmp_path: Path,
 source_root = tmp_path / "app"
 source_root.mkdir()
 
-```
+
 source_file = source_root / "example.py"
 
 source_file.write_text(
@@ -64,7 +64,7 @@ matches = result["evidence"]["matches"]
 assert len(matches) == 1
 assert matches[0]["value"] == "[REDACTED]"
 assert matches[0]["line"] == 1
-```
+
 
 def test_secret_executor_passes_clean_source(
 tmp_path: Path,
@@ -73,12 +73,12 @@ tmp_path: Path,
 source_root = tmp_path / "app"
 source_root.mkdir()
 
-```
+
 source_file = source_root / "example.py"
 
 source_file.write_text(
     """
-```
+
 
 def health():
 return "ok"
@@ -86,7 +86,7 @@ return "ok"
 encoding="utf-8",
 )
 
-```
+
 executor = SecureCommerceRegressionExecutor(
     source_root=source_root
 )
@@ -100,7 +100,7 @@ result = executor.execute(
 
 assert result["status"] == "passed"
 assert result["evidence"]["matches"] == []
-```
+
 
 def test_iac_executor_passes_secure_configuration(
 tmp_path: Path,
@@ -109,7 +109,7 @@ tmp_path: Path,
 infrastructure_root = tmp_path / "infra"
 infrastructure_root.mkdir()
 
-```
+
 secure_file = (
     infrastructure_root
     / "secure.tf"
@@ -117,7 +117,7 @@ secure_file = (
 
 secure_file.write_text(
     """
-```
+
 
 resource "null_resource" "secure_application" {
 triggers = {
@@ -142,7 +142,7 @@ permissions = "read-write-required-resources-only"
 encoding="utf-8",
 )
 
-```
+
 executor = SecureCommerceRegressionExecutor(
     infrastructure_root=infrastructure_root
 )
@@ -159,7 +159,7 @@ assert result["status"] == "passed"
 checks = result["evidence"]["checks"]
 
 assert all(checks.values())
-```
+
 
 def test_iac_executor_fails_insecure_configuration(
 tmp_path: Path,
@@ -168,7 +168,7 @@ tmp_path: Path,
 infrastructure_root = tmp_path / "infra"
 infrastructure_root.mkdir()
 
-```
+
 secure_file = (
     infrastructure_root
     / "secure.tf"
@@ -176,7 +176,7 @@ secure_file = (
 
 secure_file.write_text(
     """
-```
+
 
 resource "null_resource" "insecure" {
 triggers = {
@@ -190,7 +190,7 @@ permissions = "*"
 encoding="utf-8",
 )
 
-```
+
 executor = SecureCommerceRegressionExecutor(
     infrastructure_root=infrastructure_root
 )
@@ -211,13 +211,13 @@ assert checks["encryption_enabled"] is False
 assert checks["private_storage"] is False
 assert checks["least_privilege"] is False
 assert checks["wildcard_permissions_absent"] is False
-```
+
 
 def test_executor_rejects_unknown_test():
 """Unknown regression IDs should be rejected."""
 executor = SecureCommerceRegressionExecutor()
 
-```
+
 result = None
 
 try:
@@ -233,13 +233,13 @@ assert result is not None
 assert "No SecureCommerce regression executor" in str(
     result
 )
-```
+
 
 def test_secret_executor_requires_source_root():
 """Secret scanning should require a source directory."""
 executor = SecureCommerceRegressionExecutor()
 
-```
+
 try:
     executor.execute(
         build_test(
@@ -254,13 +254,13 @@ else:
 
 assert error is not None
 assert "source_root is required" in str(error)
-```
+
 
 def test_iac_executor_requires_infrastructure_root():
 """IaC scanning should require an infrastructure directory."""
 executor = SecureCommerceRegressionExecutor()
 
-```
+
 try:
     executor.execute(
         build_test(
@@ -275,4 +275,4 @@ else:
 
 assert error is not None
 assert "infrastructure_root is required" in str(error)
-```
+
