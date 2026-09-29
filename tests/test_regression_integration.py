@@ -1,6 +1,6 @@
 """Tests for SecureForge regression gate integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.regression import (
 RegressionResult,
@@ -71,7 +71,7 @@ RegressionStatus.SKIPPED,
 ],
 )
 
-```
+
 gate_input = build_regression_gate_input(
     result
 )
@@ -98,7 +98,7 @@ assert gate_input.failures == (
 )
 assert gate_input.has_failures is True
 assert gate_input.release_blocked is True
-```
+
 
 def test_build_gate_input_from_passing_suite():
 """A passing suite should produce a non-blocking gate input."""
@@ -116,7 +116,7 @@ RegressionStatus.PASSED,
 ],
 )
 
-```
+
 gate_input = build_regression_gate_input(
     result
 )
@@ -127,7 +127,7 @@ assert gate_input.errored_tests == ()
 assert gate_input.failures == ()
 assert gate_input.has_failures is False
 assert gate_input.release_blocked is False
-```
+
 
 def test_build_gate_input_from_assessment():
 """Existing assessments should convert consistently."""
@@ -141,7 +141,7 @@ RegressionStatus.ERROR,
 ],
 )
 
-```
+
 assessment = assess_regression_result(
     result
 )
@@ -165,7 +165,7 @@ assert gate_input.skipped_tests == (
     assessment.skipped_tests
 )
 assert gate_input.release_blocked is True
-```
+
 
 def test_gate_input_serializes_for_reporting():
 """Gate input should produce report-friendly data."""
@@ -179,7 +179,7 @@ RegressionStatus.FAILED,
 ],
 )
 
-```
+
 gate_input = build_regression_gate_input(
     result
 )
@@ -202,4 +202,4 @@ assert data == {
     ],
     "release_blocked": True,
 }
-```
+
