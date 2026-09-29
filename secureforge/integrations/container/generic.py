@@ -1,6 +1,6 @@
 """Generic container security integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 from typing import Any
@@ -21,7 +21,7 @@ SecurityIntegration,
 class GenericContainerIntegration(SecurityIntegration):
 """Adapt generic JSON container-scanner output to SecureForge."""
 
-```
+
 integration_name = "container"
 display_name = "Generic Container Security"
 
@@ -734,4 +734,4 @@ def _render_command(
         )
         for token in command
     ]
-```
+
