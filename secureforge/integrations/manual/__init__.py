@@ -2,6 +2,11 @@
 
 from .evidence import ManualEvidenceIntegration
 
+
+ManualIntegration = ManualEvidenceIntegration
+
+
 __all__ = [
-"ManualEvidenceIntegration",
+    "ManualIntegration",
+    "ManualEvidenceIntegration",
 ]
