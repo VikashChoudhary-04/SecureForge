@@ -7,7 +7,6 @@ from typing import Any
 
 from secureforge.core.config import ScanConfiguration
 from secureforge.core.normalization import (
-    NormalizationError,
     NormalizationResult,
     RawEvidence,
 )
@@ -55,13 +54,7 @@ class GenericAPIIntegration(SecurityIntegration):
         self,
         context: IntegrationContext,
     ) -> IntegrationResult:
-        """Execute the integration interface.
-
-        The generic integration does not execute an external scanner
-        directly through this interface. Scanner execution is handled
-        by SecureForge's tool execution layer. This method provides a
-        compatible integration contract for registry use.
-        """
+        """Execute the integration interface."""
         return IntegrationResult(
             integration=self.integration_name,
             success=True,
@@ -191,7 +184,7 @@ class GenericAPIIntegration(SecurityIntegration):
                         index,
                     )
                 )
-            except NormalizationError as exc:
+            except (KeyError, TypeError, ValueError) as exc:
                 warnings.append(
                     f"API finding #{index} could not "
                     f"be normalized: {exc}"
