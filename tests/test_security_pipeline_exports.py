@@ -1,4 +1,3 @@
-```python id="c7m2v9"
 """Tests for SecureForge security-pipeline exports."""
 
 from secureforge.core.scan.security_pipeline import (
@@ -98,4 +97,3 @@ def test_security_pipeline_result_to_dict(
     ).issubset(
         payload.keys()
     )
-```
