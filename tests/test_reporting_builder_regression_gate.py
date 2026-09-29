@@ -1,4 +1,3 @@
-```python id="s4n8c2"
 """Tests for regression-gate handling in the report builder."""
 
 from secureforge.reporting import (
@@ -182,4 +181,3 @@ def test_builder_maps_error_regression_gate(
     assert report.regression_gate.failures == [
         "AUTHZ-001"
     ]
-```
