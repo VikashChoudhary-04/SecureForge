@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression release gate."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.regression import (
 RegressionResult,
@@ -46,11 +46,11 @@ completed_at="2026-09-27T10:00:01+00:00",
 duration_seconds=1.0,
 )
 
-```
+
 return assess_regression_result(
     suite_result
 )
-```
+
 
 def test_gate_allows_passing_regressions():
 """All passing regressions should allow release."""
@@ -68,7 +68,7 @@ RegressionStatus.PASSED,
 ],
 )
 
-```
+
 decision = evaluate_regression_gate(
     assessment
 )
@@ -82,7 +82,7 @@ assert decision.reason == (
 assert decision.failed_tests == ()
 assert decision.errored_tests == ()
 assert decision.failures == ()
-```
+
 
 def test_gate_blocks_failed_regressions():
 """A failed regression should block release."""
@@ -100,7 +100,7 @@ RegressionStatus.PASSED,
 ],
 )
 
-```
+
 decision = evaluate_regression_gate(
     assessment
 )
@@ -118,7 +118,7 @@ assert decision.errored_tests == ()
 assert decision.failures == (
     "BOLA-001",
 )
-```
+
 
 def test_gate_blocks_regression_errors():
 """A regression execution error should block release."""
@@ -132,7 +132,7 @@ RegressionStatus.ERROR,
 ],
 )
 
-```
+
 decision = evaluate_regression_gate(
     assessment
 )
@@ -151,7 +151,7 @@ assert decision.errored_tests == (
 assert decision.failures == (
     "SECRET-001",
 )
-```
+
 
 def test_gate_allows_skipped_regressions():
 """Skipped regression testing should remain explicitly visible."""
@@ -165,7 +165,7 @@ RegressionStatus.SKIPPED,
 ],
 )
 
-```
+
 decision = evaluate_regression_gate(
     assessment
 )
@@ -180,7 +180,7 @@ assert decision.reason == (
 assert decision.skipped_tests == (
     "MISCONFIG-001",
 )
-```
+
 
 def test_failed_regression_takes_precedence_over_error():
 """A failed regression should be reported before an execution error."""
@@ -198,7 +198,7 @@ RegressionStatus.ERROR,
 ],
 )
 
-```
+
 decision = evaluate_regression_gate(
     assessment
 )
@@ -211,7 +211,7 @@ assert decision.failed_tests == (
 assert decision.errored_tests == (
     "SECRET-001",
 )
-```
+
 
 def test_gate_decision_serializes_to_dictionary():
 """Gate decisions should be report-friendly."""
@@ -225,7 +225,7 @@ RegressionStatus.FAILED,
 ],
 )
 
-```
+
 decision = evaluate_regression_gate(
     assessment
 )
@@ -248,4 +248,4 @@ assert data == {
         "BOLA-001",
     ],
 }
-```
+
