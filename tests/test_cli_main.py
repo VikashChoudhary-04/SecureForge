@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from secureforge import **version**
+from secureforge import __version__
 from secureforge.cli.main import app
 
 runner = CliRunner()
