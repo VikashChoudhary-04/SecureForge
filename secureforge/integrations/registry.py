@@ -1,6 +1,6 @@
 """Registry for SecureForge security-tool integrations."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from collections.abc import Iterable
 
@@ -9,67 +9,66 @@ from .base import SecurityIntegration
 class IntegrationRegistry:
 """Register and retrieve SecureForge security integrations."""
 
-```
-def __init__(
-    self,
-    integrations: Iterable[SecurityIntegration] | None = None,
-) -> None:
-    self._integrations: dict[str, SecurityIntegration] = {}
-
-    if integrations:
-        self.register_many(
+    def __init__(
+        self,
+        integrations: Iterable[SecurityIntegration] | None = None,
+    ) -> None:
+        self._integrations: dict[str, SecurityIntegration] = {}
+    
+        if integrations:
+            self.register_many(
+                integrations
+            )
+    
+    def register(
+        self,
+        integration: SecurityIntegration,
+        *,
+        replace: bool = False,
+    ) -> None:
+        """Register a security integration."""
+        integration_name = self._normalize_name(
+            integration.name
+        )
+    
+        if not integration_name:
+            raise ValueError(
+                "Integration name cannot be empty."
+            )
+    
+        if (
+            integration_name in self._integrations
+            and not replace
+        ):
+            raise ValueError(
+                f"Integration '{integration_name}' "
+                "is already registered."
+            )
+    
+        self._integrations[
+            integration_name
+        ] = integration
+    
+    def register_many(
+        self,
+        integrations: Iterable[SecurityIntegration],
+        *,
+        replace: bool = False,
+    ) -> int:
+        """Register multiple security integrations."""
+        integrations_list = list(
             integrations
         )
-
-def register(
-    self,
-    integration: SecurityIntegration,
-    *,
-    replace: bool = False,
-) -> None:
-    """Register a security integration."""
-    integration_name = self._normalize_name(
-        integration.name
-    )
-
-    if not integration_name:
-        raise ValueError(
-            "Integration name cannot be empty."
+    
+        for integration in integrations_list:
+            self.register(
+                integration,
+                replace=replace,
+            )
+    
+        return len(
+            integrations_list
         )
-
-    if (
-        integration_name in self._integrations
-        and not replace
-    ):
-        raise ValueError(
-            f"Integration '{integration_name}' "
-            "is already registered."
-        )
-
-    self._integrations[
-        integration_name
-    ] = integration
-
-def register_many(
-    self,
-    integrations: Iterable[SecurityIntegration],
-    *,
-    replace: bool = False,
-) -> int:
-    """Register multiple security integrations."""
-    integrations_list = list(
-        integrations
-    )
-
-    for integration in integrations_list:
-        self.register(
-            integration,
-            replace=replace,
-        )
-
-    return len(
-        integrations_list
-    )
 
 def get(
     self,
@@ -170,4 +169,3 @@ def _normalize_name(
 ) -> str:
     """Normalize an integration name."""
     return name.strip().lower()
-```
