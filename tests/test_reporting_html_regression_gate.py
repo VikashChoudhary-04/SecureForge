@@ -1,4 +1,3 @@
-```python id="x9c4m2"
 """Tests for regression-gate rendering in HTML reports."""
 
 from pathlib import Path
@@ -136,4 +135,3 @@ def test_html_renderer_writes_regression_gate_report(
 
     if sample_security_report.regression_gate is not None:
         assert "Regression Gate" in html
-```
