@@ -2,6 +2,6 @@
 
 from .evidence import ManualEvidenceIntegration
 
-**all** = [
+__all__ = [
 "ManualEvidenceIntegration",
 ]
