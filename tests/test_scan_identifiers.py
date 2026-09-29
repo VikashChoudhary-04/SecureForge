@@ -35,7 +35,6 @@ commit_sha="abc123",
 environment="lab",
 )
 
-```
 second = ScanIdentifier.generate(
     application="SecureCommerce",
     version="1.0.0",
@@ -45,7 +44,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first == second
-```
 
 def test_scan_identifier_has_expected_prefix() -> None:
 """Verify generated IDs use the SCAN prefix."""
@@ -55,9 +53,7 @@ version="1.0.0",
 profile=ScanProfile.QUICK,
 )
 
-```
 assert identifier.startswith("SCAN-")
-```
 
 def test_scan_identifier_has_expected_length() -> None:
 """Verify generated identifiers have the expected format."""
@@ -67,9 +63,7 @@ version="1.0.0",
 profile=ScanProfile.QUICK,
 )
 
-```
 assert len(identifier) == 17
-```
 
 def test_scan_identifier_changes_with_application() -> None:
 """Verify application changes produce different identifiers."""
@@ -79,7 +73,6 @@ version="1.0.0",
 profile="quick",
 )
 
-```
 second = ScanIdentifier.generate(
     application="OtherApplication",
     version="1.0.0",
@@ -87,7 +80,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first != second
-```
 
 def test_scan_identifier_changes_with_version() -> None:
 """Verify version changes produce different identifiers."""
@@ -97,7 +89,6 @@ version="1.0.0",
 profile="quick",
 )
 
-```
 second = ScanIdentifier.generate(
     application="SecureCommerce",
     version="2.0.0",
@@ -105,7 +96,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first != second
-```
 
 def test_scan_identifier_changes_with_profile() -> None:
 """Verify profile changes produce different identifiers."""
@@ -115,7 +105,6 @@ version="1.0.0",
 profile="quick",
 )
 
-```
 second = ScanIdentifier.generate(
     application="SecureCommerce",
     version="1.0.0",
@@ -123,7 +112,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first != second
-```
 
 def test_scan_identifier_changes_with_commit() -> None:
 """Verify commit changes produce different identifiers."""
@@ -134,7 +122,6 @@ profile="standard",
 commit_sha="abc123",
 )
 
-```
 second = ScanIdentifier.generate(
     application="SecureCommerce",
     version="1.0.0",
@@ -143,7 +130,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first != second
-```
 
 def test_scan_identifier_changes_with_environment() -> None:
 """Verify environment changes produce different identifiers."""
@@ -154,7 +140,6 @@ profile="standard",
 environment="lab",
 )
 
-```
 second = ScanIdentifier.generate(
     application="SecureCommerce",
     version="1.0.0",
@@ -163,7 +148,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first != second
-```
 
 def test_scan_identifier_normalizes_application_case() -> None:
 """Verify application casing does not affect the identifier."""
@@ -173,7 +157,6 @@ version="1.0.0",
 profile="quick",
 )
 
-```
 second = ScanIdentifier.generate(
     application="securecommerce",
     version="1.0.0",
@@ -181,7 +164,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first == second
-```
 
 def test_scan_identifier_normalizes_whitespace() -> None:
 """Verify repeated whitespace is normalized."""
@@ -191,7 +173,6 @@ version="1.0.0",
 profile="quick",
 )
 
-```
 second = ScanIdentifier.generate(
     application="Secure Commerce",
     version="1.0.0",
@@ -199,7 +180,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first == second
-```
 
 def test_scan_identifier_normalizes_version_case() -> None:
 """Verify version normalization is deterministic."""
@@ -209,7 +189,6 @@ version=" RELEASE-1 ",
 profile="quick",
 )
 
-```
 second = ScanIdentifier.generate(
     application="SecureCommerce",
     version="release-1",
@@ -217,7 +196,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first == second
-```
 
 def test_scan_identifier_normalizes_commit_case() -> None:
 """Verify commit normalization is deterministic."""
@@ -228,7 +206,6 @@ profile="quick",
 commit_sha="ABC123",
 )
 
-```
 second = ScanIdentifier.generate(
     application="SecureCommerce",
     version="1.0.0",
@@ -237,7 +214,6 @@ second = ScanIdentifier.generate(
 )
 
 assert first == second
-```
 
 def test_scan_identifier_accepts_string_profile() -> None:
 """Verify string scan profiles are supported."""
@@ -247,9 +223,7 @@ version="1.0.0",
 profile="standard",
 )
 
-```
 assert identifier.startswith("SCAN-")
-```
 
 def test_scan_identifier_accepts_enum_profile() -> None:
 """Verify ScanProfile values are supported."""
@@ -259,9 +233,7 @@ version="1.0.0",
 profile=ScanProfile.FULL,
 )
 
-```
 assert identifier.startswith("SCAN-")
-```
 
 def test_scan_identifier_handles_missing_optional_values() -> None:
 """Verify optional components can be omitted."""
@@ -271,10 +243,8 @@ version="1.0.0",
 profile="quick",
 )
 
-```
 assert identifier.startswith("SCAN-")
 assert len(identifier) == 17
-```
 
 def test_scan_identifier_handles_none_commit() -> None:
 """Verify an explicitly missing commit is supported."""
@@ -285,9 +255,7 @@ profile="quick",
 commit_sha=None,
 )
 
-```
 assert identifier.startswith("SCAN-")
-```
 
 def test_scan_identifier_handles_none_environment() -> None:
 """Verify an explicitly missing environment is supported."""
@@ -298,9 +266,7 @@ profile="quick",
 environment=None,
 )
 
-```
 assert identifier.startswith("SCAN-")
-```
 
 def test_scan_identifier_rejects_empty_application() -> None:
 """Verify empty application names are rejected."""
@@ -366,7 +332,6 @@ def test_scan_identifier_from_configuration() -> None:
 """Verify configuration-based identifier generation."""
 configuration = build_configuration()
 
-```
 identifier = ScanIdentifier.from_configuration(
     configuration,
     commit_sha="abc123",
@@ -381,13 +346,11 @@ expected = ScanIdentifier.generate(
 )
 
 assert identifier == expected
-```
 
 def test_configuration_identifier_changes_with_commit() -> None:
 """Verify configuration-based IDs reflect the commit."""
 configuration = build_configuration()
 
-```
 first = ScanIdentifier.from_configuration(
     configuration,
     commit_sha="abc123",
@@ -399,13 +362,11 @@ second = ScanIdentifier.from_configuration(
 )
 
 assert first != second
-```
 
 def test_configuration_identifier_uses_configuration_profile() -> None:
 """Verify configuration profile affects the generated ID."""
 configuration = build_configuration()
 
-```
 standard_id = ScanIdentifier.from_configuration(
     configuration
 )
@@ -417,13 +378,11 @@ full_id = ScanIdentifier.from_configuration(
 )
 
 assert standard_id != full_id
-```
 
 def test_configuration_identifier_uses_configuration_environment() -> None:
 """Verify configuration environment affects the generated ID."""
 configuration = build_configuration()
 
-```
 lab_id = ScanIdentifier.from_configuration(
     configuration
 )
@@ -435,7 +394,6 @@ staging_id = ScanIdentifier.from_configuration(
 )
 
 assert lab_id != staging_id
-```
 
 def test_different_profiles_have_distinct_identifiers() -> None:
 """Verify all supported profiles produce distinct IDs."""
@@ -449,11 +407,9 @@ environment="lab",
 for profile in ScanProfile
 }
 
-```
 assert len(identifiers) == len(
     list(ScanProfile)
 )
-```
 
 def test_same_inputs_with_optional_values_are_reproducible() -> None:
 """Verify reproducibility when optional values are supplied."""
@@ -465,11 +421,9 @@ parameters = {
 "environment": "LAB",
 }
 
-```
 identifiers = [
     ScanIdentifier.generate(**parameters)
     for _ in range(5)
 ]
 
 assert len(set(identifiers)) == 1
-```
