@@ -1,4 +1,3 @@
-```python
 """Tests for the SecureForge validation engine."""
 
 from secureforge.validation.base import BaseValidator, ValidationError
@@ -172,4 +171,3 @@ def test_engine_reports_supported_methods() -> None:
     assert engine.supports_method(
         ValidationMethod.HTTP
     ) is False
-```
