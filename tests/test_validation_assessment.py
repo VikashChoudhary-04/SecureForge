@@ -1,4 +1,3 @@
-```python
 """Tests for SecureForge validation assessment."""
 
 from secureforge.validation.assessment import (
@@ -150,4 +149,3 @@ def test_assess_many_preserves_order() -> None:
     assert assessments[0].status == "confirmed"
     assert assessments[1].status == "rejected"
     assert assessments[2].status == "inconclusive"
-```
