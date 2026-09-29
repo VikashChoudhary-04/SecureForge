@@ -1,6 +1,6 @@
 """Tests for SecureForge HTML security reports."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.findings import (
 Confidence,
@@ -42,7 +42,6 @@ impact="Attacker-controlled script may execute in a victim browser.",
 remediation="Apply context-aware output encoding.",
 )
 
-```
 risk = RiskAssessment(
     score=7.5,
     highest_severity="high",
@@ -99,13 +98,11 @@ return SecurityReportBuilder().build(
         }
     ],
 )
-```
 
 def test_html_renderer_returns_standalone_document():
 """Renderer should return a complete HTML document."""
 report = build_report()
 
-```
 renderer = SecurityHTMLReportRenderer()
 
 html = renderer.render(report)
@@ -115,13 +112,11 @@ assert "<html" in html
 assert "<head>" in html
 assert "<body>" in html
 assert "</html>" in html
-```
 
 def test_html_contains_release_information():
 """HTML should expose important release metadata."""
 report = build_report()
 
-```
 html = SecurityHTMLReportRenderer().render(
     report
 )
@@ -130,13 +125,11 @@ assert "SecureCommerce" in html
 assert "release-html-001" in html
 assert "0.1.0" in html
 assert "standard" in html
-```
 
 def test_html_contains_release_decision():
 """HTML should clearly display the release decision."""
 report = build_report()
 
-```
 html = SecurityHTMLReportRenderer().render(
     report
 )
@@ -145,13 +138,11 @@ assert "Release Decision" in html
 assert "block" in html
 assert "Release allowed:" in html
 assert "False" in html
-```
 
 def test_html_contains_finding_information():
 """HTML should display normalized finding information."""
 report = build_report()
 
-```
 html = SecurityHTMLReportRenderer().render(
     report
 )
@@ -162,13 +153,11 @@ assert "high" in html
 assert "dast" in html
 assert "/vulnerable/search" in html
 assert "SF-INPUT-001" in html
-```
 
 def test_html_escapes_untrusted_finding_content():
 """Finding content should be HTML escaped."""
 report = build_report()
 
-```
 html = SecurityHTMLReportRenderer().render(
     report
 )
@@ -178,13 +167,11 @@ assert (
     in html
 )
 assert "<script>" not in html
-```
 
 def test_html_contains_regression_results():
 """HTML should display regression test results."""
 report = build_report()
 
-```
 html = SecurityHTMLReportRenderer().render(
     report
 )
@@ -193,13 +180,11 @@ assert "Regression Testing" in html
 assert "XSS-001" in html
 assert "failed" in html
 assert "XSS regression remains." in html
-```
 
 def test_html_contains_policy_information():
 """HTML should display policy actions."""
 report = build_report()
 
-```
 html = SecurityHTMLReportRenderer().render(
     report
 )
@@ -210,13 +195,11 @@ assert "Critical" in html
 assert "High" in html
 assert "Medium" in html
 assert "Low" in html
-```
 
 def test_html_writer_creates_file(tmp_path):
 """Renderer should write a standalone HTML report."""
 report = build_report()
 
-```
 output_path = (
     tmp_path
     / "reports"
@@ -240,4 +223,3 @@ assert content.startswith(
 )
 assert "SecureForge Security Report" in content
 assert "SF-XSS-001" in content
-```
