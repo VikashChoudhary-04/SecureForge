@@ -42,17 +42,14 @@ data: dict[str, object] = {
 "environment": Environment.UNKNOWN,
 }
 
-```
 data.update(overrides)
 
 return RiskContext.model_validate(data)
-```
 
 def test_base_score_matches_severity() -> None:
 """Verify severity maps to the documented base score."""
 scorer = RiskScorer()
 
-```
 assert scorer.base_score(
     build_finding(Severity.CRITICAL)
 ) == 90.0
@@ -72,7 +69,6 @@ assert scorer.base_score(
 assert scorer.base_score(
     build_finding(Severity.INFO)
 ) == 5.0
-```
 
 @pytest.mark.parametrize(
 ("severity", "expected"),
@@ -97,7 +93,6 @@ def test_critical_asset_adds_ten_points() -> None:
 """Verify critical assets receive the documented adjustment."""
 scorer = RiskScorer()
 
-```
 score, factor = scorer.apply_asset_importance(
     50.0,
     AssetImportance.CRITICAL,
@@ -105,13 +100,11 @@ score, factor = scorer.apply_asset_importance(
 
 assert score == 60.0
 assert factor == "critical-importance asset"
-```
 
 def test_high_asset_adds_six_points() -> None:
 """Verify high-importance assets receive the documented adjustment."""
 scorer = RiskScorer()
 
-```
 score, factor = scorer.apply_asset_importance(
     50.0,
     AssetImportance.HIGH,
@@ -119,13 +112,11 @@ score, factor = scorer.apply_asset_importance(
 
 assert score == 56.0
 assert factor == "high-importance asset"
-```
 
 def test_medium_asset_has_no_adjustment() -> None:
 """Verify medium assets leave the score unchanged."""
 scorer = RiskScorer()
 
-```
 score, factor = scorer.apply_asset_importance(
     50.0,
     AssetImportance.MEDIUM,
@@ -133,13 +124,11 @@ score, factor = scorer.apply_asset_importance(
 
 assert score == 50.0
 assert factor is None
-```
 
 def test_low_asset_reduces_score_by_five() -> None:
 """Verify low-importance assets receive the documented reduction."""
 scorer = RiskScorer()
 
-```
 score, factor = scorer.apply_asset_importance(
     50.0,
     AssetImportance.LOW,
@@ -147,7 +136,6 @@ score, factor = scorer.apply_asset_importance(
 
 assert score == 45.0
 assert factor == "low-importance asset"
-```
 
 def test_internet_exposure_adds_ten_points() -> None:
 """Verify internet exposure increases risk."""
@@ -156,10 +144,8 @@ score, factor = RiskScorer.apply_internet_exposure(
 True,
 )
 
-```
 assert score == 60.0
 assert factor == "internet-exposed asset"
-```
 
 def test_no_internet_exposure_has_no_adjustment() -> None:
 """Verify internal assets receive no exposure adjustment."""
@@ -168,10 +154,8 @@ score, factor = RiskScorer.apply_internet_exposure(
 False,
 )
 
-```
 assert score == 50.0
 assert factor is None
-```
 
 def test_missing_authentication_adds_ten_points() -> None:
 """Verify unauthenticated exploitation increases risk."""
@@ -180,10 +164,8 @@ score, factor = RiskScorer.apply_authentication(
 False,
 )
 
-```
 assert score == 60.0
 assert factor == "no authentication required"
-```
 
 def test_required_authentication_has_no_adjustment() -> None:
 """Verify authentication requirements do not increase risk."""
@@ -192,10 +174,8 @@ score, factor = RiskScorer.apply_authentication(
 True,
 )
 
-```
 assert score == 50.0
 assert factor is None
-```
 
 def test_sensitive_data_adds_ten_points() -> None:
 """Verify sensitive-data impact increases risk."""
@@ -204,10 +184,8 @@ score, factor = RiskScorer.apply_sensitive_data(
 True,
 )
 
-```
 assert score == 60.0
 assert factor == "sensitive data affected"
-```
 
 def test_no_sensitive_data_has_no_adjustment() -> None:
 """Verify non-sensitive findings receive no data adjustment."""
@@ -216,10 +194,8 @@ score, factor = RiskScorer.apply_sensitive_data(
 False,
 )
 
-```
 assert score == 50.0
 assert factor is None
-```
 
 def test_exploit_evidence_adds_ten_points() -> None:
 """Verify confirmed exploit evidence increases risk."""
@@ -228,10 +204,8 @@ score, factor = RiskScorer.apply_exploit_evidence(
 True,
 )
 
-```
 assert score == 60.0
 assert factor == "exploit evidence available"
-```
 
 def test_no_exploit_evidence_has_no_adjustment() -> None:
 """Verify absent exploit evidence does not change the score."""
@@ -240,10 +214,8 @@ score, factor = RiskScorer.apply_exploit_evidence(
 False,
 )
 
-```
 assert score == 50.0
 assert factor is None
-```
 
 @pytest.mark.parametrize(
 ("environment", "adjustment"),
@@ -266,15 +238,12 @@ score = RiskScorer().apply_environment(
 environment,
 )
 
-```
 assert score == 50.0 + adjustment
-```
 
 def test_calculate_combines_all_contextual_factors() -> None:
 """Verify contextual factors are applied together."""
 scorer = RiskScorer()
 
-```
 score, factors = scorer.calculate(
     build_finding(Severity.HIGH),
     build_context(
@@ -296,13 +265,11 @@ assert factors == [
     "sensitive data affected",
     "exploit evidence available",
 ]
-```
 
 def test_calculate_applies_environment_after_contextual_factors() -> None:
 """Verify the environment adjustment participates in the final score."""
 scorer = RiskScorer()
 
-```
 score, factors = scorer.calculate(
     build_finding(Severity.MEDIUM),
     build_context(
@@ -312,13 +279,11 @@ score, factors = scorer.calculate(
 
 assert score == 55.0
 assert factors == []
-```
 
 def test_calculate_can_reduce_lab_risk() -> None:
 """Verify lab context reduces the final score."""
 scorer = RiskScorer()
 
-```
 score, factors = scorer.calculate(
     build_finding(Severity.MEDIUM),
     build_context(
@@ -328,13 +293,11 @@ score, factors = scorer.calculate(
 
 assert score == 40.0
 assert factors == []
-```
 
 def test_calculate_returns_explainable_factors() -> None:
 """Verify contextual adjustments produce traceable factors."""
 scorer = RiskScorer()
 
-```
 _, factors = scorer.calculate(
     build_finding(),
     build_context(
@@ -353,7 +316,6 @@ assert factors == [
     "sensitive data affected",
     "exploit evidence available",
 ]
-```
 
 def test_clamp_limits_upper_bound() -> None:
 """Verify scores cannot exceed 100."""
