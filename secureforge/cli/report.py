@@ -1,4 +1,3 @@
-```python id="r8m2kx"
 """SecureForge report command service."""
 
 from __future__ import annotations
@@ -6,17 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from secureforge.core.scan.orchestrator import (
-    SecurityScanResult,
-)
+from secureforge.core.scan.models import SecurityScanResult
 from secureforge.reporting import (
-    ReleaseMetadata,
-    ReportPaths,
-    ScanMetadata,
+    ReportingService,
     SecurityReport,
-    SecurityReportLoadError,
-    SecurityReportLoader,
-    SecurityReportService,
 )
 
 
@@ -24,18 +16,21 @@ from secureforge.reporting import (
 class ReportCommandConfiguration:
     """Configuration supplied to the SecureForge report command."""
 
-    release_id: str
-    application: str
-    version: str
-    commit_sha: str
-    environment: str
-    scan_id: str
-    profile: str
-    scan_status: str
-    started_at: str
-    completed_at: str
-    duration_seconds: float
+    release_id: str = "unknown"
+    application: str = "unknown"
+    version: str = "unknown"
+    commit_sha: str = "unknown"
+    environment: str = "lab"
+    scan_id: str = "unknown"
+    profile: str = "standard"
+    scan_status: str = "completed"
+    started_at: str = ""
+    completed_at: str = ""
+    duration_seconds: float = 0.0
     output_directory: Path = Path("reports")
+
+    input_path: Path | None = None
+    output_path: Path | None = None
 
 
 class ReportCommandService:
@@ -44,19 +39,12 @@ class ReportCommandService:
     def __init__(
         self,
         *,
-        reporting_service: SecurityReportService | None = None,
-        report_loader: SecurityReportLoader | None = None,
+        reporting_service: ReportingService | None = None,
     ) -> None:
         self.reporting_service = (
             reporting_service
             if reporting_service is not None
-            else SecurityReportService()
-        )
-
-        self.report_loader = (
-            report_loader
-            if report_loader is not None
-            else SecurityReportLoader()
+            else ReportingService()
         )
 
     def build_report(
@@ -66,91 +54,51 @@ class ReportCommandService:
         configuration: ReportCommandConfiguration,
     ) -> SecurityReport:
         """Build a report from a completed security scan."""
-        release = ReleaseMetadata(
-            release_id=configuration.release_id,
-            application=configuration.application,
-            version=configuration.version,
-            commit_sha=configuration.commit_sha,
-            environment=configuration.environment,
-            timestamp=configuration.completed_at,
-        )
-
-        scan = ScanMetadata(
-            scan_id=configuration.scan_id,
-            profile=configuration.profile,
-            status=configuration.scan_status,
-            tools=[],
-            started_at=configuration.started_at,
-            completed_at=configuration.completed_at,
-            duration_seconds=(
-                configuration.duration_seconds
-            ),
-        )
-
-        return self.reporting_service.build_from_scan_result(
-            result=result,
-            release=release,
-            scan=scan,
-        )
+        return self.reporting_service.build(result)
 
     def generate(
         self,
         *,
         result: SecurityScanResult,
         configuration: ReportCommandConfiguration,
-    ) -> ReportPaths:
+    ) -> Path:
         """Generate JSON and HTML reports from a scan result."""
-        report = self.build_report(
-            result=result,
-            configuration=configuration,
-        )
-
         output_directory = (
             configuration.output_directory
         )
 
-        paths = ReportPaths(
-            json_path=(
-                output_directory
-                / "security-report.json"
-            ),
-            html_path=(
-                output_directory
-                / "security-report.html"
-            ),
+        self.reporting_service.generate(
+            result,
+            output_directory,
         )
 
-        return self.reporting_service.generate(
-            report,
-            paths,
-        )
+        return output_directory
 
-    def load(
+    def run(
         self,
-        path: Path,
-    ) -> SecurityReport:
-        """Load and validate an existing security report."""
-        try:
-            return self.report_loader.load(path)
-        except SecurityReportLoadError:
-            raise
-
-    def regenerate_html(
-        self,
-        *,
-        json_path: Path,
-        html_path: Path | None = None,
+        configuration: ReportCommandConfiguration,
     ) -> Path:
-        """Regenerate an HTML report from persisted JSON."""
-        report = self.load(json_path)
+        """Render an existing JSON report as HTML."""
+        if (
+            configuration.input_path is None
+            or configuration.output_path is None
+        ):
+            raise ValueError(
+                "input_path and output_path are required "
+                "for report rendering."
+            )
 
-        output_path = (
-            html_path
-            if html_path is not None
-            else json_path.with_suffix(".html")
+        report = self.reporting_service.load(
+            configuration.input_path
         )
 
-        self.reporting_service.renderer.write_html(
+        output_path = configuration.output_path
+        output_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        self.reporting_service.write_html(
             report,
             output_path,
         )
@@ -161,4 +109,10 @@ class ReportCommandService:
 def build_report_command_service() -> ReportCommandService:
     """Build the default report command service."""
     return ReportCommandService()
-```
+
+
+__all__ = [
+    "ReportCommandConfiguration",
+    "ReportCommandService",
+    "build_report_command_service",
+]
