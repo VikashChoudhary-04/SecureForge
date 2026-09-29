@@ -1,4 +1,3 @@
-```python id="k5r9cw"
 """Tests for the SecureForge scan CLI command."""
 
 from pathlib import Path
@@ -455,4 +454,3 @@ def test_scan_command_handles_unexpected_error(
         "Scan failed:"
         in result.stdout
     )
-```
