@@ -1,6 +1,6 @@
 """Tests for the generic Nessus integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import pytest
 
@@ -23,7 +23,7 @@ command = integration.build_command(
 }
 )
 
-```
+
 assert command == [
     "nessus-scanner",
     "--target",
@@ -31,7 +31,7 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_supports_host(
 integration: GenericNessusIntegration,
@@ -43,9 +43,9 @@ command = integration.build_command(
 }
 )
 
-```
+
 assert command[2] == "app.internal"
-```
+
 
 def test_build_command_supports_custom_string(
 integration: GenericNessusIntegration,
@@ -60,7 +60,7 @@ command = integration.build_command(
 }
 )
 
-```
+
 assert command == [
     "nessus-custom",
     "--target",
@@ -68,7 +68,7 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_supports_custom_list(
 integration: GenericNessusIntegration,
@@ -85,13 +85,13 @@ command = integration.build_command(
 }
 )
 
-```
+
 assert command == [
     "nessus-custom",
     "--target",
     "server.internal",
 ]
-```
+
 
 def test_build_command_requires_target(
 integration: GenericNessusIntegration,
@@ -147,7 +147,7 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(
     output,
     target={"network_target": "10.10.10.20"},
@@ -169,7 +169,7 @@ assert finding["metadata"]["cvss"] == 8.8
 assert finding["evidence"] == (
     "Detected vulnerable version 1.2.3."
 )
-```
+
 
 def test_normalize_cve_from_text(
 integration: GenericNessusIntegration,
@@ -188,11 +188,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["metadata"]["cve"] == "CVE-2026-54321"
-```
+
 
 def test_normalize_cvss_nested_object(
 integration: GenericNessusIntegration,
@@ -213,11 +213,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["metadata"]["cvss"] == 6.5
-```
+
 
 def test_severity_normalization(
 integration: GenericNessusIntegration,
@@ -235,7 +235,7 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert [item["severity"] for item in findings] == [
@@ -245,7 +245,7 @@ assert [item["severity"] for item in findings] == [
     "low",
     "info",
 ]
-```
+
 
 def test_requirement_mapping(
 integration: GenericNessusIntegration,
@@ -278,14 +278,14 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["security_requirement"] == "SF-TRANSPORT-001"
 assert findings[1]["security_requirement"] == "SF-AUTH-001"
 assert findings[2]["security_requirement"] == "SF-INPUT-001"
 assert findings[3]["security_requirement"] == "SF-AUTHZ-001"
-```
+
 
 def test_unknown_finding_does_not_invent_requirement(
 integration: GenericNessusIntegration,
@@ -303,11 +303,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["security_requirement"] is None
-```
+
 
 def test_normalize_xml_report(
 integration: GenericNessusIntegration,
@@ -326,7 +326,7 @@ output = """
 </NessusClientData_v2>
 """
 
-```
+
 findings = integration.normalize(
     output,
     target={"network_target": "10.10.10.30"},
@@ -342,7 +342,7 @@ assert finding["severity"] == "medium"
 assert finding["endpoint"] == "tcp://10.10.10.30:443"
 assert finding["metadata"]["cve"] == "CVE-2026-11111"
 assert finding["metadata"]["cvss"] == 6.5
-```
+
 
 def test_empty_output_fails(
 integration: GenericNessusIntegration,
@@ -382,12 +382,12 @@ output = """
 ]
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert len(findings) == 1
 assert findings[0]["finding_id"] == "nessus-123"
-```
+
 
 def test_metadata_preserves_nessus_fields(
 integration: GenericNessusIntegration,
@@ -411,7 +411,7 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 metadata = findings[0]["metadata"]
@@ -422,7 +422,7 @@ assert metadata["product"] == "Example Server"
 assert metadata["version"] == "1.2.3"
 assert metadata["exploit_available"] is True
 assert metadata["vpr"] == 7.4
-```
+
 
 def test_default_remediation_mentions_cve(
 integration: GenericNessusIntegration,
@@ -441,11 +441,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert "CVE-2026-99999" in findings[0]["remediation"]
-```
+
 
 def test_create_evidence(
 integration: GenericNessusIntegration,
@@ -458,13 +458,13 @@ raw_data={"findings": []},
 metadata={"source_version": "10.8"},
 )
 
-```
+
 assert evidence.source == "nessus"
 assert evidence.source_reference == "reports/nessus.json"
 assert evidence.target == "10.10.10.40"
 assert evidence.metadata["source_version"] == "10.8"
 assert evidence.metadata["integration"] == "nessus"
-```
+
 
 def test_xml_without_report_items_fails(
 integration: GenericNessusIntegration,
@@ -475,7 +475,7 @@ output = """
 </NessusClientData_v2>
 """
 
-```
+
 with pytest.raises(IntegrationParseError):
     integration.normalize(output)
-```
+
