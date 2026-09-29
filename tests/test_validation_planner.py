@@ -1,4 +1,3 @@
-```python
 # SecureForge validation planner tests
 
 from __future__ import annotations
@@ -214,4 +213,3 @@ def test_generic_evidence_is_not_used_as_payload():
 
     assert request is not None
     assert request.payload is None
-```
