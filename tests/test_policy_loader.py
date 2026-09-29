@@ -73,9 +73,9 @@ content,
 encoding="utf-8",
 )
 
-```
+
 return path
-```
+
 
 def test_loader_loads_policy_from_yaml(
 tmp_path: Path,
@@ -106,7 +106,7 @@ fail_on_regression_failure: true
 """,
 )
 
-```
+
 policy = PolicyLoader().load_file(
     path
 )
@@ -122,7 +122,7 @@ assert policy.rules[0].action == PolicyAction.BLOCK
 assert policy.rules[1].action == PolicyAction.REVIEW
 assert policy.fail_on_tool_error is True
 assert policy.fail_on_regression_failure is True
-```
+
 
 def test_loader_loads_exceptions(
 tmp_path: Path,
@@ -179,7 +179,7 @@ data = {
 ],
 }
 
-```
+
 policy = PolicyLoader().load_data(
     data
 )
@@ -187,7 +187,7 @@ policy = PolicyLoader().load_data(
 assert policy.policy_id == "test-policy"
 assert len(policy.rules) == 1
 assert policy.rules[0].action == PolicyAction.PASS
-```
+
 
 def test_loader_rejects_missing_file(
 tmp_path: Path,
@@ -195,13 +195,13 @@ tmp_path: Path,
 """Verify missing policy files are rejected."""
 path = tmp_path / "missing.yaml"
 
-```
+
 with pytest.raises(
     FileNotFoundError,
     match="was not found",
 ):
     PolicyLoader().load_file(path)
-```
+
 
 def test_loader_rejects_directory(
 tmp_path: Path,
@@ -209,7 +209,7 @@ tmp_path: Path,
 """Verify a directory cannot be loaded as a policy."""
 path = tmp_path / "policy"
 
-```
+
 path.mkdir()
 
 with pytest.raises(
@@ -217,7 +217,7 @@ with pytest.raises(
     match="is not a file",
 ):
     PolicyLoader().load_file(path)
-```
+
 
 def test_loader_rejects_invalid_yaml(
 tmp_path: Path,
@@ -250,13 +250,13 @@ tmp_path / "policy.yaml",
 "",
 )
 
-```
+
 with pytest.raises(
     ValueError,
     match="Policy file is empty",
 ):
     PolicyLoader().load_file(path)
-```
+
 
 def test_loader_rejects_non_mapping_data(
 tmp_path: Path,
@@ -306,7 +306,7 @@ def test_loader_dump_data() -> None:
 """Verify policy models can be serialized."""
 policy = build_policy()
 
-```
+
 data = PolicyLoader.dump_data(
     policy
 )
@@ -316,7 +316,7 @@ assert data["version"] == "1.0"
 assert len(data["rules"]) == 3
 assert len(data["exceptions"]) == 1
 assert data["rules"][0]["action"] == "block"
-```
+
 
 def test_loader_save_file(
 tmp_path: Path,
@@ -324,7 +324,7 @@ tmp_path: Path,
 """Verify policies can be written to YAML."""
 path = tmp_path / "policy.yaml"
 
-```
+
 policy = build_policy()
 
 PolicyLoader().save_file(
@@ -339,7 +339,7 @@ loaded = PolicyLoader().load_file(
 )
 
 assert loaded == policy
-```
+
 
 def test_loader_round_trip_preserves_policy(
 tmp_path: Path,
@@ -347,7 +347,7 @@ tmp_path: Path,
 """Verify saving and loading preserves the complete policy."""
 path = tmp_path / "policy.yaml"
 
-```
+
 original = build_policy()
 
 loader = PolicyLoader()
@@ -362,7 +362,7 @@ loaded = loader.load_file(
 )
 
 assert loaded == original
-```
+
 
 def test_loader_accepts_string_path(
 tmp_path: Path,
@@ -377,13 +377,13 @@ rules: []
 """,
 )
 
-```
+
 policy = PolicyLoader().load_file(
     str(path)
 )
 
 assert policy.policy_id == "string-path-policy"
-```
+
 
 def test_loader_preserves_metadata(
 tmp_path: Path,
@@ -403,7 +403,7 @@ rules: []
 """,
 )
 
-```
+
 policy = PolicyLoader().load_file(
     path
 )
@@ -412,7 +412,7 @@ assert policy.metadata == {
     "owner": "security",
     "environment": "production",
 }
-```
+
 
 def test_loader_preserves_disabled_rules(
 tmp_path: Path,
