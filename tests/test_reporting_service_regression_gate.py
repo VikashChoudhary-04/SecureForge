@@ -1,4 +1,3 @@
-```python id="w2k9p6"
 """Tests for regression-gate handling in the reporting service."""
 
 from secureforge.reporting import (
@@ -186,4 +185,3 @@ def test_service_generate_from_results_with_regression_gate(
     assert "Regression Gate" in html_content
     assert "BOLA-001" in html_content
     assert "blocked" in html_content.lower()
-```
