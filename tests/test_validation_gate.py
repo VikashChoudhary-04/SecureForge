@@ -1,4 +1,3 @@
-```python
 """Tests for the SecureForge validation gate."""
 
 from secureforge.validation.gate import (
@@ -295,4 +294,3 @@ def test_retest_gate_confirmed_takes_precedence_over_error() -> None:
     assert decision.status == "blocked"
     assert decision.confirmed_findings == ("BOLA-001",)
     assert decision.errored_findings == ("SECRET-001",)
-```
