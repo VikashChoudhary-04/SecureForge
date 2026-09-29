@@ -1,4 +1,3 @@
-```python
 """Tests for the SecureForge command validator."""
 
 import pytest
@@ -168,4 +167,3 @@ def test_command_validator_rejects_invalid_command_syntax() -> None:
         match="Invalid command syntax",
     ):
         validator.validate(request)
-```
