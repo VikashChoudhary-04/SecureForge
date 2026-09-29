@@ -1,4 +1,3 @@
-```python
 """Tests for SecureForge remediation retesting."""
 
 from secureforge.validation.engine import ValidationEngine
@@ -180,4 +179,3 @@ def test_retest_many_preserves_order() -> None:
 
     assert results[0].fixed is True
     assert results[1].regression_required is True
-```
