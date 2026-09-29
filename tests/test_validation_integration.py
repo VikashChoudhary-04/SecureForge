@@ -1,4 +1,3 @@
-```python
 """Tests for SecureForge validation and finding integration."""
 
 from secureforge.core.findings.models import (
@@ -211,4 +210,3 @@ def test_unknown_finding_id_is_rejected() -> None:
         raise AssertionError(
             "Expected ValueError for unknown finding."
         )
-```
