@@ -51,7 +51,6 @@ finding_id="SF-0002",
 source="dast",
 )
 
-```
 engine = CorrelationEngine()
 
 results = engine.correlate([first, second])
@@ -66,7 +65,6 @@ assert correlated.source_finding_ids == [
 ]
 assert correlated.source_count == 2
 assert correlated.confidence == CorrelationConfidence.HIGH
-```
 
 def test_same_cwe_and_asset_are_strong_correlation_signals() -> None:
 """Verify CWE and asset matching are recorded as signals."""
@@ -79,7 +77,6 @@ finding_id="SF-0002",
 source="burp",
 )
 
-```
 engine = CorrelationEngine()
 
 results = engine.correlate([first, second])
@@ -91,7 +88,6 @@ link = results[0].correlation_links[0]
 assert "same_cwe" in link.signals
 assert "same_asset" in link.signals
 assert link.correlation_type == CorrelationType.SAME_VULNERABILITY
-```
 
 def test_same_endpoint_is_used_for_correlation() -> None:
 """Verify endpoint matching contributes to correlation."""
@@ -108,7 +104,6 @@ cwe="CWE-79",
 title="Cross Site Scripting",
 )
 
-```
 engine = CorrelationEngine()
 
 results = engine.correlate([first, second])
@@ -118,7 +113,6 @@ assert len(results) == 1
 link = results[0].correlation_links[0]
 
 assert "same_endpoint" in link.signals
-```
 
 def test_different_findings_without_enough_signals_are_not_correlated() -> None:
 """Verify weakly related findings remain independent."""
@@ -141,13 +135,11 @@ cwe="CWE-79",
 asset="backend-b",
 )
 
-```
 engine = CorrelationEngine()
 
 results = engine.correlate([first, second])
 
 assert results == []
-```
 
 def test_endpoint_query_strings_are_normalized() -> None:
 """Verify equivalent endpoints with query strings correlate."""
@@ -162,7 +154,6 @@ source="burp",
 endpoint="/api/products?search=admin",
 )
 
-```
 engine = CorrelationEngine()
 
 results = engine.correlate([first, second])
@@ -172,7 +163,6 @@ assert len(results) == 1
 link = results[0].correlation_links[0]
 
 assert "same_endpoint" in link.signals
-```
 
 def test_correlated_finding_collects_evidence_ids() -> None:
 """Verify evidence from both findings is represented."""
@@ -185,7 +175,6 @@ finding_id="SF-0002",
 source="dast",
 )
 
-```
 from secureforge.core.findings import Evidence
 
 first.add_evidence(
@@ -215,7 +204,6 @@ correlated = results[0]
 assert correlated.evidence_count == 2
 assert "E-SAST-001" in correlated.evidence_ids
 assert "E-DAST-001" in correlated.evidence_ids
-```
 
 def test_single_finding_does_not_create_correlation() -> None:
 """Verify correlation requires at least two findings."""
@@ -224,13 +212,11 @@ finding_id="SF-0001",
 source="dast",
 )
 
-```
 engine = CorrelationEngine()
 
 results = engine.correlate([finding])
 
 assert results == []
-```
 
 def test_minimum_signals_can_be_configured() -> None:
 """Verify correlation sensitivity can be configured."""
@@ -243,13 +229,11 @@ finding_id="SF-0002",
 source="dast",
 )
 
-```
 engine = CorrelationEngine(minimum_signals=4)
 
 results = engine.correlate([first, second])
 
 assert results == []
-```
 
 def test_correlated_id_is_deterministic() -> None:
 """Verify correlation IDs do not depend on input ordering."""
@@ -262,11 +246,9 @@ finding_id="SF-0002",
 source="dast",
 )
 
-```
 engine = CorrelationEngine()
 
 first_result = engine.correlate([first, second])
 second_result = engine.correlate([second, first])
 
 assert first_result[0].finding_id == second_result[0].finding_id
-```
