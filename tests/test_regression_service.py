@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression service."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -44,7 +44,7 @@ tmp_path
 / "suite.yaml"
 )
 
-```
+
 write_suite(suite_path)
 
 source_root = (
@@ -78,7 +78,7 @@ assert result.passed == 1
 assert result.failed == 0
 assert result.errors == 0
 assert result.skipped == 0
-```
+
 
 def test_service_propagates_failed_regression(
 tmp_path: Path,
@@ -89,7 +89,7 @@ tmp_path
 / "suite.yaml"
 )
 
-```
+
 write_suite(suite_path)
 
 source_root = (
@@ -120,7 +120,7 @@ assert result.total == 1
 assert result.passed == 0
 assert result.failed == 1
 assert result.errors == 0
-```
+
 
 def test_service_accepts_custom_runtime_configuration(
 tmp_path: Path,
@@ -131,7 +131,7 @@ tmp_path
 / "suite.yaml"
 )
 
-```
+
 write_suite(suite_path)
 
 source_root = (
@@ -163,7 +163,7 @@ result = service.run(
 
 assert result.status == RegressionStatus.PASSED
 assert result.total == 1
-```
+
 
 def test_service_configuration_is_immutable(
 tmp_path: Path,
@@ -174,7 +174,7 @@ tmp_path
 / "suite.yaml"
 )
 
-```
+
 configuration = RegressionServiceConfiguration(
     suite_path=suite_path
 )
@@ -187,4 +187,4 @@ else:
     error = None
 
 assert error is not None
-```
+
