@@ -1,4 +1,3 @@
-```python id="r3m7x1"
 """Tests for SecureForge reporting models."""
 
 from secureforge.reporting import (
@@ -241,4 +240,3 @@ def test_security_report_model(
         sample_security_report.decision,
         DecisionReport,
     )
-```
