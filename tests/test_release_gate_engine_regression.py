@@ -1,4 +1,3 @@
-```python id="v8q3m6"
 """Tests for regression integration in the release gate engine."""
 
 from secureforge.core.release_gate.engine import (
@@ -149,4 +148,3 @@ def test_regression_gate_result_serializes() -> None:
     assert payload["skipped_tests"] == [
         "XSS-001"
     ]
-```
