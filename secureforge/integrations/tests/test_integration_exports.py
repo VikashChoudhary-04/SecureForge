@@ -1,6 +1,6 @@
 """Tests for SecureForge integration package exports."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.integrations import (
 IntegrationConfigurationError,
@@ -24,7 +24,7 @@ def test_default_registry_export_is_usable() -> None:
 """The exported registry builder should construct the registry."""
 registry = build_default_registry()
 
-```
+
 assert registry.contains("sast")
 assert registry.contains("sca")
 assert registry.contains("secrets")
@@ -35,4 +35,4 @@ assert registry.contains("iac")
 assert registry.contains("nessus")
 assert registry.contains("nmap")
 assert registry.contains("manual")
-```
+
