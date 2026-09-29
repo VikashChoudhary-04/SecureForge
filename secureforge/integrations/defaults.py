@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .registry_factory import build_default_registry
+
 
 DEFAULT_INTEGRATIONS = (
     "api",
@@ -24,5 +26,6 @@ def default_integration_names() -> tuple[str, ...]:
 
 __all__ = [
     "DEFAULT_INTEGRATIONS",
+    "build_default_registry",
     "default_integration_names",
 ]
