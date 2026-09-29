@@ -87,7 +87,7 @@ def test_high_severity_block_rule_blocks_release() -> None:
 finding = build_finding(severity=Severity.HIGH)
 assessment = build_assessment(finding)
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -109,7 +109,7 @@ result = PolicyEngine().evaluate(
 assert result.decision == PolicyDecision.BLOCK
 assert result.blocking_findings == ["SF-0001"]
 assert "BLOCK-HIGH" in result.triggered_rules
-```
+
 
 def test_medium_severity_review_rule_requires_review() -> None:
 """Verify a review rule produces REVIEW."""
@@ -119,7 +119,7 @@ finding,
 risk_level=RiskLevel.MEDIUM,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -140,7 +140,7 @@ result = PolicyEngine().evaluate(
 
 assert result.decision == PolicyDecision.REVIEW
 assert result.review_findings == ["SF-0001"]
-```
+
 
 def test_pass_rule_allows_finding() -> None:
 """Verify an explicit pass rule produces PASS."""
@@ -150,7 +150,7 @@ finding,
 risk_level=RiskLevel.LOW,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -171,14 +171,14 @@ result = PolicyEngine().evaluate(
 
 assert result.decision == PolicyDecision.PASS
 assert result.passed_findings == ["SF-0001"]
-```
+
 
 def test_no_matching_rule_requires_review() -> None:
 """Verify unmatched findings are not silently passed."""
 finding = build_finding(severity=Severity.HIGH)
 assessment = build_assessment(finding)
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -203,7 +203,7 @@ assert any(
     "No explicit policy rule matched" in reason
     for reason in result.reasons
 )
-```
+
 
 def test_block_takes_precedence_over_review() -> None:
 """Verify the strongest decision wins across findings."""
@@ -216,7 +216,7 @@ finding_id="SF-0002",
 severity=Severity.MEDIUM,
 )
 
-```
+
 high_assessment = build_assessment(
     high_finding,
     risk_level=RiskLevel.HIGH,
@@ -254,14 +254,14 @@ result = PolicyEngine().evaluate(
 assert result.decision == PolicyDecision.BLOCK
 assert result.blocking_findings == ["SF-0001"]
 assert result.review_findings == ["SF-0002"]
-```
+
 
 def test_finding_exception_is_applied() -> None:
 """Verify a finding-specific exception prevents policy enforcement."""
 finding = build_finding(severity=Severity.HIGH)
 assessment = build_assessment(finding)
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -293,14 +293,14 @@ assert result.decision == PolicyDecision.PASS
 assert result.blocking_findings == []
 assert result.exceptions_applied == ["EX-0001"]
 assert result.passed_findings == ["SF-0001"]
-```
+
 
 def test_requirement_exception_is_applied() -> None:
 """Verify a requirement-based exception can apply."""
 finding = build_finding(severity=Severity.HIGH)
 assessment = build_assessment(finding)
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -328,14 +328,14 @@ result = PolicyEngine().evaluate(
 
 assert result.decision == PolicyDecision.PASS
 assert result.exceptions_applied == ["EX-REQ-001"]
-```
+
 
 def test_disabled_exception_does_not_apply() -> None:
 """Verify disabled exceptions do not bypass policy."""
 finding = build_finding(severity=Severity.HIGH)
 assessment = build_assessment(finding)
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -364,7 +364,7 @@ result = PolicyEngine().evaluate(
 
 assert result.decision == PolicyDecision.BLOCK
 assert result.exceptions_applied == []
-```
+
 
 def test_failed_regression_blocks_when_configured() -> None:
 """Verify regression failures can block the release."""
@@ -374,7 +374,7 @@ finding,
 risk_level=RiskLevel.LOW,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -400,7 +400,7 @@ assert any(
     "BOLA-001" in reason
     for reason in result.reasons
 )
-```
+
 
 def test_failed_regression_requires_review_when_not_blocking() -> None:
 """Verify configurable regression handling."""
@@ -410,7 +410,7 @@ finding,
 risk_level=RiskLevel.LOW,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -432,7 +432,7 @@ result = PolicyEngine().evaluate(
 )
 
 assert result.decision == PolicyDecision.REVIEW
-```
+
 
 def test_tool_error_requires_review_by_default() -> None:
 """Verify tool errors require review under the default policy."""
@@ -442,7 +442,7 @@ finding,
 risk_level=RiskLevel.LOW,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -467,7 +467,7 @@ assert any(
     "tool execution error" in reason
     for reason in result.reasons
 )
-```
+
 
 def test_tool_error_can_block_when_configured() -> None:
 """Verify tool failure policy can be configured to block."""
@@ -477,7 +477,7 @@ finding,
 risk_level=RiskLevel.LOW,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -499,14 +499,14 @@ result = PolicyEngine().evaluate(
 )
 
 assert result.decision == PolicyDecision.BLOCK
-```
+
 
 def test_disabled_rule_does_not_trigger() -> None:
 """Verify disabled policy rules are ignored."""
 finding = build_finding(severity=Severity.HIGH)
 assessment = build_assessment(finding)
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -528,7 +528,7 @@ result = PolicyEngine().evaluate(
 
 assert result.decision == PolicyDecision.REVIEW
 assert result.triggered_rules == []
-```
+
 
 def test_risk_level_rule_can_trigger_without_matching_severity() -> None:
 """Verify policies can match contextual risk independently."""
@@ -538,7 +538,7 @@ finding,
 risk_level=RiskLevel.HIGH,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -559,7 +559,7 @@ result = PolicyEngine().evaluate(
 
 assert result.decision == PolicyDecision.BLOCK
 assert result.blocking_findings == ["SF-0001"]
-```
+
 
 def test_policy_result_preserves_policy_identity() -> None:
 """Verify policy metadata is preserved in evaluation results."""
@@ -569,7 +569,7 @@ finding,
 risk_level=RiskLevel.LOW,
 )
 
-```
+
 policy = build_policy(
     rules=[
         PolicyRule(
@@ -590,4 +590,4 @@ result = PolicyEngine().evaluate(
 
 assert result.policy_id == "default-security-gate"
 assert result.policy_version == "1.0"
-```
+
