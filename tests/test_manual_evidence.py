@@ -1,6 +1,6 @@
 """Tests for the manual security evidence integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import pytest
 
@@ -25,13 +25,13 @@ command = integration.build_command(
 }
 )
 
-```
+
 assert command == [
     "manual-evidence",
     "--input",
     "evidence/burp.json",
 ]
-```
+
 
 def test_build_command_custom_string(
 integration: ManualEvidenceIntegration,
@@ -46,14 +46,14 @@ command = integration.build_command(
 }
 )
 
-```
+
 assert command == [
     "python",
     "importer.py",
     "--input",
     "evidence/manual.json",
 ]
-```
+
 
 def test_build_command_custom_list(
 integration: ManualEvidenceIntegration,
@@ -70,13 +70,13 @@ command = integration.build_command(
 }
 )
 
-```
+
 assert command == [
     "manual-importer",
     "--file",
     "evidence/manual.json",
 ]
-```
+
 
 def test_build_command_requires_evidence_path(
 integration: ManualEvidenceIntegration,
@@ -100,9 +100,9 @@ assert integration.supports_target(
 {"evidence_path": "evidence/burp.json"}
 )
 
-```
+
 assert not integration.supports_target({})
-```
+
 
 def test_normalize_burp_finding(
 integration: ManualEvidenceIntegration,
@@ -133,7 +133,7 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert len(findings) == 1
@@ -152,7 +152,7 @@ assert finding["metadata"]["validation_source"] == "burp_suite"
 assert finding["metadata"]["manual_validation"] is True
 assert finding["metadata"]["request"] == "GET /api/orders/42"
 assert finding["metadata"]["response"] == "HTTP/1.1 200 OK"
-```
+
 
 def test_normalize_wireshark_evidence(
 integration: ManualEvidenceIntegration,
@@ -173,7 +173,7 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert len(findings) == 1
@@ -185,7 +185,7 @@ assert finding["metadata"]["packet_reference"] == (
     "capture.pcapng:packet-144"
 )
 assert finding["security_requirement"] == "SF-AUTH-001"
-```
+
 
 def test_normalize_metasploit_evidence(
 integration: ManualEvidenceIntegration,
@@ -208,7 +208,7 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert len(findings) == 1
@@ -223,7 +223,7 @@ assert finding["metadata"]["command"] == "run"
 assert finding["evidence"] == (
     "Controlled shell obtained in lab."
 )
-```
+
 
 def test_generic_manual_source(
 integration: ManualEvidenceIntegration,
@@ -242,11 +242,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["metadata"]["validation_source"] == "other"
-```
+
 
 def test_default_manual_source(
 integration: ManualEvidenceIntegration,
@@ -263,11 +263,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["metadata"]["validation_source"] == "manual"
-```
+
 
 def test_severity_defaults_to_medium(
 integration: ManualEvidenceIntegration,
@@ -283,11 +283,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["severity"] == "medium"
-```
+
 
 def test_confidence_defaults_to_confirmed(
 integration: ManualEvidenceIntegration,
@@ -303,11 +303,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["confidence"] == "confirmed"
-```
+
 
 def test_evidence_list_is_combined(
 integration: ManualEvidenceIntegration,
@@ -328,7 +328,7 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["evidence"] == (
@@ -336,7 +336,7 @@ assert findings[0]["evidence"] == (
     "Step 2 reproduced the issue.\\n"
     "Step 3 confirmed impact."
 )
-```
+
 
 def test_requirement_mapping(
 integration: ManualEvidenceIntegration,
@@ -365,14 +365,14 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["security_requirement"] == "SF-INPUT-001"
 assert findings[1]["security_requirement"] == "SF-AUTH-001"
 assert findings[2]["security_requirement"] == "SF-SECRET-001"
 assert findings[3]["security_requirement"] == "SF-TRANSPORT-001"
-```
+
 
 def test_authz_requirement_mapping(
 integration: ManualEvidenceIntegration,
@@ -389,11 +389,11 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["security_requirement"] == "SF-AUTHZ-001"
-```
+
 
 def test_target_asset_is_used(
 integration: ManualEvidenceIntegration,
@@ -410,14 +410,14 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(
     output,
     target={"host": "10.10.10.50"},
 )
 
 assert findings[0]["asset"] == "10.10.10.50"
-```
+
 
 def test_empty_output_fails(
 integration: ManualEvidenceIntegration,
@@ -456,12 +456,12 @@ output = """
 ]
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert len(findings) == 1
 assert findings[0]["finding_id"] == "MANUAL-001"
-```
+
 
 def test_create_evidence(
 integration: ManualEvidenceIntegration,
@@ -478,14 +478,14 @@ metadata={
 },
 )
 
-```
+
 assert evidence.source == "manual"
 assert evidence.source_reference == "evidence/burp.json"
 assert evidence.target == "securecommerce"
 assert evidence.raw_data["finding"] == "BOLA"
 assert evidence.metadata["tool"] == "Burp Suite Professional"
 assert evidence.metadata["integration"] == "manual"
-```
+
 
 def test_metadata_is_preserved(
 integration: ManualEvidenceIntegration,
@@ -505,10 +505,10 @@ output = """
 }
 """
 
-```
+
 findings = integration.normalize(output)
 
 assert findings[0]["metadata"]["tester"] == "security-team"
 assert findings[0]["metadata"]["case_id"] == "CASE-100"
 assert findings[0]["metadata"]["manual_validation"] is True
-```
+
