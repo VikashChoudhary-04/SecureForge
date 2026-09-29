@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression execution engine."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.regression import (
 RegressionEngine,
@@ -39,7 +39,7 @@ return {
 },
 }
 
-```
+
 result = RegressionEngine(
     executor=executor
 ).run_test(
@@ -55,7 +55,7 @@ assert result.evidence == {
 }
 assert result.completed_at is not None
 assert result.duration_seconds is not None
-```
+
 
 def test_engine_records_failed_test():
 """A failed executor result should produce FAILED."""
@@ -69,7 +69,7 @@ return {
 },
 }
 
-```
+
 result = RegressionEngine(
     executor=executor
 ).run_test(
@@ -83,7 +83,7 @@ assert result.actual_result == "HTTP 200"
 assert result.message == (
     "Authorization bypass remains."
 )
-```
+
 
 def test_engine_records_executor_error():
 """Executor exceptions should become ERROR results."""
@@ -92,7 +92,7 @@ raise RuntimeError(
 "Target application unavailable."
 )
 
-```
+
 result = RegressionEngine(
     executor=executor
 ).run_test(
@@ -104,7 +104,7 @@ assert result.actual_result is None
 assert result.message == (
     "Target application unavailable."
 )
-```
+
 
 def test_engine_errors_when_no_executor_is_configured():
 """Missing executor should produce an ERROR result."""
@@ -112,12 +112,12 @@ result = RegressionEngine().run_test(
 build_test()
 )
 
-```
+
 assert result.status == RegressionStatus.ERROR
 assert "No regression executor" in (
     result.message or ""
 )
-```
+
 
 def test_engine_skips_disabled_test():
 """Disabled tests should be reported as SKIPPED."""
@@ -126,7 +126,7 @@ raise AssertionError(
 "Disabled test must not execute."
 )
 
-```
+
 result = RegressionEngine(
     executor=executor
 ).run_test(
@@ -139,7 +139,7 @@ assert result.status == RegressionStatus.SKIPPED
 assert result.message == (
     "Regression test is disabled."
 )
-```
+
 
 def test_engine_accepts_status_aliases():
 """Common status aliases should normalize correctly."""
@@ -166,7 +166,7 @@ RegressionStatus.SKIPPED,
 ),
 ]
 
-```
+
 for raw_status, expected_status in statuses:
     result = RegressionEngine(
         executor=lambda test, status=raw_status: {
@@ -178,7 +178,7 @@ for raw_status, expected_status in statuses:
     )
 
     assert result.status == expected_status
-```
+
 
 def test_engine_rejects_invalid_executor_status():
 """Unknown executor statuses should become ERROR."""
@@ -190,12 +190,12 @@ executor=lambda test: {
 build_test()
 )
 
-```
+
 assert result.status == RegressionStatus.ERROR
 assert "Unsupported regression status" in (
     result.message or ""
 )
-```
+
 
 def test_engine_requires_mapping_from_executor():
 """Executor output must be a mapping."""
@@ -205,12 +205,12 @@ executor=lambda test: "invalid"
 build_test()
 )
 
-```
+
 assert result.status == RegressionStatus.ERROR
 assert "must return a mapping" in (
     result.message or ""
 )
-```
+
 
 def test_engine_normalizes_non_mapping_evidence():
 """Non-mapping evidence should be safely preserved as raw data."""
@@ -224,18 +224,18 @@ executor=lambda test: {
 build_test()
 )
 
-```
+
 assert result.status == RegressionStatus.PASSED
 assert result.evidence == {
     "raw": "HTTP 403 response"
 }
-```
+
 
 def test_engine_runs_only_enabled_suite_tests():
 """Suite execution should not invoke disabled tests."""
 executed: list[str] = []
 
-```
+
 def executor(test):
     executed.append(test.test_id)
 
@@ -279,7 +279,7 @@ assert result.total == 2
 assert result.passed == 2
 assert result.failed == 0
 assert result.errors == 0
-```
+
 
 def test_engine_marks_suite_failed_when_any_test_fails():
 """One failed test should fail the complete suite."""
@@ -290,7 +290,7 @@ return {
 "actual_result": "HTTP 200",
 }
 
-```
+
     return {
         "status": "passed",
         "actual_result": "secure",
@@ -316,7 +316,7 @@ assert result.total == 2
 assert result.passed == 1
 assert result.failed == 1
 assert result.successful is False
-```
+
 
 def test_engine_marks_suite_error_when_any_test_errors():
 """An execution error should make the suite ERROR."""
@@ -326,7 +326,7 @@ raise RuntimeError(
 "Target unavailable."
 )
 
-```
+
     return {
         "status": "passed",
         "actual_result": "secure",
@@ -351,7 +351,7 @@ assert result.status == RegressionStatus.ERROR
 assert result.errors == 1
 assert result.passed == 1
 assert result.successful is False
-```
+
 
 def test_engine_marks_empty_suite_skipped():
 """A suite without enabled tests should be skipped."""
@@ -361,7 +361,7 @@ name="Empty Regression Suite",
 tests=[],
 )
 
-```
+
 result = RegressionEngine(
     executor=lambda test: {
         "status": "passed"
@@ -374,4 +374,4 @@ assert result.status == RegressionStatus.SKIPPED
 assert result.total == 0
 assert result.skipped == 0
 assert result.successful is False
-```
+
