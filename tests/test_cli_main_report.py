@@ -1,4 +1,3 @@
-```python id="k3p7w9"
 """Tests for the SecureForge report CLI command."""
 
 import json
@@ -169,4 +168,3 @@ def test_report_command_rejects_invalid_json(
 
     assert result.exit_code != 0
     assert not output_path.exists()
-```
