@@ -1,4 +1,3 @@
-```python id="m7q2v9"
 """Tests for SecureForge validation package exports."""
 
 import secureforge.validation as validation
@@ -116,4 +115,3 @@ def test_validation_package_defines_complete_public_api() -> None:
     }
 
     assert set(validation.__all__) == expected
-```
