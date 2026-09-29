@@ -1,6 +1,6 @@
 """Tests for SecureForge runtime configuration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -50,7 +50,6 @@ directory: ./reports
 """,
 )
 
-```
 configuration = load_runtime_configuration(path)
 
 assert configuration.path == path
@@ -60,7 +59,6 @@ assert configuration.profile == "standard"
 assert configuration.target["base_url"] == (
     "http://localhost:5000"
 )
-```
 
 def test_runtime_configuration_sections(
 tmp_path: Path,
@@ -97,7 +95,6 @@ level: INFO
 """,
 )
 
-```
 configuration = load_runtime_configuration(path)
 
 assert configuration.scan["profile"] == "quick"
@@ -110,7 +107,6 @@ assert configuration.requirements["path"] == (
 )
 assert configuration.output["directory"] == "./reports"
 assert configuration.logging["level"] == "INFO"
-```
 
 def test_profile_is_normalized(
 tmp_path: Path,
@@ -132,11 +128,9 @@ enabled: true
 """,
 )
 
-```
 configuration = load_runtime_configuration(path)
 
 assert configuration.profile == "standard"
-```
 
 def test_integration_returns_configuration(
 tmp_path: Path,
@@ -162,7 +156,6 @@ enabled: false
 """,
 )
 
-```
 configuration = load_runtime_configuration(path)
 
 assert configuration.integration("sast") == {
@@ -171,7 +164,6 @@ assert configuration.integration("sast") == {
 }
 
 assert configuration.integration("missing") == {}
-```
 
 def test_enabled_integrations(
 tmp_path: Path,
@@ -199,14 +191,12 @@ enabled: true
 """,
 )
 
-```
 configuration = load_runtime_configuration(path)
 
 assert configuration.enabled_integrations() == [
     "sast",
     "secrets",
 ]
-```
 
 def test_missing_project_name_fails(
 tmp_path: Path,
@@ -227,13 +217,11 @@ enabled: true
 """,
 )
 
-```
 with pytest.raises(
     RuntimeConfigurationError,
     match="project.name is required",
 ):
     load_runtime_configuration(path)
-```
 
 def test_missing_application_fails(
 tmp_path: Path,
@@ -254,13 +242,11 @@ enabled: true
 """,
 )
 
-```
 with pytest.raises(
     RuntimeConfigurationError,
     match="project.application is required",
 ):
     load_runtime_configuration(path)
-```
 
 def test_missing_profile_fails(
 tmp_path: Path,
@@ -281,13 +267,11 @@ enabled: true
 """,
 )
 
-```
 with pytest.raises(
     RuntimeConfigurationError,
     match="scan.profile is required",
 ):
     load_runtime_configuration(path)
-```
 
 def test_missing_integrations_fails(
 tmp_path: Path,
@@ -307,13 +291,11 @@ integrations: {}
 """,
 )
 
-```
 with pytest.raises(
     RuntimeConfigurationError,
     match="At least one integration must be configured",
 ):
     load_runtime_configuration(path)
-```
 
 def test_invalid_integration_configuration_fails(
 tmp_path: Path,
@@ -334,13 +316,11 @@ sast: true
 """,
 )
 
-```
 with pytest.raises(
     RuntimeConfigurationError,
     match="Integration 'sast' configuration must be a mapping",
 ):
     load_runtime_configuration(path)
-```
 
 def test_invalid_section_type_fails(
 tmp_path: Path,
@@ -364,7 +344,6 @@ enabled: true
 """,
 )
 
-```
 configuration = load_runtime_configuration(path)
 
 with pytest.raises(
@@ -372,7 +351,6 @@ with pytest.raises(
     match="Configuration section 'target' must be a mapping",
 ):
     _ = configuration.target
-```
 
 def test_missing_file_fails(
 tmp_path: Path,
@@ -380,13 +358,11 @@ tmp_path: Path,
 """A missing configuration file should fail clearly."""
 path = tmp_path / "missing.yaml"
 
-```
 with pytest.raises(
     RuntimeConfigurationError,
     match="Configuration file does not exist",
 ):
     load_runtime_configuration(path)
-```
 
 def test_invalid_yaml_fails(
 tmp_path: Path,
@@ -402,13 +378,11 @@ invalid: [this is not valid yaml
 """,
 )
 
-```
 with pytest.raises(
     RuntimeConfigurationError,
     match="Invalid YAML configuration",
 ):
     load_runtime_configuration(path)
-```
 
 def test_non_mapping_root_fails(
 tmp_path: Path,
@@ -433,7 +407,6 @@ def test_existing_example_config_loads() -> None:
 """The SecureCommerce example should load successfully."""
 root = Path(**file**).resolve().parents[1]
 
-```
 path = (
     root
     / "secureforge"
@@ -448,13 +421,11 @@ assert configuration.project["application"] == (
     "SecureCommerce"
 )
 assert configuration.profile == "standard"
-```
 
 def test_full_lab_example_loads() -> None:
 """The full lab example should load successfully."""
 root = Path(**file**).resolve().parents[1]
 
-```
 path = (
     root
     / "secureforge"
@@ -469,4 +440,3 @@ assert configuration.profile == "full"
 assert "nessus" in configuration.integrations
 assert "nmap" in configuration.integrations
 assert "manual" in configuration.integrations
-```
