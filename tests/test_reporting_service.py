@@ -1,6 +1,6 @@
 """Tests for the SecureForge reporting service."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 
@@ -201,4 +201,3 @@ assert "SecureCommerce" in html
 assert "SF-AUTHZ-001" in html
 assert "block" in html
 assert "Release allowed:" in html
-```
