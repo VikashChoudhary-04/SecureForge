@@ -1,4 +1,3 @@
-```python
 # SecureForge scan and validation integration tests
 
 from __future__ import annotations
@@ -215,4 +214,3 @@ def test_pipeline_serialization_contains_validation_sections():
     assert len(data["validation_results"]) == 1
     assert data["validation_results"][0]["finding_id"] == "BOLA-001"
     assert data["validation_gate"]["blocked"] is True
-```
