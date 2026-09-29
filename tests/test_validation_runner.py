@@ -1,4 +1,3 @@
-```python id="9q3v1m"
 """Tests for the SecureForge validation runner."""
 
 from secureforge.validation.base import BaseValidator
@@ -214,4 +213,3 @@ def test_retest_run_counts_errors() -> None:
     assert run.inconclusive == 0
     assert run.errors == 1
     assert run.regression_required is False
-```
