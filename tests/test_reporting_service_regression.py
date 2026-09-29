@@ -1,4 +1,3 @@
-```python id="m1v7q3"
 """Tests for regression-aware security reporting services."""
 
 from secureforge.reporting import (
@@ -216,4 +215,3 @@ def test_service_generate_from_results_with_regression(
     assert "Regression Testing" in html_content
     assert "securecommerce-regression" in html_content
     assert "BOLA-001" in html_content
-```
