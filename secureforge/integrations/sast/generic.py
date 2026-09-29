@@ -1,6 +1,6 @@
 """Generic JSON SAST integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -19,7 +19,7 @@ SecurityIntegration,
 class GenericSASTIntegration(SecurityIntegration):
 """Normalize findings from a generic JSON SAST scanner."""
 
-```
+
 integration_name = "sast"
 display_name = "Generic Static Application Security Testing"
 
@@ -671,4 +671,4 @@ def _tool_configuration(
             return tool
 
     return None
-```
+
