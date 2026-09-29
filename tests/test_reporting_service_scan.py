@@ -1,4 +1,3 @@
-```python
 """Tests for generating reports from completed scan results."""
 
 from pathlib import Path
@@ -200,4 +199,3 @@ def test_generate_from_scan_result(
     assert html_content
     assert "securecommerce" in json_content
     assert "SecureForge" in html_content
-```
