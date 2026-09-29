@@ -1,6 +1,6 @@
 """Tests for SecureForge regression assessment."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.regression import (
 RegressionResult,
@@ -62,7 +62,7 @@ RegressionStatus.PASSED,
 ],
 )
 
-```
+
 assessment = assess_regression_result(
     result
 )
@@ -84,7 +84,7 @@ assert assessment.skipped_tests == ()
 assert assessment.release_blocked is False
 assert assessment.successful is True
 assert assessment.failure_ids == ()
-```
+
 
 def test_assessment_blocks_release_for_failed_tests():
 """A failed regression should block the release."""
@@ -102,7 +102,7 @@ RegressionStatus.PASSED,
 ],
 )
 
-```
+
 assessment = assess_regression_result(
     result
 )
@@ -123,7 +123,7 @@ assert assessment.successful is False
 assert assessment.failure_ids == (
     "BOLA-001",
 )
-```
+
 
 def test_assessment_blocks_release_for_errors():
 """A regression execution error should block the release."""
@@ -137,7 +137,7 @@ RegressionStatus.ERROR,
 ],
 )
 
-```
+
 assessment = assess_regression_result(
     result
 )
@@ -158,7 +158,7 @@ assert assessment.successful is False
 assert assessment.failure_ids == (
     "SECRET-001",
 )
-```
+
 
 def test_assessment_tracks_skipped_tests():
 """Skipped regressions should be reported separately."""
@@ -172,7 +172,7 @@ RegressionStatus.SKIPPED,
 ],
 )
 
-```
+
 assessment = assess_regression_result(
     result
 )
@@ -190,7 +190,7 @@ assert assessment.skipped_tests == (
 )
 assert assessment.release_blocked is False
 assert assessment.successful is False
-```
+
 
 def test_assessment_handles_mixed_results():
 """Assessment should classify every regression status correctly."""
@@ -216,7 +216,7 @@ RegressionStatus.SKIPPED,
 ],
 )
 
-```
+
 assessment = assess_regression_result(
     result
 )
@@ -242,7 +242,7 @@ assert assessment.failure_ids == (
 )
 assert assessment.release_blocked is True
 assert assessment.successful is False
-```
+
 
 def test_assessment_serializes_to_dictionary():
 """Assessment should provide report-friendly dictionary output."""
@@ -260,7 +260,7 @@ RegressionStatus.PASSED,
 ],
 )
 
-```
+
 assessment = assess_regression_result(
     result
 )
@@ -285,4 +285,4 @@ assert data == {
     "skipped_tests": [],
     "release_blocked": True,
 }
-```
+
