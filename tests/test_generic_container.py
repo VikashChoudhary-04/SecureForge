@@ -1,6 +1,6 @@
 """Tests for the generic container security integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.config import (
 ScanConfiguration,
@@ -46,7 +46,7 @@ integration = GenericContainerIntegration(
 executable="trivy"
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -58,14 +58,14 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_uses_container_path_when_image_is_missing() -> None:
 integration = GenericContainerIntegration(
 executable="container-scanner"
 )
 
-```
+
 command = integration.build_command(
     make_configuration(
         container_image=None,
@@ -80,7 +80,7 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_supports_custom_template() -> None:
 integration = GenericContainerIntegration(
@@ -95,7 +95,7 @@ command=[
 ]
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -109,12 +109,12 @@ assert command == [
     "--target",
     "securecommerce:latest",
 ]
-```
+
 
 def test_build_command_requires_container_target() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 configuration = make_configuration(
     container_image=None,
     container_path=None,
@@ -130,12 +130,12 @@ else:
     raise AssertionError(
         "Expected container target validation to fail."
     )
-```
+
 
 def test_normalize_vulnerable_package() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -176,12 +176,12 @@ assert finding["metadata"]["package"] == "openssl"
 assert finding["metadata"]["installed_version"] == "3.0.1"
 assert finding["metadata"]["fixed_version"] == "3.0.2"
 assert finding["metadata"]["cvss"] == 8.1
-```
+
 
 def test_fixed_version_generates_upgrade_remediation() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "vulnerabilities": [
@@ -208,12 +208,12 @@ remediation = result.findings[0]["remediation"]
 assert "libxml2" in remediation
 assert "2.11" in remediation
 assert "rebuild" in remediation.lower()
-```
+
 
 def test_root_container_maps_to_container_requirement() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "misconfigurations": [
@@ -245,12 +245,12 @@ assert "non-root" in (
 assert "isolation" in (
     finding["impact"].lower()
 )
-```
+
 
 def test_privileged_container_generates_privilege_remediation() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -275,12 +275,12 @@ remediation = result.findings[0]["remediation"]
 
 assert "privileged" in remediation.lower()
 assert "capabilities" in remediation.lower()
-```
+
 
 def test_exposed_port_finding() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "issues": [
@@ -313,12 +313,12 @@ assert finding["metadata"]["ports"] == [
 assert "network" in (
     finding["remediation"].lower()
 )
-```
+
 
 def test_custom_security_requirement_is_preserved() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -339,12 +339,12 @@ assert result.success is True
 assert result.findings[0][
     "security_requirement"
 ] == "SF-CUSTOM-001"
-```
+
 
 def test_image_metadata_is_preserved() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -382,12 +382,12 @@ assert finding["metadata"]["vendor"] == (
 assert finding["metadata"]["component"] == (
     "openssl"
 )
-```
+
 
 def test_default_severity_is_medium() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -405,12 +405,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["severity"] == "medium"
-```
+
 
 def test_default_confidence_is_unknown() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -428,12 +428,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["confidence"] == "unknown"
-```
+
 
 def test_stdout_json_is_supported() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": (
@@ -454,12 +454,12 @@ assert (
     result.findings[0]["source_finding_id"]
     == "container-008"
 )
-```
+
 
 def test_invalid_stdout_json_returns_failure() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": "not-json"
@@ -473,12 +473,12 @@ result = integration.normalize(
 assert result.success is False
 assert result.errors
 assert "valid JSON" in result.errors[0]
-```
+
 
 def test_malformed_record_becomes_warning() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -501,12 +501,12 @@ assert any(
     "not an object" in warning
     for warning in result.warnings
 )
-```
+
 
 def test_multiple_container_findings_are_normalized() -> None:
 integration = GenericContainerIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -544,14 +544,14 @@ assert [
     "container-011",
     "container-012",
 ]
-```
+
 
 def test_integration_metadata() -> None:
 integration = GenericContainerIntegration(
 version="1.0.0"
 )
 
-```
+
 metadata = integration.integration_metadata()
 
 assert metadata["integration"] == "container"
@@ -559,4 +559,4 @@ assert metadata["display_name"] == (
     "Generic Container Security"
 )
 assert metadata["version"] == "1.0.0"
-```
+
