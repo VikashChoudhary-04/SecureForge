@@ -1,4 +1,3 @@
-```python id="v4c8n1"
 """Tests for the SecureForge report command service."""
 
 import json
@@ -168,4 +167,3 @@ def test_report_command_accepts_path_objects(
     )
 
     assert result == output_path
-```
