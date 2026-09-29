@@ -168,7 +168,7 @@ assert release_result.blocking_findings == [
     "SF-SAST-001",
     "SF-DAST-001",
 ]
-```
+
 
 def test_core_pipeline_allows_low_risk_finding() -> None:
 """Verify an explicitly permitted low-risk finding can pass."""
