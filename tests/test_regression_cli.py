@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression CLI."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -44,7 +44,7 @@ tmp_path
 / "suite.yaml"
 )
 
-```
+
 write_suite(suite_path)
 
 source_root = (
@@ -79,7 +79,7 @@ assert "Total: 1" in result.stdout
 assert "Passed: 1" in result.stdout
 assert "Failed: 0" in result.stdout
 assert "SECRET-001: PASSED" in result.stdout
-```
+
 
 def test_cli_returns_failure_for_failed_regression(
 tmp_path: Path,
@@ -90,7 +90,7 @@ tmp_path
 / "suite.yaml"
 )
 
-```
+
 write_suite(suite_path)
 
 source_root = (
@@ -125,7 +125,7 @@ assert "Total: 1" in result.stdout
 assert "Passed: 0" in result.stdout
 assert "Failed: 1" in result.stdout
 assert "SECRET-001: FAILED" in result.stdout
-```
+
 
 def test_cli_reports_execution_error(
 tmp_path: Path,
@@ -136,7 +136,7 @@ tmp_path
 / "suite.yaml"
 )
 
-```
+
 write_suite(suite_path)
 
 result = runner.invoke(
@@ -156,7 +156,7 @@ assert (
     or "Regression execution error:"
     in result.stderr
 )
-```
+
 
 def test_cli_help():
 """CLI should expose the regression run command."""
@@ -167,8 +167,8 @@ app,
 ],
 )
 
-```
+
 assert result.exit_code == 0
 assert "run" in result.stdout
 assert "regression" in result.stdout.lower()
-```
+
