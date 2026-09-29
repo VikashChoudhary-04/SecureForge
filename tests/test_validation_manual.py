@@ -1,4 +1,3 @@
-```python id="4m8xq1"
 """Tests for the SecureForge manual validator."""
 
 import pytest
@@ -194,4 +193,3 @@ def test_manual_validator_defaults_remediation_to_false() -> None:
     result = validator.validate(request)
 
     assert result.remediation_verified is False
-```
