@@ -44,9 +44,7 @@ content,
 encoding="utf-8",
 )
 
-```
 return path
-```
 
 def test_loader_loads_requirement_list_from_yaml(
 tmp_path: Path,
@@ -190,13 +188,11 @@ tmp_path: Path,
 """Verify a missing requirements file raises an error."""
 path = tmp_path / "missing.yaml"
 
-```
 with pytest.raises(
     FileNotFoundError,
     match="was not found",
 ):
     RequirementLoader().load_file(path)
-```
 
 def test_loader_rejects_directory(
 tmp_path: Path,
@@ -204,7 +200,6 @@ tmp_path: Path,
 """Verify a directory cannot be loaded as a requirements file."""
 path = tmp_path / "requirements"
 
-```
 path.mkdir()
 
 with pytest.raises(
@@ -212,7 +207,6 @@ with pytest.raises(
     match="is not a file",
 ):
     RequirementLoader().load_file(path)
-```
 
 def test_loader_rejects_invalid_yaml(
 tmp_path: Path,
@@ -244,13 +238,11 @@ tmp_path / "requirements.yaml",
 "",
 )
 
-```
 with pytest.raises(
     ValueError,
     match="Requirements file is empty",
 ):
     RequirementLoader().load_file(path)
-```
 
 def test_loader_rejects_non_list_data(
 tmp_path: Path,
@@ -264,13 +256,11 @@ value: true
 """,
 )
 
-```
 with pytest.raises(
     ValueError,
     match="must be a YAML list",
 ):
     RequirementLoader().load_file(path)
-```
 
 def test_loader_rejects_non_mapping_requirement(
 tmp_path: Path,
@@ -317,7 +307,6 @@ def test_loader_dump_data_serializes_requirements() -> None:
 """Verify requirement models can be serialized."""
 requirement = build_requirement()
 
-```
 data = RequirementLoader.dump_data(
     [requirement]
 )
@@ -342,7 +331,6 @@ assert data == [
         "metadata": {},
     }
 ]
-```
 
 def test_loader_save_file_writes_yaml(
 tmp_path: Path,
@@ -350,7 +338,6 @@ tmp_path: Path,
 """Verify requirements can be written to YAML."""
 path = tmp_path / "requirements.yaml"
 
-```
 requirements = [
     build_requirement("SF-AUTHZ-001"),
     build_requirement("SF-AUTHZ-002"),
@@ -370,7 +357,6 @@ loaded = RequirementLoader().load_file(
 assert len(loaded) == 2
 assert loaded[0].requirement_id == "SF-AUTHZ-001"
 assert loaded[1].requirement_id == "SF-AUTHZ-002"
-```
 
 def test_loader_round_trip_preserves_requirement(
 tmp_path: Path,
@@ -378,7 +364,6 @@ tmp_path: Path,
 """Verify save/load preserves the requirement model."""
 path = tmp_path / "requirements.yaml"
 
-```
 original = build_requirement()
 
 loader = RequirementLoader()
@@ -393,7 +378,6 @@ loaded = loader.load_file(
 )
 
 assert loaded == [original]
-```
 
 def test_loader_accepts_path_string(
 tmp_path: Path,
