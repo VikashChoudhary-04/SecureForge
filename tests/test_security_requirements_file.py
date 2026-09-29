@@ -40,7 +40,6 @@ def test_repository_requirements_load_successfully() -> None:
 """Verify the repository requirements YAML is valid."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -49,13 +48,11 @@ assert requirements
 assert len(requirements) == len(
     EXPECTED_REQUIREMENTS
 )
-```
 
 def test_repository_contains_expected_requirements() -> None:
 """Verify all defined SecureForge requirements are present."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -66,13 +63,11 @@ requirement_ids = {
 }
 
 assert requirement_ids == EXPECTED_REQUIREMENTS
-```
 
 def test_repository_requirements_have_unique_ids() -> None:
 """Verify requirement identifiers are unique."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -85,13 +80,11 @@ requirement_ids = [
 assert len(requirement_ids) == len(
     set(requirement_ids)
 )
-```
 
 def test_repository_requirements_are_active() -> None:
 """Verify all baseline requirements are active."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -100,13 +93,11 @@ assert all(
     requirement.status == RequirementStatus.ACTIVE
     for requirement in requirements
 )
-```
 
 def test_repository_requirements_have_descriptions() -> None:
 """Verify requirements contain useful descriptions."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -115,13 +106,11 @@ assert all(
     requirement.description.strip()
     for requirement in requirements
 )
-```
 
 def test_repository_requirements_have_verification_methods() -> None:
 """Verify requirements define at least one verification method."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -130,13 +119,11 @@ assert all(
     requirement.verification_methods
     for requirement in requirements
 )
-```
 
 def test_repository_mandatory_requirements_are_security_relevant() -> None:
 """Verify mandatory requirements use expected security categories."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -165,13 +152,11 @@ assert all(
     requirement.category in allowed_categories
     for requirement in mandatory
 )
-```
 
 def test_repository_authorization_requirements_cover_regression() -> None:
 """Verify authorization requirements support regression testing."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -189,13 +174,11 @@ assert all(
     "regression" in requirement.verification_methods
     for requirement in authorization_requirements
 )
-```
 
 def test_repository_injection_requirement_supports_regression() -> None:
 """Verify injection protection can be regression-tested."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -211,13 +194,11 @@ assert (
     "regression"
     in injection_requirement.verification_methods
 )
-```
 
 def test_repository_regression_requirement_exists() -> None:
 """Verify SecureForge explicitly models regression protection."""
 loader = RequirementLoader()
 
-```
 requirements = loader.load_file(
     REQUIREMENTS_FILE
 )
@@ -235,4 +216,3 @@ assert (
 )
 
 assert regression_requirement.mandatory is False
-```
