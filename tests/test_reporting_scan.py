@@ -1,4 +1,3 @@
-```python id="p5v8n2"
 """Tests for scan-to-report conversion."""
 
 from secureforge.reporting import (
@@ -334,4 +333,3 @@ def test_build_scan_report_preserves_regression_gate(
         report.regression_gate.failures
         == list(gate.failures)
     )
-```
