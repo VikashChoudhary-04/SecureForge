@@ -2,6 +2,7 @@
 
 from .generic import GenericAPIIntegration
 
-**all** = [
-"GenericAPIIntegration",
+
+__all__ = [
+    "GenericAPIIntegration",
 ]
