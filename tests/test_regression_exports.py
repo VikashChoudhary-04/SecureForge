@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression package exports."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import secureforge.regression as regression
 
@@ -145,8 +145,8 @@ expected = {
 "regression_app",
 }
 
-```
+
 assert set(
     regression.__all__
 ) == expected
-```
+
