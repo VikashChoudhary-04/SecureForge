@@ -1,4 +1,3 @@
-```python
 """Tests for the SecureForge API validator."""
 
 from __future__ import annotations
@@ -382,4 +381,3 @@ def test_api_validator_rejects_empty_endpoint() -> None:
             "http://localhost:5000",
             "   ",
         )
-```
