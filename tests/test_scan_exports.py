@@ -1,4 +1,3 @@
-```python
 """Tests for SecureForge scan-package exports."""
 
 from secureforge.core.scan import (
@@ -99,4 +98,3 @@ def test_scan_exports_reference_expected_objects() -> None:
     assert scan.build_scan_executor.__name__ == (
         "build_scan_executor"
     )
-```
