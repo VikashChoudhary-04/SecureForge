@@ -1,4 +1,3 @@
-```python id="j2m8q4"
 """Tests for regression integration in the security pipeline."""
 
 from secureforge.core.scan.security_pipeline import (
@@ -222,4 +221,3 @@ def test_pipeline_serializes_regression_sections(
         "BOLA-001"
         in payload["regression_gate"]["failures"]
     )
-```
