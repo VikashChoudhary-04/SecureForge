@@ -2,6 +2,6 @@
 
 from .generic import GenericNessusIntegration
 
-**all** = [
+__all__ = [
 "GenericNessusIntegration",
 ]
