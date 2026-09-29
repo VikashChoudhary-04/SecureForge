@@ -1,4 +1,3 @@
-```python id="7c1m5v"
 """Tests for the SecureForge validation service."""
 
 from secureforge.validation.base import BaseValidator
@@ -239,4 +238,3 @@ def test_service_preserves_validation_order() -> None:
         "FINDING-002",
         "FINDING-003",
     ]
-```
