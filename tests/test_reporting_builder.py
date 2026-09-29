@@ -1,4 +1,3 @@
-```python id="q7m2x4"
 """Tests for the SecureForge security report builder."""
 
 from secureforge.reporting import (
@@ -291,4 +290,3 @@ def test_report_models_are_serializable(
     assert "policy" in payload
     assert "decision" in payload
     assert "remediation" in payload
-```
