@@ -1,6 +1,6 @@
 """Generic Infrastructure-as-Code security integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 from typing import Any
@@ -21,7 +21,7 @@ SecurityIntegration,
 class GenericIACIntegration(SecurityIntegration):
 """Adapt generic IaC scanner output to SecureForge."""
 
-```
+
 integration_name = "iac"
 display_name = "Generic Infrastructure-as-Code Security"
 
@@ -721,4 +721,4 @@ def _render_command(
         )
         for token in command
     ]
-```
+
