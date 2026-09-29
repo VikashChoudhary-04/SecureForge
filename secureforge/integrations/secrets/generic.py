@@ -1,6 +1,6 @@
 """Generic secret-detection integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 import shlex
@@ -22,7 +22,7 @@ SecurityIntegration,
 class GenericSecretsIntegration(SecurityIntegration):
 """Adapt generic JSON secret-scanner output to SecureForge."""
 
-```
+
 integration_name = "secrets"
 display_name = "Generic Secret Detection"
 
@@ -567,4 +567,4 @@ def _render_command(
         )
 
     return rendered
-```
+
