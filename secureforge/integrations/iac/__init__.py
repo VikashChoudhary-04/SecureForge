@@ -2,6 +2,11 @@
 
 from .generic import GenericIACIntegration
 
+
+IaCIntegration = GenericIACIntegration
+
+
 __all__ = [
-"GenericIACIntegration",
+    "IaCIntegration",
+    "GenericIACIntegration",
 ]
