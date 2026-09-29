@@ -1,6 +1,6 @@
 """Tests for the generic DAST integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.config import (
 ScanConfiguration,
@@ -44,7 +44,7 @@ integration = GenericDASTIntegration(
 executable="zap-baseline"
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -56,7 +56,7 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_supports_custom_template() -> None:
 integration = GenericDASTIntegration(
@@ -69,7 +69,7 @@ command=[
 ]
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -81,12 +81,12 @@ assert command == [
     "--output",
     "results.json",
 ]
-```
+
 
 def test_build_command_requires_base_url() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 configuration = make_configuration(
     base_url=None
 )
@@ -101,12 +101,12 @@ else:
     raise AssertionError(
         "Expected base_url validation to fail."
     )
-```
+
 
 def test_normalize_sql_injection_finding() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -148,12 +148,12 @@ assert finding["parameter"] == "search"
 assert finding["cwe"] == "CWE-89"
 assert finding["owasp"] == "A03:2021"
 assert finding["security_requirement"] == "SF-INPUT-001"
-```
+
 
 def test_xss_maps_to_input_requirement() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "results": [
@@ -176,12 +176,12 @@ assert result.success is True
 finding = result.findings[0]
 
 assert finding["security_requirement"] == "SF-INPUT-001"
-```
+
 
 def test_authentication_issue_maps_to_auth_requirement() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "alerts": [
@@ -204,12 +204,12 @@ assert result.success is True
 finding = result.findings[0]
 
 assert finding["security_requirement"] == "SF-AUTH-001"
-```
+
 
 def test_authorization_issue_maps_to_authz_requirement() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "issues": [
@@ -231,12 +231,12 @@ assert result.success is True
 finding = result.findings[0]
 
 assert finding["security_requirement"] == "SF-AUTHZ-001"
-```
+
 
 def test_tls_issue_maps_to_transport_requirement() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "vulnerabilities": [
@@ -261,12 +261,12 @@ finding = result.findings[0]
 assert finding["security_requirement"] == (
     "SF-TRANSPORT-001"
 )
-```
+
 
 def test_custom_security_requirement_is_preserved() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -288,12 +288,12 @@ assert result.success is True
 assert result.findings[0][
     "security_requirement"
 ] == "SF-API-002"
-```
+
 
 def test_request_response_and_evidence_are_preserved_in_metadata() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -333,12 +333,12 @@ assert finding["metadata"]["proof"] == (
     "Confirmed during runtime test"
 )
 assert finding["metadata"]["status_code"] == 200
-```
+
 
 def test_default_severity_is_medium() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -356,12 +356,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["severity"] == "medium"
-```
+
 
 def test_default_confidence_is_unknown() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -379,12 +379,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["confidence"] == "unknown"
-```
+
 
 def test_stdout_json_is_supported() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": (
@@ -405,12 +405,12 @@ assert (
     result.findings[0]["source_finding_id"]
     == "dast-010"
 )
-```
+
 
 def test_invalid_stdout_json_returns_failure() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": "not-json"
@@ -424,12 +424,12 @@ result = integration.normalize(
 assert result.success is False
 assert result.errors
 assert "valid JSON" in result.errors[0]
-```
+
 
 def test_malformed_record_becomes_warning() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -452,12 +452,12 @@ assert any(
     "not an object" in warning
     for warning in result.warnings
 )
-```
+
 
 def test_multiple_dast_findings_are_normalized() -> None:
 integration = GenericDASTIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -498,14 +498,14 @@ assert [
     "dast-013",
     "dast-014",
 ]
-```
+
 
 def test_integration_metadata() -> None:
 integration = GenericDASTIntegration(
 version="1.0.0"
 )
 
-```
+
 metadata = integration.integration_metadata()
 
 assert metadata["integration"] == "dast"
@@ -513,4 +513,4 @@ assert metadata["display_name"] == (
     "Generic Dynamic Application Security Testing"
 )
 assert metadata["version"] == "1.0.0"
-```
+
