@@ -93,7 +93,7 @@ def test_rule_matches_severity() -> None:
 """Verify a severity-based rule matches correctly."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     severity=Severity.HIGH
 )
@@ -108,13 +108,13 @@ assert evaluator.rule_matches(
     assessment,
     rule,
 )
-```
+
 
 def test_rule_does_not_match_different_severity() -> None:
 """Verify mismatched severity prevents a rule match."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     severity=Severity.MEDIUM
 )
@@ -129,13 +129,13 @@ assert not evaluator.rule_matches(
     assessment,
     rule,
 )
-```
+
 
 def test_rule_matches_risk_level() -> None:
 """Verify a contextual risk rule matches correctly."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding()
 assessment = build_assessment(
     risk_level=RiskLevel.CRITICAL
@@ -151,13 +151,13 @@ assert evaluator.rule_matches(
     assessment,
     rule,
 )
-```
+
 
 def test_rule_does_not_match_different_risk_level() -> None:
 """Verify mismatched risk level prevents a rule match."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding()
 assessment = build_assessment(
     risk_level=RiskLevel.MEDIUM
@@ -173,13 +173,13 @@ assert not evaluator.rule_matches(
     assessment,
     rule,
 )
-```
+
 
 def test_rule_matches_when_no_conditions_are_set() -> None:
 """Verify an unconditional rule matches."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding()
 assessment = build_assessment()
 
@@ -193,13 +193,13 @@ assert evaluator.rule_matches(
     assessment,
     rule,
 )
-```
+
 
 def test_rule_matching_is_case_insensitive() -> None:
 """Verify severity and risk values are normalized."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     severity=Severity.HIGH
 )
@@ -217,13 +217,13 @@ assert evaluator.rule_matches(
     assessment,
     rule,
 )
-```
+
 
 def test_match_rule_returns_matching_rule() -> None:
 """Verify matching rules are selected."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding()
 assessment = build_assessment()
 
@@ -248,13 +248,13 @@ matched = evaluator.match_rule(
 
 assert matched is not None
 assert matched.rule_id == "BLOCK-HIGH"
-```
+
 
 def test_match_rule_ignores_disabled_rules() -> None:
 """Verify disabled rules cannot trigger."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding()
 assessment = build_assessment()
 
@@ -280,13 +280,13 @@ matched = evaluator.match_rule(
 
 assert matched is not None
 assert matched.rule_id == "REVIEW-HIGH"
-```
+
 
 def test_match_rule_prefers_block_over_review() -> None:
 """Verify higher-priority actions win when rules overlap."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding()
 assessment = build_assessment()
 
@@ -311,13 +311,13 @@ matched = evaluator.match_rule(
 
 assert matched is not None
 assert matched.rule_id == "BLOCK-HIGH"
-```
+
 
 def test_match_rule_prefers_review_over_pass() -> None:
 """Verify review outranks pass."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding()
 assessment = build_assessment()
 
@@ -342,13 +342,13 @@ matched = evaluator.match_rule(
 
 assert matched is not None
 assert matched.rule_id == "REVIEW-HIGH"
-```
+
 
 def test_match_rule_returns_none_when_nothing_matches() -> None:
 """Verify unmatched findings return no rule."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     severity=Severity.LOW
 )
@@ -373,13 +373,13 @@ matched = evaluator.match_rule(
 )
 
 assert matched is None
-```
+
 
 def test_exception_matches_finding_id() -> None:
 """Verify an exception can target a specific finding."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     finding_id="SF-EXCEPTION-001"
 )
@@ -398,13 +398,13 @@ assert evaluator.exception_applies(
     finding,
     policy,
 )
-```
+
 
 def test_exception_matches_requirement_id() -> None:
 """Verify an exception can target a requirement."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     security_requirement="SF-AUTHZ-001"
 )
@@ -423,13 +423,13 @@ assert evaluator.exception_applies(
     finding,
     policy,
 )
-```
+
 
 def test_exception_does_not_match_unrelated_finding() -> None:
 """Verify unrelated exceptions do not apply."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     finding_id="SF-001"
 )
@@ -448,13 +448,13 @@ assert not evaluator.exception_applies(
     finding,
     policy,
 )
-```
+
 
 def test_disabled_exception_does_not_apply() -> None:
 """Verify disabled exceptions are ignored."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     finding_id="SF-001"
 )
@@ -474,13 +474,13 @@ assert not evaluator.exception_applies(
     finding,
     policy,
 )
-```
+
 
 def test_find_exception_returns_matching_exception() -> None:
 """Verify the matching exception object is returned."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     finding_id="SF-001"
 )
@@ -502,13 +502,13 @@ result = evaluator.find_exception(
 
 assert result is not None
 assert result.exception_id == "EXC-001"
-```
+
 
 def test_find_exception_returns_none_when_unmatched() -> None:
 """Verify no exception returns None."""
 evaluator = PolicyEvaluator()
 
-```
+
 finding = build_finding(
     finding_id="SF-001"
 )
@@ -519,13 +519,13 @@ assert evaluator.find_exception(
     finding,
     policy,
 ) is None
-```
+
 
 def test_action_priority() -> None:
 """Verify policy action priorities."""
 evaluator = PolicyEvaluator()
 
-```
+
 assert evaluator.action_priority(
     PolicyAction.PASS
 ) == 0
@@ -537,13 +537,13 @@ assert evaluator.action_priority(
 assert evaluator.action_priority(
     PolicyAction.BLOCK
 ) == 2
-```
+
 
 def test_highest_action_returns_block() -> None:
 """Verify block is the highest action."""
 evaluator = PolicyEvaluator()
 
-```
+
 result = evaluator.highest_action(
     [
         PolicyAction.PASS,
@@ -553,13 +553,13 @@ result = evaluator.highest_action(
 )
 
 assert result == PolicyAction.BLOCK
-```
+
 
 def test_highest_action_returns_review() -> None:
 """Verify review outranks pass."""
 evaluator = PolicyEvaluator()
 
-```
+
 result = evaluator.highest_action(
     [
         PolicyAction.PASS,
@@ -568,12 +568,12 @@ result = evaluator.highest_action(
 )
 
 assert result == PolicyAction.REVIEW
-```
+
 
 def test_highest_action_returns_pass_for_empty_list() -> None:
 """Verify an empty action set defaults to pass."""
 evaluator = PolicyEvaluator()
 
-```
+
 assert evaluator.highest_action([]) == PolicyAction.PASS
-```
+
