@@ -52,7 +52,6 @@ configuration = build_configuration(
 profile=ScanProfile.QUICK
 )
 
-```
 planner = ScanPlanner()
 
 assert planner.required_integrations(
@@ -62,7 +61,6 @@ assert planner.required_integrations(
     "sca",
     "secrets",
 )
-```
 
 def test_standard_profile_requires_expected_integrations() -> None:
 """Verify the standard profile integration set."""
@@ -70,7 +68,6 @@ configuration = build_configuration(
 profile=ScanProfile.STANDARD
 )
 
-```
 planner = ScanPlanner()
 
 assert planner.required_integrations(
@@ -83,7 +80,6 @@ assert planner.required_integrations(
     "dast",
     "container",
 )
-```
 
 def test_full_profile_requires_expected_integrations() -> None:
 """Verify the full profile integration set."""
@@ -91,7 +87,6 @@ configuration = build_configuration(
 profile=ScanProfile.FULL
 )
 
-```
 planner = ScanPlanner()
 
 assert planner.required_integrations(
@@ -108,7 +103,6 @@ assert planner.required_integrations(
     "nmap",
     "manual",
 )
-```
 
 def test_plan_selects_configured_enabled_tools() -> None:
 """Verify enabled configured tools are planned."""
@@ -121,7 +115,6 @@ build_tool("secrets"),
 ],
 )
 
-```
 planned = ScanPlanner().plan(
     configuration
 )
@@ -134,7 +127,6 @@ assert [
     "sca",
     "secrets",
 ]
-```
 
 def test_plan_preserves_profile_order() -> None:
 """Verify planned tools follow profile order."""
@@ -147,7 +139,6 @@ build_tool("sca"),
 ],
 )
 
-```
 planned = ScanPlanner().plan(
     configuration
 )
@@ -160,7 +151,6 @@ assert [
     "sca",
     "secrets",
 ]
-```
 
 def test_plan_ignores_tools_not_in_profile() -> None:
 """Verify unrelated configured tools are not planned."""
@@ -174,7 +164,6 @@ build_tool("nmap"),
 ],
 )
 
-```
 planned = ScanPlanner().plan(
     configuration
 )
@@ -187,7 +176,6 @@ assert [
     "sca",
     "secrets",
 ]
-```
 
 def test_plan_ignores_disabled_tools() -> None:
 """Verify disabled tools are excluded from execution."""
@@ -200,7 +188,6 @@ build_tool("secrets"),
 ],
 )
 
-```
 planned = ScanPlanner().plan(
     configuration
 )
@@ -212,7 +199,6 @@ assert [
     "sast",
     "secrets",
 ]
-```
 
 def test_plan_returns_empty_when_no_tools_are_configured() -> None:
 """Verify an empty configuration produces no plan entries."""
@@ -220,13 +206,11 @@ configuration = build_configuration(
 profile=ScanProfile.QUICK
 )
 
-```
 planned = ScanPlanner().plan(
     configuration
 )
 
 assert planned == []
-```
 
 def test_missing_integrations_are_reported() -> None:
 """Verify unconfigured profile integrations are identified."""
@@ -237,7 +221,6 @@ build_tool("sast"),
 ],
 )
 
-```
 missing = ScanPlanner().missing_integrations(
     configuration
 )
@@ -246,7 +229,6 @@ assert missing == [
     "sca",
     "secrets",
 ]
-```
 
 def test_no_missing_integrations_when_all_are_configured() -> None:
 """Verify a complete configuration has no missing integrations."""
@@ -259,11 +241,9 @@ build_tool("secrets"),
 ],
 )
 
-```
 assert ScanPlanner().missing_integrations(
     configuration
 ) == []
-```
 
 def test_disabled_integrations_are_reported() -> None:
 """Verify explicitly disabled profile tools are identified."""
@@ -276,7 +256,6 @@ build_tool("secrets"),
 ],
 )
 
-```
 disabled = ScanPlanner().disabled_integrations(
     configuration
 )
@@ -284,7 +263,6 @@ disabled = ScanPlanner().disabled_integrations(
 assert disabled == [
     "sca"
 ]
-```
 
 def test_disabled_integrations_do_not_count_as_missing() -> None:
 """Verify disabled tools are distinct from absent tools."""
@@ -297,7 +275,6 @@ build_tool("secrets"),
 ],
 )
 
-```
 planner = ScanPlanner()
 
 assert "sca" not in planner.missing_integrations(
@@ -307,7 +284,6 @@ assert "sca" not in planner.missing_integrations(
 assert "sca" in planner.disabled_integrations(
     configuration
 )
-```
 
 def test_tool_names_are_case_insensitive() -> None:
 """Verify integration lookup ignores tool-name casing."""
@@ -320,7 +296,6 @@ build_tool("SECRETS"),
 ],
 )
 
-```
 planned = ScanPlanner().plan(
     configuration
 )
@@ -333,13 +308,11 @@ assert [
     "sca",
     "secrets",
 ]
-```
 
 def test_planned_tool_contains_original_configuration() -> None:
 """Verify planned entries retain their tool configuration."""
 sast = build_tool("sast")
 
-```
 configuration = build_configuration(
     profile=ScanProfile.QUICK,
     tools=[
@@ -359,7 +332,6 @@ assert isinstance(
 )
 
 assert planned[0].configuration is sast
-```
 
 def test_standard_profile_plans_only_available_tools() -> None:
 """Verify standard planning handles partial tool configuration."""
@@ -372,7 +344,6 @@ build_tool("container"),
 ],
 )
 
-```
 planned = ScanPlanner().plan(
     configuration
 )
@@ -393,7 +364,6 @@ assert ScanPlanner().missing_integrations(
     "secrets",
     "api",
 ]
-```
 
 def test_full_profile_plans_available_integrations() -> None:
 """Verify full planning supports the complete integration set."""
@@ -410,7 +380,6 @@ integration_names = [
 "manual",
 ]
 
-```
 configuration = build_configuration(
     profile=ScanProfile.FULL,
     tools=[
@@ -431,7 +400,6 @@ assert [
 assert ScanPlanner().missing_integrations(
     configuration
 ) == []
-```
 
 def test_disabled_unrelated_tool_is_not_reported() -> None:
 """Verify unrelated disabled tools do not affect profile status."""
@@ -445,7 +413,6 @@ build_tool("nmap", enabled=False),
 ],
 )
 
-```
 planner = ScanPlanner()
 
 assert planner.disabled_integrations(
@@ -455,7 +422,6 @@ assert planner.disabled_integrations(
 assert planner.missing_integrations(
     configuration
 ) == []
-```
 
 def test_plan_returns_new_list_each_time() -> None:
 """Verify planning does not expose mutable internal state."""
@@ -468,7 +434,6 @@ build_tool("secrets"),
 ],
 )
 
-```
 planner = ScanPlanner()
 
 first = planner.plan(configuration)
@@ -476,4 +441,3 @@ second = planner.plan(configuration)
 
 assert first == second
 assert first is not second
-```
