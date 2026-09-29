@@ -1,6 +1,6 @@
 """Tests for the generic secret-detection integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.config import (
 ScanConfiguration,
@@ -42,7 +42,7 @@ integration = GenericSecretsIntegration(
 executable="gitleaks"
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -54,7 +54,7 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_supports_custom_template() -> None:
 integration = GenericSecretsIntegration(
@@ -66,7 +66,7 @@ command=[
 ]
 )
 
-```
+
 command = integration.build_command(
     make_configuration(
         source_path="./repository"
@@ -79,12 +79,12 @@ assert command == [
     "./repository",
     "--json",
 ]
-```
+
 
 def test_build_command_requires_source_path() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 configuration = make_configuration()
 configuration.target.source_path = None
 
@@ -98,12 +98,12 @@ else:
     raise AssertionError(
         "Expected source_path validation to fail."
     )
-```
+
 
 def test_normalize_secret_finding() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -140,12 +140,12 @@ assert finding["metadata"]["file"] == (
     "config/settings.py"
 )
 assert finding["metadata"]["line"] == 42
-```
+
 
 def test_secret_value_is_redacted() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 actual_secret = "AKIA_SUPER_SECRET_VALUE"
 
 evidence = make_evidence(
@@ -176,12 +176,12 @@ assert (
 assert actual_secret not in str(
     finding
 )
-```
+
 
 def test_match_value_is_redacted() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 actual_secret = (
     "ghp_example_token_that_must_not_be_saved"
 )
@@ -212,12 +212,12 @@ assert (
 assert actual_secret not in str(
     finding
 )
-```
+
 
 def test_redacted_scanner_value_is_preserved() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "secrets": [
@@ -241,12 +241,12 @@ assert (
     finding["metadata"]["secret_value"]
     == "sk_****7890"
 )
-```
+
 
 def test_default_severity_for_secret_is_high() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -263,12 +263,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["severity"] == "high"
-```
+
 
 def test_cwe_is_normalized() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -286,12 +286,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["cwe"] == "CWE-798"
-```
+
 
 def test_nested_location_is_supported() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -318,12 +318,12 @@ assert finding["metadata"]["file"] == (
     "app/config.py"
 )
 assert finding["metadata"]["line"] == 19
-```
+
 
 def test_multiple_secret_findings_are_normalized() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -360,12 +360,12 @@ assert [
     "secret-002",
     "secret-003",
 ]
-```
+
 
 def test_malformed_record_becomes_warning() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -388,12 +388,12 @@ assert any(
     "not an object" in warning
     for warning in result.warnings
 )
-```
+
 
 def test_stdout_json_is_supported() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": (
@@ -413,12 +413,12 @@ assert (
     result.findings[0]["source_finding_id"]
     == "secret-005"
 )
-```
+
 
 def test_invalid_stdout_json_returns_failure() -> None:
 integration = GenericSecretsIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": "this is not json"
@@ -432,14 +432,14 @@ result = integration.normalize(
 assert result.success is False
 assert result.errors
 assert "valid JSON" in result.errors[0]
-```
+
 
 def test_integration_metadata_declares_redaction() -> None:
 integration = GenericSecretsIntegration(
 version="1.0.0"
 )
 
-```
+
 metadata = integration.integration_metadata()
 
 assert metadata["integration"] == "secrets"
@@ -447,4 +447,4 @@ assert metadata["display_name"] == (
     "Generic Secret Detection"
 )
 assert metadata["version"] == "1.0.0"
-```
+
