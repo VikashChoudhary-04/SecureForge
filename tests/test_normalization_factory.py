@@ -48,7 +48,7 @@ def test_factory_creates_findings_from_result() -> None:
 """Verify normalized findings become Finding objects."""
 result = build_result()
 
-```
+
 findings = NormalizationFindingFactory().create(
     result
 )
@@ -57,7 +57,7 @@ assert len(findings) == 1
 assert isinstance(findings[0], Finding)
 assert findings[0].title == "SQL Injection"
 assert findings[0].severity == Severity.HIGH
-```
+
 
 def test_factory_creates_multiple_findings() -> None:
 """Verify multiple normalized findings are converted."""
@@ -69,7 +69,7 @@ build_finding_data("Broken Access Control"),
 ]
 )
 
-```
+
 findings = NormalizationFindingFactory().create(
     result
 )
@@ -83,7 +83,7 @@ assert [
     "Cross Site Scripting",
     "Broken Access Control",
 ]
-```
+
 
 def test_factory_rejects_unsuccessful_result() -> None:
 """Verify failed normalization cannot produce findings."""
@@ -95,7 +95,7 @@ errors=[
 ],
 )
 
-```
+
 with pytest.raises(
     ValueError,
     match="unsuccessful normalization result",
@@ -103,7 +103,7 @@ with pytest.raises(
     NormalizationFindingFactory().create(
         result
     )
-```
+
 
 def test_factory_accepts_empty_successful_result() -> None:
 """Verify a successful result with no findings is valid."""
@@ -112,13 +112,13 @@ source="dast",
 findings=[],
 )
 
-```
+
 findings = NormalizationFindingFactory().create(
     result
 )
 
 assert findings == []
-```
+
 
 def test_factory_create_many_combines_results() -> None:
 """Verify findings from multiple results are combined."""
@@ -128,7 +128,7 @@ build_finding_data("SQL Injection"),
 ]
 )
 
-```
+
 second = NormalizationResult(
     source="sast",
     findings=[
@@ -152,7 +152,7 @@ findings = NormalizationFindingFactory().create_many(
 assert len(findings) == 2
 assert findings[0].source == "dast"
 assert findings[1].source == "sast"
-```
+
 
 def test_factory_create_many_preserves_order() -> None:
 """Verify finding order follows normalization result order."""
@@ -162,7 +162,7 @@ build_finding_data("First Finding"),
 ]
 )
 
-```
+
 second = build_result(
     [
         build_finding_data("Second Finding"),
@@ -183,7 +183,7 @@ assert [
     "First Finding",
     "Second Finding",
 ]
-```
+
 
 def test_factory_create_from_data() -> None:
 """Verify direct conversion from normalized dictionaries."""
@@ -192,7 +192,7 @@ build_finding_data("SQL Injection"),
 build_finding_data("Cross Site Scripting"),
 ]
 
-```
+
 findings = NormalizationFindingFactory().create_from_data(
     data
 )
@@ -205,13 +205,13 @@ assert all(
     )
     for finding in findings
 )
-```
+
 
 def test_factory_rejects_invalid_finding_data() -> None:
 """Verify invalid normalized data is rejected."""
 invalid_data = build_finding_data()
 
-```
+
 del invalid_data["title"]
 
 result = build_result(
@@ -225,13 +225,13 @@ with pytest.raises(
     NormalizationFindingFactory().create(
         result
     )
-```
+
 
 def test_factory_uses_injected_finding_factory() -> None:
 """Verify a custom FindingFactory can be injected."""
 from secureforge.core.findings import FindingFactory
 
-```
+
 factory = FindingFactory()
 
 normalization_factory = NormalizationFindingFactory(
@@ -246,14 +246,14 @@ findings = normalization_factory.create(
 
 assert len(findings) == 1
 assert findings[0].finding_id.startswith("SF-")
-```
+
 
 def test_factory_generates_deterministic_ids() -> None:
 """Verify equivalent normalization results produce stable IDs."""
 first_result = build_result()
 second_result = build_result()
 
-```
+
 factory = NormalizationFindingFactory()
 
 first = factory.create(
@@ -265,4 +265,4 @@ second = factory.create(
 )[0]
 
 assert first.finding_id == second.finding_id
-```
+
