@@ -2,6 +2,6 @@
 
 from .generic import GenericDASTIntegration
 
-**all** = [
+__all__ = [
 "GenericDASTIntegration",
 ]
