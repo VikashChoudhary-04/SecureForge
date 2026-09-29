@@ -1,4 +1,3 @@
-```python
 """Tests for regression data in the security report builder."""
 
 from secureforge.reporting import (
@@ -226,4 +225,3 @@ def test_builder_includes_both_regression_sections(
     assert report.regression_gate.failures == [
         "BOLA-001"
     ]
-```
