@@ -1,6 +1,6 @@
 """Generic Nessus vulnerability-assessment integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 import re
@@ -17,7 +17,7 @@ from secureforge.core.normalization import RawEvidence
 class GenericNessusIntegration(SecurityIntegration):
 """Normalize Nessus-style vulnerability assessment results."""
 
-```
+
 integration_name = "nessus"
 display_name = "Nessus"
 description = (
@@ -844,4 +844,4 @@ def _default_remediation(
         f"Investigate {title}, apply the vendor or configuration "
         "remediation, and retest the affected asset."
     )
-```
+
