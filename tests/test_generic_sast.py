@@ -76,32 +76,32 @@ finding = {
 "security_requirement": "SF-INPUT-001",
 }
 
-```
+
 finding.update(
     overrides
 )
 
 return finding
-```
+
 
 def test_integration_has_expected_identity() -> None:
 """Verify the generic SAST integration identity."""
 integration = GenericSASTIntegration()
 
-```
+
 assert integration.name == "sast"
 assert integration.integration_name == "sast"
 assert (
     integration.display_name
     == "Generic Static Application Security Testing"
 )
-```
+
 
 def test_build_command_uses_source_path() -> None:
 """Verify default command construction."""
 integration = GenericSASTIntegration()
 
-```
+
 command = integration.build_command(
     build_configuration()
 )
@@ -113,13 +113,13 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_uses_configured_tool_command() -> None:
 """Verify configured tool commands override defaults."""
 integration = GenericSASTIntegration()
 
-```
+
 configuration = build_configuration(
     tools=[
         ToolConfiguration(
@@ -146,13 +146,13 @@ assert command == [
     "auto",
     "--json",
 ]
-```
+
 
 def test_build_command_uses_configured_executable() -> None:
 """Verify executable-based configuration is supported."""
 integration = GenericSASTIntegration()
 
-```
+
 configuration = build_configuration(
     tools=[
         ToolConfiguration(
@@ -173,13 +173,13 @@ assert command == [
     "semgrep",
     "--json",
 ]
-```
+
 
 def test_build_command_requires_source_path() -> None:
 """Verify SAST rejects configurations without source."""
 integration = GenericSASTIntegration()
 
-```
+
 configuration = build_configuration(
     source_path=None
 )
@@ -191,13 +191,13 @@ with pytest.raises(
     integration.build_command(
         configuration
     )
-```
+
 
 def test_normalize_json_object_with_findings() -> None:
 """Verify standard JSON finding output is normalized."""
 integration = GenericSASTIntegration()
 
-```
+
 evidence = build_evidence(
     {
         "findings": [
@@ -213,13 +213,13 @@ result = integration.normalize(
 assert result.success is True
 assert result.source == "sast"
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_json_results_alias() -> None:
 """Verify scanners using a results field are supported."""
 integration = GenericSASTIntegration()
 
-```
+
 evidence = build_evidence(
     {
         "results": [
@@ -233,13 +233,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_json_issues_alias() -> None:
 """Verify scanners using an issues field are supported."""
 integration = GenericSASTIntegration()
 
-```
+
 evidence = build_evidence(
     {
         "issues": [
@@ -253,13 +253,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_json_string() -> None:
 """Verify JSON stored as scanner stdout is parsed."""
 integration = GenericSASTIntegration()
 
-```
+
 payload = json.dumps(
     {
         "findings": [
@@ -278,13 +278,13 @@ result = integration.normalize(
 
 assert result.success is True
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_stdout_inside_tool_output() -> None:
 """Verify tool execution-shaped evidence is supported."""
 integration = GenericSASTIntegration()
 
-```
+
 payload = json.dumps(
     {
         "findings": [
@@ -306,13 +306,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_list_payload() -> None:
 """Verify a top-level finding list is supported."""
 integration = GenericSASTIntegration()
 
-```
+
 evidence = build_evidence(
     [
         build_finding()
@@ -324,13 +324,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_finding_fields() -> None:
 """Verify core fields map correctly."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -355,7 +355,7 @@ assert finding["owasp"] == "A05:2025"
 assert finding["security_requirement"] == "SF-INPUT-001"
 assert finding["severity"] == "high"
 assert finding["confidence"] == "high"
-```
+
 
 @pytest.mark.parametrize(
 ("scanner_severity", "expected"),
@@ -378,7 +378,7 @@ expected: str,
 """Verify common scanner severity values normalize correctly."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -392,13 +392,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["severity"] == expected
-```
+
 
 def test_unsupported_severity_becomes_warning() -> None:
 """Verify unsupported severities do not crash the complete parse."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -415,7 +415,7 @@ assert result.success is True
 assert result.findings == []
 assert len(result.warnings) == 1
 assert "Unsupported SAST severity" in result.warnings[0]
-```
+
 
 @pytest.mark.parametrize(
 ("value", "expected"),
@@ -433,7 +433,7 @@ expected: str,
 """Verify CWE values are normalized."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -447,13 +447,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["cwe"] == expected
-```
+
 
 def test_cwe_list_uses_first_value() -> None:
 """Verify list-based CWE output is supported."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -470,13 +470,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["cwe"] == "CWE-89"
-```
+
 
 def test_owasp_list_uses_first_value() -> None:
 """Verify list-based OWASP mappings are supported."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -493,13 +493,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["owasp"] == "A05:2025"
-```
+
 
 def test_default_description_uses_message() -> None:
 """Verify message is used when description is absent."""
 integration = GenericSASTIntegration()
 
-```
+
 finding = build_finding(
     description=None,
     message="Dangerous SQL construction detected.",
@@ -519,13 +519,13 @@ assert (
     result.findings[0]["description"]
     == "Dangerous SQL construction detected."
 )
-```
+
 
 def test_default_description_uses_title() -> None:
 """Verify title becomes the final description fallback."""
 integration = GenericSASTIntegration()
 
-```
+
 finding = build_finding(
     description=None,
     message=None,
@@ -542,13 +542,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["description"] == "SQL Injection"
-```
+
 
 def test_default_remediation_is_provided() -> None:
 """Verify a remediation is always available."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -563,13 +563,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["remediation"]
-```
+
 
 def test_default_impact_is_provided() -> None:
 """Verify an impact is always available."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -583,13 +583,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["impact"]
-```
+
 
 def test_location_object_is_supported() -> None:
 """Verify nested source location data is extracted."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -619,13 +619,13 @@ assert finding["metadata"]["source_location"]["file"] == (
 )
 assert finding["metadata"]["source_location"]["line"] == "42"
 assert finding["metadata"]["source_location"]["column"] == "10"
-```
+
 
 def test_path_can_be_used_as_endpoint() -> None:
 """Verify path is accepted as an endpoint fallback."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -641,13 +641,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["endpoint"] == "/api/users"
-```
+
 
 def test_missing_title_produces_warning() -> None:
 """Verify malformed findings are skipped with a warning."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -668,13 +668,13 @@ assert len(result.warnings) == 1
 assert "missing required field 'title'" in (
     result.warnings[0]
 )
-```
+
 
 def test_findings_field_must_be_list() -> None:
 """Verify malformed findings containers are rejected."""
 integration = GenericSASTIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="must be a list",
@@ -688,13 +688,13 @@ with pytest.raises(
             }
         )
     )
-```
+
 
 def test_finding_items_must_be_objects() -> None:
 """Verify finding records must be dictionaries."""
 integration = GenericSASTIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="must be an object",
@@ -708,13 +708,13 @@ with pytest.raises(
             }
         )
     )
-```
+
 
 def test_invalid_json_is_rejected() -> None:
 """Verify invalid scanner JSON is rejected."""
 integration = GenericSASTIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="not valid JSON",
@@ -724,13 +724,13 @@ with pytest.raises(
             "{invalid-json"
         )
     )
-```
+
 
 def test_unsupported_output_type_is_rejected() -> None:
 """Verify unsupported raw output types are rejected."""
 integration = GenericSASTIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="Unsupported SAST output format",
@@ -740,13 +740,13 @@ with pytest.raises(
             12345
         )
     )
-```
+
 
 def test_empty_findings_produce_successful_result() -> None:
 """Verify clean SAST output is represented correctly."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -758,13 +758,13 @@ result = integration.normalize(
 assert result.success is True
 assert result.findings == []
 assert result.warnings == []
-```
+
 
 def test_application_defaults_to_unknown_when_missing() -> None:
 """Verify normalization remains valid without application metadata."""
 integration = GenericSASTIntegration()
 
-```
+
 evidence = RawEvidence(
     source="sast",
     raw_data={
@@ -779,13 +779,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["application"] == "unknown"
-```
+
 
 def test_asset_defaults_to_evidence_target() -> None:
 """Verify evidence target becomes the asset fallback."""
 integration = GenericSASTIntegration()
 
-```
+
 finding = build_finding(
     asset=None
 )
@@ -802,13 +802,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["asset"] == "src"
-```
+
 
 def test_source_finding_id_uses_rule_id() -> None:
 """Verify rule ID is used as the source identifier."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -826,13 +826,13 @@ assert (
     result.findings[0]["source_finding_id"]
     == "PY-SQL-001"
 )
-```
+
 
 def test_source_finding_id_uses_fingerprint() -> None:
 """Verify fingerprint is used as the final identifier fallback."""
 integration = GenericSASTIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -851,13 +851,13 @@ assert (
     result.findings[0]["source_finding_id"]
     == "abc123"
 )
-```
+
 
 def test_source_finding_id_has_deterministic_fallback() -> None:
 """Verify missing scanner IDs receive deterministic indexes."""
 integration = GenericSASTIntegration()
 
-```
+
 findings = [
     build_finding(
         id=None,
@@ -886,13 +886,13 @@ assert [
     "sast-1",
     "sast-2",
 ]
-```
+
 
 def test_normalized_output_can_be_used_by_finding_factory() -> None:
 """Verify SAST output is compatible with canonical Finding creation."""
 from secureforge.core.findings import FindingFactory
 
-```
+
 integration = GenericSASTIntegration()
 
 result = integration.normalize(
@@ -914,4 +914,4 @@ assert findings[0].source == "sast"
 assert findings[0].severity.value == "high"
 assert findings[0].cwe == "CWE-89"
 assert findings[0].security_requirement == "SF-INPUT-001"
-```
+
