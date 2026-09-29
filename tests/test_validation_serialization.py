@@ -1,4 +1,3 @@
-```python id="q4m8s1"
 """Tests for SecureForge validation serialization."""
 
 import json
@@ -185,4 +184,3 @@ def test_dumps_retest_result_produces_valid_json() -> None:
     assert decoded["finding_id"] == "SQLI-001"
     assert decoded["current_outcome"] == "rejected"
     assert decoded["fixed"] is True
-```
