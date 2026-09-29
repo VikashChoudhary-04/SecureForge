@@ -1,4 +1,3 @@
-```python
 """Tests for SecureForge release-gate package exports."""
 
 from secureforge.core.release_gate import (
@@ -69,4 +68,3 @@ def test_release_gate_exports_reference_expected_objects() -> None:
         release_gate.build_regression_gate_result.__name__
         == "build_regression_gate_result"
     )
-```
