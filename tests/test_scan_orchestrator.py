@@ -1,4 +1,3 @@
-```python id="a6r3k9"
 """Tests for SecureForge scan orchestration."""
 
 from secureforge.core.scan.orchestrator import (
@@ -162,4 +161,3 @@ def test_scan_orchestrator_accepts_regression_gate(
     assert result.pipeline.regression_gate == (
         sample_regression_gate
     )
-```
