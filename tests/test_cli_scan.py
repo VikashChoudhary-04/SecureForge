@@ -1,4 +1,3 @@
-```python id="w4n8kc"
 """Tests for SecureForge scan command services."""
 
 from pathlib import Path
@@ -347,4 +346,3 @@ def test_scan_command_service_uses_custom_metadata(
 
     assert scan.scan_id == "scan-005"
     assert scan.profile == "full"
-```
