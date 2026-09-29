@@ -2,6 +2,11 @@
 
 from .generic import GenericSASTIntegration
 
+
+SASTIntegration = GenericSASTIntegration
+
+
 __all__ = [
-"GenericSASTIntegration",
+    "SASTIntegration",
+    "GenericSASTIntegration",
 ]
