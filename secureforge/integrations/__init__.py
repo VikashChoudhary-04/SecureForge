@@ -1,19 +1,18 @@
-"""Security-tool integration framework for SecureForge."""
+"""Security-tool integration components for SecureForge."""
 
 from .base import (
-IntegrationConfigurationError,
-IntegrationError,
-IntegrationParseError,
-SecurityIntegration,
+    IntegrationContext,
+    IntegrationResult,
+    SecurityIntegration,
 )
-from .defaults import build_default_registry
-from .registry import IntegrationRegistry
+from .defaults import (
+    build_default_integrations,
+)
+
 
 __all__ = [
-"IntegrationConfigurationError",
-"IntegrationError",
-"IntegrationParseError",
-"IntegrationRegistry",
-"SecurityIntegration",
-"build_default_registry",
+    "IntegrationContext",
+    "IntegrationResult",
+    "SecurityIntegration",
+    "build_default_integrations",
 ]
