@@ -1,4 +1,3 @@
-```python id="c1k4x8"
 """Tests for the SecureForge validator registry."""
 
 import pytest
@@ -171,4 +170,3 @@ def test_registry_rejects_request_without_supported_validator() -> None:
         match="No validator supports",
     ):
         registry.find(request)
-```
