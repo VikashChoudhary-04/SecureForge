@@ -1,4 +1,3 @@
-```python
 # SecureForge reporting and validation integration tests
 
 from __future__ import annotations
@@ -279,4 +278,3 @@ def test_validation_error_is_preserved_in_report():
     )
 
     assert report.validation_gate is not None
-```
