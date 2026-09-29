@@ -2,6 +2,11 @@
 
 from .generic import GenericSecretsIntegration
 
+
+SecretsIntegration = GenericSecretsIntegration
+
+
 __all__ = [
-"GenericSecretsIntegration",
+    "SecretsIntegration",
+    "GenericSecretsIntegration",
 ]
