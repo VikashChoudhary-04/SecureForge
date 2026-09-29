@@ -1,6 +1,6 @@
 """Tests for regression reporting adapters."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.regression import (
 RegressionResult,
@@ -57,7 +57,6 @@ completed_at="2026-09-27T10:00:02+00:00",
 duration_seconds=2.0,
 )
 
-```
 report = build_regression_report(
     result
 )
@@ -81,7 +80,6 @@ assert report.completed_at == (
     "2026-09-27T10:00:02+00:00"
 )
 assert report.duration_seconds == 2.0
-```
 
 def test_build_regression_report_preserves_test_results():
 """Every regression result should become a report test."""
@@ -112,7 +110,6 @@ completed_at="2026-09-27T10:00:04+00:00",
 duration_seconds=4.0,
 )
 
-```
 report = build_regression_report(
     result
 )
@@ -139,7 +136,6 @@ assert report.tests[2].status == "error"
 
 assert report.tests[3].test_id == "SECRET-001"
 assert report.tests[3].status == "skipped"
-```
 
 def test_build_regression_report_handles_empty_suite():
 """An empty regression suite should still produce a valid report."""
@@ -153,7 +149,6 @@ completed_at="2026-09-27T10:00:00+00:00",
 duration_seconds=0.0,
 )
 
-```
 report = build_regression_report(
     result
 )
@@ -167,7 +162,6 @@ assert report.failed == 0
 assert report.errors == 0
 assert report.skipped == 0
 assert report.tests == []
-```
 
 def test_build_regression_report_preserves_evidence():
 """Regression evidence should remain available in the report."""
@@ -201,7 +195,6 @@ completed_at="2026-09-27T10:00:01+00:00",
 duration_seconds=1.0,
 )
 
-```
 report = build_regression_report(
     result
 )
@@ -210,4 +203,3 @@ assert report.tests[0].evidence == {
     "matches": [],
     "values_redacted": True,
 }
-```
