@@ -1,4 +1,3 @@
-```python id="3g5r8p"
 """Tests for the SecureForge script validator."""
 
 from secureforge.validation.base import ValidationError
@@ -136,4 +135,3 @@ def test_script_validator_uses_configured_timeout() -> None:
 
     assert result.outcome == ValidationOutcome.ERROR
     assert "timed out" in result.message.lower()
-```
