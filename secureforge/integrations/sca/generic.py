@@ -1,6 +1,6 @@
 """Generic JSON SCA integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -19,7 +19,7 @@ SecurityIntegration,
 class GenericSCAIntegration(SecurityIntegration):
 """Normalize findings from a generic JSON SCA scanner."""
 
-```
+
 integration_name = "sca"
 display_name = "Generic Software Composition Analysis"
 
@@ -721,4 +721,4 @@ def _tool_configuration(
             return tool
 
     return None
-```
+
