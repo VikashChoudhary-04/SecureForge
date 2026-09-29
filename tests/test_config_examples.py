@@ -1,6 +1,6 @@
 """Tests for SecureForge configuration examples."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -14,43 +14,33 @@ def load_yaml(path: Path) -> dict:
 with path.open("r", encoding="utf-8") as file:
 data = yaml.safe_load(file)
 
-```
 assert isinstance(data, dict)
 
 return data
-```
 
 def test_default_config_exists() -> None:
 """The default configuration should exist."""
 path = CONFIG_DIR / "default.yaml"
 
-```
 assert path.is_file()
-```
 
 def test_quick_config_exists() -> None:
 """The quick configuration should exist."""
 path = CONFIG_DIR / "quick.yaml"
 
-```
 assert path.is_file()
-```
 
 def test_standard_config_exists() -> None:
 """The standard configuration should exist."""
 path = CONFIG_DIR / "standard.yaml"
 
-```
 assert path.is_file()
-```
 
 def test_full_config_exists() -> None:
 """The full configuration should exist."""
 path = CONFIG_DIR / "full.yaml"
 
-```
 assert path.is_file()
-```
 
 def test_securecommerce_config_exists() -> None:
 """The SecureCommerce example should exist."""
@@ -60,9 +50,7 @@ CONFIG_DIR
 / "securecommerce.yaml"
 )
 
-```
 assert path.is_file()
-```
 
 def test_full_lab_config_exists() -> None:
 """The full lab example should exist."""
@@ -72,9 +60,7 @@ CONFIG_DIR
 / "full-lab.yaml"
 )
 
-```
 assert path.is_file()
-```
 
 def test_default_config_structure() -> None:
 """The default configuration should contain core sections."""
@@ -82,7 +68,6 @@ config = load_yaml(
 CONFIG_DIR / "default.yaml"
 )
 
-```
 assert config["project"]["name"] == "securecommerce"
 assert config["project"]["application"] == "SecureCommerce"
 assert config["scan"]["profile"] == "standard"
@@ -91,7 +76,6 @@ assert "target" in config
 assert "integrations" in config
 assert "output" in config
 assert "logging" in config
-```
 
 def test_quick_config_uses_quick_profile() -> None:
 """The quick configuration should use the quick profile."""
@@ -99,7 +83,6 @@ config = load_yaml(
 CONFIG_DIR / "quick.yaml"
 )
 
-```
 assert config["scan"]["profile"] == "quick"
 
 assert set(config["integrations"]) == {
@@ -107,7 +90,6 @@ assert set(config["integrations"]) == {
     "sca",
     "secrets",
 }
-```
 
 def test_standard_config_uses_standard_profile() -> None:
 """The standard configuration should contain standard integrations."""
@@ -115,7 +97,6 @@ config = load_yaml(
 CONFIG_DIR / "standard.yaml"
 )
 
-```
 assert config["scan"]["profile"] == "standard"
 
 assert set(config["integrations"]) == {
@@ -126,7 +107,6 @@ assert set(config["integrations"]) == {
     "dast",
     "container",
 }
-```
 
 def test_full_config_uses_full_profile() -> None:
 """The full configuration should declare all integrations."""
@@ -134,7 +114,6 @@ config = load_yaml(
 CONFIG_DIR / "full.yaml"
 )
 
-```
 assert config["scan"]["profile"] == "full"
 
 assert set(config["integrations"]) == {
@@ -149,7 +128,6 @@ assert set(config["integrations"]) == {
     "nmap",
     "manual",
 }
-```
 
 def test_securecommerce_config_contains_application_targets() -> None:
 """SecureCommerce should expose the targets required by standard scans."""
@@ -159,7 +137,6 @@ CONFIG_DIR
 / "securecommerce.yaml"
 )
 
-```
 target = config["target"]
 
 assert target["base_url"] == "http://localhost:5000"
@@ -175,7 +152,6 @@ assert target["source_path"] == (
 assert target["container_image"] == (
     "securecommerce:latest"
 )
-```
 
 def test_securecommerce_config_references_policy_and_requirements() -> None:
 """SecureCommerce should reference the policy and requirement catalogs."""
@@ -185,7 +161,6 @@ CONFIG_DIR
 / "securecommerce.yaml"
 )
 
-```
 assert config["policy"]["path"] == (
     "./policies/default.yaml"
 )
@@ -193,7 +168,6 @@ assert config["policy"]["path"] == (
 assert config["requirements"]["path"] == (
     "./requirements/security-requirements.yaml"
 )
-```
 
 def test_full_lab_config_contains_full_targets() -> None:
 """The full lab configuration should expose all target types."""
@@ -203,7 +177,6 @@ CONFIG_DIR
 / "full-lab.yaml"
 )
 
-```
 target = config["target"]
 
 assert target["base_url"] == "http://localhost:5000"
@@ -224,7 +197,6 @@ assert target["iac_path"] == (
 )
 assert target["network_target"] == "127.0.0.1"
 assert target["evidence_path"] == "./evidence"
-```
 
 def test_full_lab_config_declares_all_integrations() -> None:
 """The full lab configuration should declare every integration."""
@@ -234,7 +206,6 @@ CONFIG_DIR
 / "full-lab.yaml"
 )
 
-```
 integrations = config["integrations"]
 
 expected = {
@@ -251,7 +222,6 @@ expected = {
 }
 
 assert set(integrations) == expected
-```
 
 def test_full_lab_config_references_policy_and_requirements() -> None:
 """The full lab should use the shared policy and requirements."""
@@ -261,7 +231,6 @@ CONFIG_DIR
 / "full-lab.yaml"
 )
 
-```
 assert config["policy"]["path"] == (
     "./policies/default.yaml"
 )
@@ -269,7 +238,6 @@ assert config["policy"]["path"] == (
 assert config["requirements"]["path"] == (
     "./requirements/security-requirements.yaml"
 )
-```
 
 def test_integration_commands_are_strings_when_defined() -> None:
 """Configured integration commands should be strings."""
@@ -281,14 +249,12 @@ for filename in (
 ):
 config = load_yaml(CONFIG_DIR / filename)
 
-```
     for name, integration in config["integrations"].items():
         if "command" in integration:
             assert isinstance(
                 integration["command"],
                 str,
             ), name
-```
 
 def test_output_paths_are_defined() -> None:
 """Every configuration should define report output paths."""
@@ -306,10 +272,8 @@ CONFIG_DIR
 ):
 config = load_yaml(path)
 
-```
     output = config["output"]
 
     assert output["directory"]
     assert output["json"]
     assert output["html"]
-```
