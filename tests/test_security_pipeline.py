@@ -1,4 +1,3 @@
-```python id="z4n8q1"
 """Tests for the SecureForge security verification pipeline."""
 
 from secureforge.core.scan.security_pipeline import (
@@ -204,4 +203,3 @@ def test_pipeline_accepts_custom_components(
     assert result.risk is not None
     assert result.policy is not None
     assert result.release_gate is not None
-```
