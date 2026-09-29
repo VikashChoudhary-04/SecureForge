@@ -1,4 +1,3 @@
-```python id="8r2v6m"
 """Tests for SecureForge validation models."""
 
 from secureforge.validation.models import (
@@ -176,4 +175,3 @@ def test_validation_summary_counts_results() -> None:
     assert summary.errors == 1
     assert summary.remediated == 1
     assert summary.all_validated is False
-```
