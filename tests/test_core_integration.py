@@ -66,7 +66,6 @@ parameter="id",
 cwe="CWE-639",
 )
 
-```
 dast_finding = build_finding(
     finding_id="SF-DAST-001",
     source="dast",
@@ -183,7 +182,6 @@ parameter="",
 cwe="CWE-16",
 )
 
-```
 risk = RiskEngine().evaluate(
     finding,
     RiskContext(
@@ -241,7 +239,7 @@ release_result = ReleaseGateEngine().evaluate(gate_input)
 
 assert release_result.decision == ReleaseDecision.PASS
 assert release_result.passed is True
-```
+
 
 def test_failed_regression_overrides_passing_policy() -> None:
 """Verify a regression failure prevents an otherwise passing release."""
@@ -255,7 +253,6 @@ parameter="",
 cwe="CWE-16",
 )
 
-```
 risk = RiskEngine().evaluate(
     finding,
     RiskContext(
@@ -304,7 +301,6 @@ release_result = ReleaseGateEngine().evaluate(gate_input)
 
 assert release_result.decision == ReleaseDecision.BLOCK
 assert release_result.failed_regressions == ["BOLA-001"]
-```
 
 def test_multiple_sources_are_preserved_through_correlation() -> None:
 """Verify source-specific evidence survives correlation."""
@@ -338,7 +334,6 @@ cwe="CWE-89",
 ),
 ]
 
-```
 for finding in findings:
     finding.add_evidence(
         Evidence(
@@ -366,4 +361,3 @@ assert all_source_ids == {
     "SF-DAST-002",
     "SF-BURP-002",
 }
-```
