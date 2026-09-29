@@ -1,6 +1,6 @@
 """Tests for the generic API security integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.config import (
 ScanConfiguration,
@@ -48,7 +48,7 @@ integration = GenericAPIIntegration(
 executable="api-scanner"
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -60,14 +60,14 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_uses_api_base_when_openapi_is_missing() -> None:
 integration = GenericAPIIntegration(
 executable="api-scanner"
 )
 
-```
+
 command = integration.build_command(
     make_configuration(
         openapi_url=None
@@ -81,7 +81,7 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_supports_custom_template() -> None:
 integration = GenericAPIIntegration(
@@ -96,7 +96,7 @@ command=[
 ]
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -110,12 +110,12 @@ assert command == [
     "--target",
     "http://localhost:3000/api",
 ]
-```
+
 
 def test_build_command_requires_api_target() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 configuration = make_configuration(
     openapi_url=None,
     api_base_url=None,
@@ -132,12 +132,12 @@ else:
     raise AssertionError(
         "Expected API target validation to fail."
     )
-```
+
 
 def test_normalize_bola_finding() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -176,12 +176,12 @@ assert finding["parameter"] == "order_id"
 assert finding["cwe"] == "CWE-639"
 assert finding["owasp"] == "API1:2023"
 assert finding["security_requirement"] == "SF-AUTHZ-001"
-```
+
 
 def test_bfla_maps_to_function_authorization_requirement() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "results": [
@@ -209,12 +209,12 @@ assert "privileged" in finding["impact"].lower()
 assert "function-level authorization" in (
     finding["remediation"].lower()
 )
-```
+
 
 def test_authentication_issue_maps_to_auth_requirement() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "issues": [
@@ -240,12 +240,12 @@ assert finding["security_requirement"] == "SF-AUTH-001"
 assert "authentication" in (
     finding["impact"].lower()
 )
-```
+
 
 def test_input_validation_issue_maps_to_input_requirement() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "vulnerabilities": [
@@ -268,12 +268,12 @@ assert result.success is True
 finding = result.findings[0]
 
 assert finding["security_requirement"] == "SF-INPUT-001"
-```
+
 
 def test_custom_security_requirement_is_preserved() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -296,12 +296,12 @@ assert result.success is True
 finding = result.findings[0]
 
 assert finding["security_requirement"] == "SF-API-002"
-```
+
 
 def test_metadata_preserves_api_context() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -336,12 +336,12 @@ assert finding["metadata"]["status_code"] == 200
 assert finding["metadata"]["operation_id"] == "getProfile"
 assert finding["metadata"]["authentication"] == "required"
 assert finding["metadata"]["response"]["contains"] == "email"
-```
+
 
 def test_default_severity_is_medium() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -359,12 +359,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["severity"] == "medium"
-```
+
 
 def test_stdout_json_is_supported() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": (
@@ -385,12 +385,12 @@ assert (
     result.findings[0]["source_finding_id"]
     == "api-008"
 )
-```
+
 
 def test_invalid_stdout_json_returns_failure() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": "not-json"
@@ -404,12 +404,12 @@ result = integration.normalize(
 assert result.success is False
 assert result.errors
 assert "valid JSON" in result.errors[0]
-```
+
 
 def test_malformed_record_becomes_warning() -> None:
 integration = GenericAPIIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -432,14 +432,14 @@ assert any(
     "not an object" in warning
     for warning in result.warnings
 )
-```
+
 
 def test_integration_metadata() -> None:
 integration = GenericAPIIntegration(
 version="2.1.0"
 )
 
-```
+
 metadata = integration.integration_metadata()
 
 assert metadata["integration"] == "api"
@@ -447,4 +447,4 @@ assert metadata["display_name"] == (
     "Generic API Security"
 )
 assert metadata["version"] == "2.1.0"
-```
+
