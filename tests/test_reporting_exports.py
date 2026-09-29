@@ -1,4 +1,3 @@
-```python id="v6c2qm"
 """Tests for SecureForge reporting package exports."""
 
 from secureforge.reporting import (
@@ -45,4 +44,3 @@ def test_reporting_exports() -> None:
         SecurityReportService,
         "generate_from_scan_result",
     )
-```
