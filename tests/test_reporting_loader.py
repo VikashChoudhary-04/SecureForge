@@ -1,4 +1,3 @@
-```python
 """Tests for loading and validating persisted security reports."""
 
 import json
@@ -193,4 +192,3 @@ def test_loader_rejects_missing_required_report_section(
         match="failed schema validation",
     ):
         loader.load(path)
-```
