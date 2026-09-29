@@ -10,16 +10,16 @@ from secureforge.core.normalization import NormalizationResult, RawEvidence
 from secureforge.core.scan import ToolExecutionResult
 
 class IntegrationError(Exception):
-"""Base exception raised by SecureForge integrations."""
+    """Base exception raised by SecureForge integrations."""
 
 class IntegrationConfigurationError(IntegrationError):
-"""Raised when an integration is incorrectly configured."""
+    """Raised when an integration is incorrectly configured."""
 
 class IntegrationParseError(IntegrationError):
-"""Raised when an integration cannot parse tool output."""
+    """Raised when an integration cannot parse tool output."""
 
 class SecurityIntegration(ABC):
-"""Base contract implemented by SecureForge security integrations."""
+    """Base contract implemented by SecureForge security integrations."""
 
 ```
 integration_name: str = "unknown"
