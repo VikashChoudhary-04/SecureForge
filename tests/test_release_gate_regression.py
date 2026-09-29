@@ -21,7 +21,6 @@ errored_tests=(),
 skipped_tests=(),
 )
 
-```
 result = build_regression_gate_result(
     decision
 )
@@ -39,7 +38,6 @@ assert result.reason == (
 assert result.failures == ()
 assert result.skipped_tests == ()
 assert result.has_failures is False
-```
 
 def test_build_regression_gate_result_from_failed_decision() -> None:
 """Convert a blocked regression decision."""
@@ -61,7 +59,6 @@ skipped_tests=(
 ),
 )
 
-```
 result = build_regression_gate_result(
     decision
 )
@@ -78,7 +75,6 @@ assert result.skipped_tests == (
     "OPTIONAL-001",
 )
 assert result.has_failures is True
-```
 
 def test_regression_gate_result_to_dict() -> None:
 """Serialize the release-gate regression result."""
@@ -96,7 +92,6 @@ errored_tests=(
 skipped_tests=(),
 )
 
-```
 result = build_regression_gate_result(
     decision
 )
@@ -114,4 +109,3 @@ assert result.to_dict() == {
     ],
     "skipped_tests": [],
 }
-```
