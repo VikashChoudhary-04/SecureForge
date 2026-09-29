@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression runner."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -56,7 +56,7 @@ tmp_path
 / "regression-tests.yaml"
 )
 
-```
+
 write_suite(suite_path)
 
 source_root = (
@@ -70,7 +70,7 @@ source_root.mkdir()
     / "application.py"
 ).write_text(
     """
-```
+
 
 def health():
 return "ok"
@@ -78,7 +78,7 @@ return "ok"
 encoding="utf-8",
 )
 
-```
+
 infrastructure_root = (
     tmp_path
     / "infra"
@@ -90,7 +90,7 @@ infrastructure_root.mkdir()
     / "secure.tf"
 ).write_text(
     """
-```
+
 
 resource "null_resource" "secure_application" {
 triggers = {
@@ -114,7 +114,7 @@ permissions = "read-write-required-resources-only"
 encoding="utf-8",
 )
 
-```
+
 runner = RegressionRunner()
 
 result = runner.run(
@@ -133,7 +133,7 @@ assert result.passed == 2
 assert result.failed == 0
 assert result.errors == 0
 assert result.skipped == 0
-```
+
 
 def test_runner_reports_secret_regression_failure(
 tmp_path: Path,
@@ -144,10 +144,10 @@ tmp_path
 / "regression-tests.yaml"
 )
 
-```
+
 suite_path.write_text(
     """
-```
+
 
 suite:
 id: secret-test
@@ -211,7 +211,7 @@ tmp_path: Path,
 """Runner should surface missing suite configuration."""
 runner = RegressionRunner()
 
-```
+
 configuration = RegressionRunConfiguration(
     suite_path=(
         tmp_path
@@ -223,7 +223,7 @@ with pytest.raises(
     FileNotFoundError
 ):
     runner.run(configuration)
-```
+
 
 def test_runner_uses_custom_base_url(
 tmp_path: Path,
@@ -234,10 +234,10 @@ tmp_path
 / "regression-tests.yaml"
 )
 
-```
+
 suite_path.write_text(
     """
-```
+
 
 suite:
 id: custom-target
