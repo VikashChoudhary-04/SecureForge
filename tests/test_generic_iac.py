@@ -1,6 +1,6 @@
 """Tests for the generic IaC security integration."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from secureforge.core.config import (
 ScanConfiguration,
@@ -44,7 +44,7 @@ integration = GenericIACIntegration(
 executable="checkov"
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -56,7 +56,7 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_supports_custom_template() -> None:
 integration = GenericIACIntegration(
@@ -71,7 +71,7 @@ command=[
 ]
 )
 
-```
+
 command = integration.build_command(
     make_configuration()
 )
@@ -85,12 +85,12 @@ assert command == [
     "--target",
     "./terraform",
 ]
-```
+
 
 def test_build_command_requires_iac_path() -> None:
 integration = GenericIACIntegration()
 
-```
+
 configuration = make_configuration(
     iac_path=None
 )
@@ -105,12 +105,12 @@ else:
     raise AssertionError(
         "Expected IaC path validation to fail."
     )
-```
+
 
 def test_normalize_public_resource_finding() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -154,12 +154,12 @@ assert finding["security_requirement"] == (
 )
 assert finding["metadata"]["provider"] == "aws"
 assert finding["metadata"]["service"] == "ec2"
-```
+
 
 def test_public_exposure_generates_network_remediation() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "misconfigurations": [
@@ -182,12 +182,12 @@ remediation = result.findings[0]["remediation"]
 
 assert "public access" in remediation.lower()
 assert "network exposure" in remediation.lower()
-```
+
 
 def test_permission_issue_generates_least_privilege_remediation() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "issues": [
@@ -215,12 +215,12 @@ assert "least-privilege" in (
 assert "permissions" in (
     finding["impact"].lower()
 )
-```
+
 
 def test_storage_issue_generates_data_protection_impact() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "checks": [
@@ -248,12 +248,12 @@ assert "sensitive data" in (
 assert "encryption" in (
     finding["remediation"].lower()
 )
-```
+
 
 def test_custom_security_requirement_is_preserved() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -274,12 +274,12 @@ assert result.success is True
 assert result.findings[0][
     "security_requirement"
 ] == "SF-CUSTOM-001"
-```
+
 
 def test_resource_metadata_is_preserved() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -330,12 +330,12 @@ assert finding["metadata"]["account"] == (
 assert finding["metadata"]["framework"] == (
     "terraform"
 )
-```
+
 
 def test_cwe_is_normalized() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -354,12 +354,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["cwe"] == "CWE-732"
-```
+
 
 def test_default_severity_is_medium() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -377,12 +377,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["severity"] == "medium"
-```
+
 
 def test_default_confidence_is_unknown() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -400,12 +400,12 @@ result = integration.normalize(
 
 assert result.success is True
 assert result.findings[0]["confidence"] == "unknown"
-```
+
 
 def test_stdout_json_is_supported() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": (
@@ -426,12 +426,12 @@ assert (
     result.findings[0]["source_finding_id"]
     == "iac-009"
 )
-```
+
 
 def test_invalid_stdout_json_returns_failure() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "stdout": "not-json"
@@ -445,12 +445,12 @@ result = integration.normalize(
 assert result.success is False
 assert result.errors
 assert "valid JSON" in result.errors[0]
-```
+
 
 def test_malformed_record_becomes_warning() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -473,12 +473,12 @@ assert any(
     "not an object" in warning
     for warning in result.warnings
 )
-```
+
 
 def test_multiple_iac_findings_are_normalized() -> None:
 integration = GenericIACIntegration()
 
-```
+
 evidence = make_evidence(
     {
         "findings": [
@@ -516,14 +516,14 @@ assert [
     "iac-012",
     "iac-013",
 ]
-```
+
 
 def test_integration_metadata() -> None:
 integration = GenericIACIntegration(
 version="1.0.0"
 )
 
-```
+
 metadata = integration.integration_metadata()
 
 assert metadata["integration"] == "iac"
@@ -531,4 +531,4 @@ assert metadata["display_name"] == (
     "Generic Infrastructure-as-Code Security"
 )
 assert metadata["version"] == "1.0.0"
-```
+
