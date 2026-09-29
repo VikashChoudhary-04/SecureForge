@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression YAML loader."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -21,14 +21,14 @@ tmp_path
 / "regression.yaml"
 )
 
-```
+
 path.write_text(
     content,
     encoding="utf-8",
 )
 
 return path
-```
+
 
 def test_loader_builds_regression_suite(tmp_path):
 """Loader should build a typed regression suite."""
@@ -55,7 +55,7 @@ tags:
 - bola
 - api
 
-```
+
 - id: SQLI-001
   name: SQL Injection Regression
   security_requirement: SF-INPUT-001
@@ -69,7 +69,7 @@ tags:
   tags:
     - injection
     - sqli
-```
+
 
 metadata:
 application: SecureCommerce
@@ -77,7 +77,7 @@ environment: lab
 """,
 )
 
-```
+
 suite = RegressionLoader().load(path)
 
 assert suite.suite_id == (
@@ -103,7 +103,7 @@ assert suite.metadata == {
     "application": "SecureCommerce",
     "environment": "lab",
 }
-```
+
 
 def test_loader_defaults_method_to_get(tmp_path):
 """Missing method should default to GET."""
@@ -126,11 +126,11 @@ failure_condition: HTTP 500.
 """,
 )
 
-```
+
 suite = RegressionLoader().load(path)
 
 assert suite.tests[0].method == "GET"
-```
+
 
 def test_loader_defaults_enabled_to_true(tmp_path):
 """Missing enabled field should default to true."""
@@ -153,11 +153,11 @@ failure_condition: HTTP 500.
 """,
 )
 
-```
+
 suite = RegressionLoader().load(path)
 
 assert suite.tests[0].enabled is True
-```
+
 
 def test_loader_rejects_missing_file(tmp_path):
 """Missing configuration files should raise a clear error."""
@@ -166,13 +166,13 @@ tmp_path
 / "missing.yaml"
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="not found",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_invalid_yaml(tmp_path):
 """Invalid YAML should produce a configuration error."""
@@ -185,13 +185,13 @@ name: [invalid
 """,
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="Invalid YAML",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_non_mapping_root(tmp_path):
 """The root YAML document must be a mapping."""
@@ -220,13 +220,13 @@ application: SecureCommerce
 """,
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="requires a 'suite' mapping",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_missing_suite_id(tmp_path):
 """A suite must have an ID."""
@@ -239,13 +239,13 @@ tests: []
 """,
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="non-empty 'id'",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_missing_tests_list(tmp_path):
 """A suite must contain a tests list."""
@@ -258,13 +258,13 @@ name: Test Suite
 """,
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="requires a 'tests' list",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_incomplete_test_definition(
 tmp_path,
@@ -285,13 +285,13 @@ description: Missing objective and expected behavior.
 """,
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="requires a non-empty",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_invalid_enabled_type(
 tmp_path,
@@ -317,13 +317,13 @@ enabled: yes
 """,
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="must be boolean",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_invalid_tags(tmp_path):
 """Tags must be represented as a list of strings."""
@@ -349,13 +349,13 @@ tags:
 """,
 )
 
-```
+
 with pytest.raises(
     RegressionConfigurationError,
     match="tags must contain only strings",
 ):
     RegressionLoader().load(path)
-```
+
 
 def test_loader_rejects_invalid_metadata(tmp_path):
 """Suite metadata must be a mapping."""
