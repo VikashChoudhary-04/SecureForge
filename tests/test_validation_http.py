@@ -1,4 +1,3 @@
-```python
 """Tests for the SecureForge HTTP validator."""
 
 from __future__ import annotations
@@ -226,4 +225,3 @@ def test_http_validator_handles_unreachable_target() -> None:
     assert result.outcome == ValidationOutcome.ERROR
     assert result.validator == "http"
     assert result.evidence[0].observed is not None
-```
