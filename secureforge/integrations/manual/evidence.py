@@ -1,6 +1,6 @@
 """Manual security evidence adapter for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 from typing import Any
@@ -15,7 +15,7 @@ SecurityIntegration,
 class ManualEvidenceIntegration(SecurityIntegration):
 """Convert manually validated security evidence into findings."""
 
-```
+
 integration_name = "manual"
 display_name = "Manual Validation"
 description = (
@@ -547,4 +547,4 @@ def _target_asset(
         or target.get("network_target")
         or "unknown"
     )
-```
+
