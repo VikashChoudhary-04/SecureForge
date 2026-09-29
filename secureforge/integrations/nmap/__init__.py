@@ -2,6 +2,11 @@
 
 from .generic import GenericNmapIntegration
 
+
+NmapIntegration = GenericNmapIntegration
+
+
 __all__ = [
-"GenericNmapIntegration",
+    "NmapIntegration",
+    "GenericNmapIntegration",
 ]
