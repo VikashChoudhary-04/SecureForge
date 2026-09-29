@@ -1,6 +1,6 @@
 """Generic Dynamic Application Security Testing integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 from typing import Any
@@ -21,7 +21,7 @@ SecurityIntegration,
 class GenericDASTIntegration(SecurityIntegration):
 """Adapt generic JSON DAST output to SecureForge."""
 
-```
+
 integration_name = "dast"
 display_name = "Generic Dynamic Application Security Testing"
 
@@ -664,4 +664,4 @@ def _render_command(
         )
         for token in command
     ]
-```
+
