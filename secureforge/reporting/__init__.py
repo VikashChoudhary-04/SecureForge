@@ -2,6 +2,7 @@
 
 from .models import (
     DecisionReport,
+    PolicyReport,
     RegressionGateReport,
     RegressionReport,
     RegressionTestReport,
@@ -21,6 +22,7 @@ from .service import ReportingService
 
 __all__ = [
     "DecisionReport",
+    "PolicyReport",
     "RegressionGateReport",
     "RegressionReport",
     "RegressionTestReport",
