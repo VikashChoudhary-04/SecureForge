@@ -21,7 +21,6 @@ errored_tests=(),
 skipped_tests=("OPTIONAL-001",),
 )
 
-```
 report = build_regression_gate_report(
     decision
 )
@@ -42,7 +41,6 @@ assert report.skipped_tests == [
     "OPTIONAL-001"
 ]
 assert report.failures == []
-```
 
 def test_build_regression_gate_report_from_failed_decision() -> None:
 """Build a report section from a failed regression decision."""
@@ -64,7 +62,6 @@ skipped_tests=(
 ),
 )
 
-```
 report = build_regression_gate_report(
     decision
 )
@@ -87,7 +84,6 @@ assert report.failures == [
     "SQLI-001",
     "AUTHZ-001",
 ]
-```
 
 def test_regression_gate_report_serializes_correctly() -> None:
 """Verify the regression gate report exposes report-ready data."""
@@ -103,7 +99,6 @@ errored_tests=("BOLA-001",),
 skipped_tests=(),
 )
 
-```
 report = build_regression_gate_report(
     decision
 )
@@ -119,4 +114,3 @@ assert serialized["errored_tests"] == [
 assert serialized["failures"] == [
     "BOLA-001"
 ]
-```
