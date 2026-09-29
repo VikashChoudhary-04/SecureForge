@@ -79,32 +79,32 @@ finding = {
 "security_requirement": "SF-DEP-001",
 }
 
-```
+
 finding.update(
     overrides
 )
 
 return finding
-```
+
 
 def test_integration_has_expected_identity() -> None:
 """Verify the generic SCA integration identity."""
 integration = GenericSCAIntegration()
 
-```
+
 assert integration.name == "sca"
 assert integration.integration_name == "sca"
 assert (
     integration.display_name
     == "Generic Software Composition Analysis"
 )
-```
+
 
 def test_build_command_uses_source_path() -> None:
 """Verify default SCA command construction."""
 integration = GenericSCAIntegration()
 
-```
+
 command = integration.build_command(
     build_configuration()
 )
@@ -116,13 +116,13 @@ assert command == [
     "--format",
     "json",
 ]
-```
+
 
 def test_build_command_uses_configured_tool_command() -> None:
 """Verify configured SCA command overrides the default."""
 integration = GenericSCAIntegration()
 
-```
+
 configuration = build_configuration(
     tools=[
         ToolConfiguration(
@@ -149,13 +149,13 @@ assert command == [
     "-o",
     "json",
 ]
-```
+
 
 def test_build_command_uses_configured_executable() -> None:
 """Verify executable-based SCA configuration."""
 integration = GenericSCAIntegration()
 
-```
+
 configuration = build_configuration(
     tools=[
         ToolConfiguration(
@@ -178,13 +178,13 @@ assert command == [
     "-o",
     "json",
 ]
-```
+
 
 def test_build_command_requires_source_path() -> None:
 """Verify SCA requires a source path."""
 integration = GenericSCAIntegration()
 
-```
+
 configuration = build_configuration(
     source_path=None
 )
@@ -196,13 +196,13 @@ with pytest.raises(
     integration.build_command(
         configuration
     )
-```
+
 
 def test_normalize_findings_object() -> None:
 """Verify standard SCA findings are normalized."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -216,13 +216,13 @@ result = integration.normalize(
 assert result.success is True
 assert result.source == "sca"
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_vulnerabilities_alias() -> None:
 """Verify vulnerability-based output is supported."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -234,13 +234,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_results_alias() -> None:
 """Verify results-based output is supported."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -252,13 +252,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_dependency_alias() -> None:
 """Verify dependency records are supported."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -270,13 +270,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_json_string() -> None:
 """Verify JSON scanner output stored as text is parsed."""
 integration = GenericSCAIntegration()
 
-```
+
 payload = json.dumps(
     {
         "vulnerabilities": [
@@ -293,13 +293,13 @@ result = integration.normalize(
 
 assert result.success is True
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_stdout_inside_tool_output() -> None:
 """Verify tool execution-shaped evidence is supported."""
 integration = GenericSCAIntegration()
 
-```
+
 payload = json.dumps(
     {
         "findings": [
@@ -319,13 +319,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_top_level_list() -> None:
 """Verify a top-level vulnerability list is supported."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         [
@@ -335,13 +335,13 @@ result = integration.normalize(
 )
 
 assert len(result.findings) == 1
-```
+
 
 def test_normalize_dependency_fields() -> None:
 """Verify dependency fields map correctly."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -365,13 +365,13 @@ assert finding["cwe"] == "CWE-79"
 assert finding["security_requirement"] == "SF-DEP-001"
 assert finding["severity"] == "high"
 assert finding["confidence"] == "high"
-```
+
 
 def test_dependency_metadata_is_preserved() -> None:
 """Verify package and version information is retained."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -390,7 +390,7 @@ assert metadata["fixed_version"] == "1.2.3"
 assert metadata["vulnerability_id"] == "CVE-2026-0001"
 assert metadata["dependency_type"] == "runtime"
 assert metadata["cvss"] == 8.1
-```
+
 
 @pytest.mark.parametrize(
 ("severity", "expected"),
@@ -414,7 +414,7 @@ expected: str,
 """Verify common SCA severity values normalize correctly."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -428,7 +428,7 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["severity"] == expected
-```
+
 
 @pytest.mark.parametrize(
 ("score", "expected"),
@@ -451,7 +451,7 @@ expected: str,
 """Verify CVSS scores map to normalized severity."""
 integration = GenericSCAIntegration()
 
-```
+
 finding = build_finding(
     severity=None,
     cvss=score,
@@ -468,13 +468,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["severity"] == expected
-```
+
 
 def test_cvss_object_score_is_supported() -> None:
 """Verify structured CVSS data is supported."""
 integration = GenericSCAIntegration()
 
-```
+
 finding = build_finding(
     severity=None,
     cvss={
@@ -494,13 +494,13 @@ result = integration.normalize(
 
 assert result.findings[0]["severity"] == "critical"
 assert result.findings[0]["metadata"]["cvss"] == 9.1
-```
+
 
 def test_invalid_cvss_falls_back_to_medium() -> None:
 """Verify invalid CVSS data receives a safe default severity."""
 integration = GenericSCAIntegration()
 
-```
+
 finding = build_finding(
     severity=None,
     cvss="not-a-score",
@@ -518,13 +518,13 @@ result = integration.normalize(
 
 assert result.findings[0]["severity"] == "medium"
 assert result.findings[0]["metadata"]["cvss"] is None
-```
+
 
 def test_cwe_is_normalized() -> None:
 """Verify CWE values normalize consistently."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -538,13 +538,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["cwe"] == "CWE-79"
-```
+
 
 def test_cwe_list_uses_first_value() -> None:
 """Verify list-based CWE output is supported."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -561,13 +561,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["cwe"] == "CWE-79"
-```
+
 
 def test_explicit_remediation_is_preferred() -> None:
 """Verify scanner remediation takes precedence."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -584,13 +584,13 @@ assert (
     result.findings[0]["remediation"]
     == "Apply vendor security patch."
 )
-```
+
 
 def test_remediation_uses_fixed_version() -> None:
 """Verify fixed-version remediation is generated."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -611,13 +611,13 @@ assert (
 assert "example-lib" in (
     result.findings[0]["remediation"]
 )
-```
+
 
 def test_remediation_without_fixed_version_is_still_actionable() -> None:
 """Verify remediation remains useful without a fixed version."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -635,13 +635,13 @@ assert result.findings[0]["remediation"]
 assert "example-lib" in (
     result.findings[0]["remediation"]
 )
-```
+
 
 def test_missing_package_name_produces_warning() -> None:
 """Verify malformed dependency records are skipped."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -660,13 +660,13 @@ assert result.success is True
 assert result.findings == []
 assert len(result.warnings) == 1
 assert "missing a package name" in result.warnings[0]
-```
+
 
 def test_unsupported_severity_produces_warning() -> None:
 """Verify invalid severity does not crash the full parse."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -683,13 +683,13 @@ assert result.success is True
 assert result.findings == []
 assert len(result.warnings) == 1
 assert "Unsupported SCA severity" in result.warnings[0]
-```
+
 
 def test_findings_field_must_be_a_list() -> None:
 """Verify malformed finding containers are rejected."""
 integration = GenericSCAIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="must be a list",
@@ -703,13 +703,13 @@ with pytest.raises(
             }
         )
     )
-```
+
 
 def test_finding_items_must_be_objects() -> None:
 """Verify dependency records must be dictionaries."""
 integration = GenericSCAIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="must be an object",
@@ -723,13 +723,13 @@ with pytest.raises(
             }
         )
     )
-```
+
 
 def test_invalid_json_is_rejected() -> None:
 """Verify invalid scanner JSON is rejected."""
 integration = GenericSCAIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="not valid JSON",
@@ -739,13 +739,13 @@ with pytest.raises(
             "{invalid-json"
         )
     )
-```
+
 
 def test_unsupported_output_type_is_rejected() -> None:
 """Verify unsupported scanner output types are rejected."""
 integration = GenericSCAIntegration()
 
-```
+
 with pytest.raises(
     IntegrationParseError,
     match="Unsupported SCA output format",
@@ -755,13 +755,13 @@ with pytest.raises(
             12345
         )
     )
-```
+
 
 def test_empty_vulnerability_list_is_successful() -> None:
 """Verify clean dependency scans are represented correctly."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -773,13 +773,13 @@ result = integration.normalize(
 assert result.success is True
 assert result.findings == []
 assert result.warnings == []
-```
+
 
 def test_application_defaults_to_unknown() -> None:
 """Verify missing application metadata has a safe fallback."""
 integration = GenericSCAIntegration()
 
-```
+
 evidence = RawEvidence(
     source="sca",
     raw_data={
@@ -794,13 +794,13 @@ result = integration.normalize(
 )
 
 assert result.findings[0]["application"] == "unknown"
-```
+
 
 def test_asset_uses_evidence_target() -> None:
 """Verify target becomes the dependency asset fallback."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -818,13 +818,13 @@ assert (
     result.findings[0]["asset"]
     == "dependency-lockfile"
 )
-```
+
 
 def test_default_asset_is_dependency_collection() -> None:
 """Verify a safe asset fallback exists."""
 integration = GenericSCAIntegration()
 
-```
+
 evidence = RawEvidence(
     source="sca",
     raw_data={
@@ -847,13 +847,13 @@ assert (
     result.findings[0]["asset"]
     == "dependency-collection"
 )
-```
+
 
 def test_vulnerability_id_falls_back_to_ghsa() -> None:
 """Verify GHSA identifiers are supported."""
 integration = GenericSCAIntegration()
 
-```
+
 finding = build_finding(
     id=None,
     cve=None,
@@ -874,13 +874,13 @@ assert (
     result.findings[0]["source_finding_id"]
     == "GHSA-abcd-1234-efgh"
 )
-```
+
 
 def test_vulnerability_id_has_deterministic_fallback() -> None:
 """Verify missing vulnerability IDs receive stable indexes."""
 integration = GenericSCAIntegration()
 
-```
+
 findings = [
     build_finding(
         id=None,
@@ -913,13 +913,13 @@ assert [
     "sca-1",
     "sca-2",
 ]
-```
+
 
 def test_default_requirement_is_dependency_security() -> None:
 """Verify dependency findings map to SF-DEP-001 by default."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -936,13 +936,13 @@ assert (
     result.findings[0]["security_requirement"]
     == "SF-DEP-001"
 )
-```
+
 
 def test_normalized_output_creates_canonical_finding() -> None:
 """Verify SCA output is compatible with FindingFactory."""
 integration = GenericSCAIntegration()
 
-```
+
 result = integration.normalize(
     build_evidence(
         {
@@ -962,13 +962,13 @@ assert findings[0].source == "sca"
 assert findings[0].severity.value == "high"
 assert findings[0].cwe == "CWE-79"
 assert findings[0].security_requirement == "SF-DEP-001"
-```
+
 
 def test_multiple_vulnerabilities_are_preserved() -> None:
 """Verify multiple dependency vulnerabilities are normalized."""
 integration = GenericSCAIntegration()
 
-```
+
 findings = [
     build_finding(
         id="CVE-2026-0001",
@@ -996,4 +996,4 @@ assert result.findings[0]["source_finding_id"] == (
 assert result.findings[1]["source_finding_id"] == (
     "CVE-2026-0002"
 )
-```
+
