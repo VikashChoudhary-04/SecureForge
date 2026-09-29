@@ -2,6 +2,6 @@
 
 from .generic import GenericSCAIntegration
 
-**all** = [
+__all__ = [
 "GenericSCAIntegration",
 ]
