@@ -1,6 +1,6 @@
 """Tests for the SecureForge regression registry."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import pytest
 
@@ -35,7 +35,7 @@ def test_registry_registers_and_retrieves_test():
 """Registered tests should be retrievable by ID."""
 registry = RegressionRegistry()
 
-```
+
 test = build_test("BOLA-001")
 
 registry.register(test)
@@ -44,26 +44,26 @@ assert registry.contains("BOLA-001")
 assert registry.get("BOLA-001") is test
 assert registry.require("BOLA-001") is test
 assert len(registry) == 1
-```
+
 
 def test_registry_normalizes_test_id_lookup():
 """Test ID lookup should ignore surrounding whitespace."""
 registry = RegressionRegistry()
 
-```
+
 test = build_test("BOLA-001")
 
 registry.register(test)
 
 assert registry.get(" BOLA-001 ") is test
 assert registry.contains(" BOLA-001 ")
-```
+
 
 def test_registry_rejects_empty_test_id():
 """An empty regression test ID should be rejected."""
 registry = RegressionRegistry()
 
-```
+
 test = build_test("BOLA-001")
 test.test_id = "   "
 
@@ -72,13 +72,13 @@ with pytest.raises(
     match="cannot be empty",
 ):
     registry.register(test)
-```
+
 
 def test_registry_rejects_duplicate_test_id():
 """Duplicate regression IDs should not overwrite existing tests."""
 registry = RegressionRegistry()
 
-```
+
 registry.register(
     build_test("BOLA-001")
 )
@@ -90,13 +90,13 @@ with pytest.raises(
     registry.register(
         build_test("BOLA-001")
     )
-```
+
 
 def test_registry_register_many():
 """Multiple regression tests should be registered together."""
 registry = RegressionRegistry()
 
-```
+
 tests = [
     build_test("BOLA-001"),
     build_test(
@@ -120,7 +120,7 @@ assert [
     "SQLI-001",
     "SECRET-001",
 ]
-```
+
 
 def test_registry_finds_tests_by_requirement():
 """Requirement lookup should return all mapped tests."""
@@ -135,7 +135,7 @@ requirement="SF-INPUT-001",
 ]
 )
 
-```
+
 results = registry.for_requirement(
     "SF-AUTHZ-001"
 )
@@ -147,7 +147,7 @@ assert [
     "BOLA-001",
     "BOLA-002",
 ]
-```
+
 
 def test_registry_returns_enabled_tests():
 """Enabled lookup should exclude disabled tests."""
@@ -170,7 +170,7 @@ enabled=True,
 ]
 )
 
-```
+
 enabled = registry.enabled()
 
 assert [
@@ -180,33 +180,33 @@ assert [
     "BOLA-001",
     "XSS-001",
 ]
-```
+
 
 def test_registry_require_raises_for_missing_test():
 """Missing required tests should raise a clear error."""
 registry = RegressionRegistry()
 
-```
+
 with pytest.raises(
     RegressionTestNotFoundError,
     match="not registered",
 ):
     registry.require("BOLA-001")
-```
+
 
 def test_registry_get_returns_none_for_missing_test():
 """Optional lookup should return None for missing tests."""
 registry = RegressionRegistry()
 
-```
+
 assert registry.get("BOLA-001") is None
-```
+
 
 def test_registry_remove_returns_removed_test():
 """Removing a test should return the removed definition."""
 registry = RegressionRegistry()
 
-```
+
 test = build_test("BOLA-001")
 
 registry.register(test)
@@ -216,19 +216,19 @@ removed = registry.remove("BOLA-001")
 assert removed is test
 assert registry.contains("BOLA-001") is False
 assert len(registry) == 0
-```
+
 
 def test_registry_remove_raises_for_missing_test():
 """Removing an unknown test should raise a clear error."""
 registry = RegressionRegistry()
 
-```
+
 with pytest.raises(
     RegressionTestNotFoundError,
     match="not registered",
 ):
     registry.remove("BOLA-001")
-```
+
 
 def test_registry_clear_removes_all_tests():
 """Clear should remove every registered test."""
@@ -239,9 +239,9 @@ build_test("SQLI-001"),
 ]
 )
 
-```
+
 registry.clear()
 
 assert len(registry) == 0
 assert registry.all() == []
-```
+
