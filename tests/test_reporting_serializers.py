@@ -1,6 +1,6 @@
 """Tests for SecureForge security report serialization."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 
@@ -41,7 +41,6 @@ impact="Database queries may be manipulated.",
 remediation="Use parameterized queries.",
 )
 
-```
 risk = RiskAssessment(
     score=9.5,
     highest_severity="critical",
@@ -87,14 +86,12 @@ return SecurityReportBuilder().build(
     policy=policy,
     release_gate=release_gate,
 )
-```
 
 def test_serializer_converts_report_to_dictionary():
 """Serializer should produce a JSON-compatible dictionary."""
 report = build_report()
 serializer = SecurityReportSerializer()
 
-```
 data = serializer.to_dict(report)
 
 assert isinstance(data, dict)
@@ -108,14 +105,12 @@ assert data["findings"][0]["finding_id"] == (
     "SF-SQLI-001"
 )
 assert data["decision"]["status"] == "block"
-```
 
 def test_serializer_produces_valid_json():
 """Serialized report should be valid JSON."""
 report = build_report()
 serializer = SecurityReportSerializer()
 
-```
 output = serializer.to_json(report)
 
 parsed = json.loads(output)
@@ -127,14 +122,12 @@ assert parsed["findings"][0]["severity"] == (
     "critical"
 )
 assert parsed["decision"]["release_allowed"] is False
-```
 
 def test_serializer_writes_json_file(tmp_path):
 """Serializer should write the report to disk."""
 report = build_report()
 serializer = SecurityReportSerializer()
 
-```
 output_path = (
     tmp_path
     / "reports"
@@ -162,13 +155,11 @@ assert parsed["risk"]["highest_severity"] == (
     "critical"
 )
 assert parsed["decision"]["status"] == "block"
-```
 
 def test_serializer_preserves_nested_report_data():
 """Nested risk, policy, and regression data should survive serialization."""
 report = build_report()
 
-```
 report.regression.tests_total = 1
 report.regression.tests_failed = 1
 
@@ -185,4 +176,3 @@ assert data["regression"]["tests_failed"] == 1
 assert data["policy"]["tool_errors"] == [
     "Synthetic tool failure."
 ]
-```
