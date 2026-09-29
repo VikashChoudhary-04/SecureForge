@@ -1,6 +1,6 @@
 """Generic Nmap integration for SecureForge."""
 
-from **future** import annotations
+from __future__ import annotations
 
 import json
 import shlex
@@ -22,7 +22,7 @@ SecurityIntegration,
 class GenericNmapIntegration(SecurityIntegration):
 """Adapt Nmap host and service discovery to SecureForge evidence."""
 
-```
+
 integration_name = "nmap"
 display_name = "Nmap Network Discovery"
 
@@ -695,4 +695,4 @@ def _render_command(
         )
         for token in command
     ]
-```
+
