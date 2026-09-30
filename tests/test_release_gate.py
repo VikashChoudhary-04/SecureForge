@@ -1,5 +1,3 @@
-"""Tests for the SecureForge release-gate engine."""
-
 from secureforge.core.policy import PolicyDecision
 from secureforge.core.release_gate import (
     ReleaseDecision,
