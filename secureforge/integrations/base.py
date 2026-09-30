@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -63,10 +63,13 @@ class SecurityIntegration(ABC):
 
     name: str = "unknown"
 
-    @abstractmethod
     def run(
         self,
         context: IntegrationContext,
     ) -> IntegrationResult:
         """Execute the integration against the supplied context."""
-        raise NotImplementedError
+        del context
+
+        raise NotImplementedError(
+            "This integration does not implement run()."
+        )
