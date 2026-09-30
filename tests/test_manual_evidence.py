@@ -5,110 +5,110 @@ from __future__ import annotations
 import pytest
 
 from secureforge.integrations.base import (
-IntegrationConfigurationError,
-IntegrationParseError,
+    IntegrationConfigurationError,
+    IntegrationParseError,
 )
 from secureforge.integrations.manual import ManualEvidenceIntegration
 
+
 @pytest.fixture()
 def integration() -> ManualEvidenceIntegration:
-"""Return a manual evidence integration instance."""
-return ManualEvidenceIntegration()
+    """Return a manual evidence integration instance."""
+    return ManualEvidenceIntegration()
+
 
 def test_build_command(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""The default command should reference the evidence file."""
-command = integration.build_command(
-{
-"evidence_path": "evidence/burp.json",
-}
-)
+    """The default command should reference the evidence file."""
+    command = integration.build_command(
+        {
+            "evidence_path": "evidence/burp.json",
+        }
+    )
 
-
-assert command == [
-    "manual-evidence",
-    "--input",
-    "evidence/burp.json",
-]
+    assert command == [
+        "manual-evidence",
+        "--input",
+        "evidence/burp.json",
+    ]
 
 
 def test_build_command_custom_string(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Custom string commands should support evidence-path substitution."""
-command = integration.build_command(
-{
-"evidence_path": "evidence/manual.json",
-"manual_command": (
-"python importer.py --input {evidence_path}"
-),
-}
-)
+    """Custom string commands should support evidence-path substitution."""
+    command = integration.build_command(
+        {
+            "evidence_path": "evidence/manual.json",
+            "manual_command": (
+                "python importer.py --input {evidence_path}"
+            ),
+        }
+    )
 
-
-assert command == [
-    "python",
-    "importer.py",
-    "--input",
-    "evidence/manual.json",
-]
+    assert command == [
+        "python",
+        "importer.py",
+        "--input",
+        "evidence/manual.json",
+    ]
 
 
 def test_build_command_custom_list(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Custom list commands should support evidence-path substitution."""
-command = integration.build_command(
-{
-"evidence_path": "evidence/manual.json",
-"manual_command": [
-"manual-importer",
-"--file",
-"{evidence_path}",
-],
-}
-)
+    """Custom list commands should support evidence-path substitution."""
+    command = integration.build_command(
+        {
+            "evidence_path": "evidence/manual.json",
+            "manual_command": [
+                "manual-importer",
+                "--file",
+                "{evidence_path}",
+            ],
+        }
+    )
 
-
-assert command == [
-    "manual-importer",
-    "--file",
-    "evidence/manual.json",
-]
+    assert command == [
+        "manual-importer",
+        "--file",
+        "evidence/manual.json",
+    ]
 
 
 def test_build_command_requires_evidence_path(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""An evidence path is required."""
-with pytest.raises(IntegrationConfigurationError):
-integration.build_command({})
+    """An evidence path is required."""
+    with pytest.raises(IntegrationConfigurationError):
+        integration.build_command({})
+
 
 def test_validate_config_requires_evidence_path(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Configuration validation should require an evidence path."""
-with pytest.raises(IntegrationConfigurationError):
-integration.validate_config({})
+    """Configuration validation should require an evidence path."""
+    with pytest.raises(IntegrationConfigurationError):
+        integration.validate_config({})
+
 
 def test_supports_target(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""The integration should recognize manual evidence targets."""
-assert integration.supports_target(
-{"evidence_path": "evidence/burp.json"}
-)
+    """The integration should recognize manual evidence targets."""
+    assert integration.supports_target(
+        {"evidence_path": "evidence/burp.json"}
+    )
 
-
-assert not integration.supports_target({})
+    assert not integration.supports_target({})
 
 
 def test_normalize_burp_finding(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Burp-validated evidence should normalize correctly."""
-output = """
+    """Burp-validated evidence should normalize correctly."""
+    output = """
 {
 "findings": [
 {
@@ -133,32 +133,31 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
+    assert len(findings) == 1
 
-assert len(findings) == 1
+    finding = findings[0]
 
-finding = findings[0]
-
-assert finding["finding_id"] == "BURP-001"
-assert finding["title"] == "BOLA in order endpoint"
-assert finding["severity"] == "high"
-assert finding["confidence"] == "confirmed"
-assert finding["cwe"] == "CWE-639"
-assert finding["endpoint"] == "/api/orders/42"
-assert finding["parameter"] == "id"
-assert finding["security_requirement"] == "SF-AUTHZ-001"
-assert finding["metadata"]["validation_source"] == "burp_suite"
-assert finding["metadata"]["manual_validation"] is True
-assert finding["metadata"]["request"] == "GET /api/orders/42"
-assert finding["metadata"]["response"] == "HTTP/1.1 200 OK"
+    assert finding["finding_id"] == "BURP-001"
+    assert finding["title"] == "BOLA in order endpoint"
+    assert finding["severity"] == "high"
+    assert finding["confidence"] == "confirmed"
+    assert finding["cwe"] == "CWE-639"
+    assert finding["endpoint"] == "/api/orders/42"
+    assert finding["parameter"] == "id"
+    assert finding["security_requirement"] == "SF-AUTHZ-001"
+    assert finding["metadata"]["validation_source"] == "burp_suite"
+    assert finding["metadata"]["manual_validation"] is True
+    assert finding["metadata"]["request"] == "GET /api/orders/42"
+    assert finding["metadata"]["response"] == "HTTP/1.1 200 OK"
 
 
 def test_normalize_wireshark_evidence(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Wireshark validation evidence should be preserved."""
-output = """
+    """Wireshark validation evidence should be preserved."""
+    output = """
 {
 "findings": [
 {
@@ -173,25 +172,24 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
+    assert len(findings) == 1
 
-assert len(findings) == 1
+    finding = findings[0]
 
-finding = findings[0]
-
-assert finding["metadata"]["validation_source"] == "wireshark"
-assert finding["metadata"]["packet_reference"] == (
-    "capture.pcapng:packet-144"
-)
-assert finding["security_requirement"] == "SF-AUTH-001"
+    assert finding["metadata"]["validation_source"] == "wireshark"
+    assert finding["metadata"]["packet_reference"] == (
+        "capture.pcapng:packet-144"
+    )
+    assert finding["security_requirement"] == "SF-AUTH-001"
 
 
 def test_normalize_metasploit_evidence(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Metasploit validation evidence should be recorded as manual evidence."""
-output = """
+    """Metasploit validation evidence should be recorded as manual evidence."""
+    output = """
 {
 "findings": [
 {
@@ -208,28 +206,27 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
+    assert len(findings) == 1
 
-assert len(findings) == 1
+    finding = findings[0]
 
-finding = findings[0]
-
-assert finding["metadata"]["validation_source"] == "metasploit"
-assert finding["metadata"]["module"] == (
-    "exploit/example/module"
-)
-assert finding["metadata"]["command"] == "run"
-assert finding["evidence"] == (
-    "Controlled shell obtained in lab."
-)
+    assert finding["metadata"]["validation_source"] == "metasploit"
+    assert finding["metadata"]["module"] == (
+        "exploit/example/module"
+    )
+    assert finding["metadata"]["command"] == "run"
+    assert finding["evidence"] == (
+        "Controlled shell obtained in lab."
+    )
 
 
 def test_generic_manual_source(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Unknown sources should remain safe and be marked as other."""
-output = """
+    """Unknown sources should remain safe and be marked as other."""
+    output = """
 {
 "findings": [
 {
@@ -242,17 +239,16 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["metadata"]["validation_source"] == "other"
+    assert findings[0]["metadata"]["validation_source"] == "other"
 
 
 def test_default_manual_source(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Missing source should default to manual."""
-output = """
+    """Missing source should default to manual."""
+    output = """
 {
 "findings": [
 {
@@ -263,17 +259,16 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["metadata"]["validation_source"] == "manual"
+    assert findings[0]["metadata"]["validation_source"] == "manual"
 
 
 def test_severity_defaults_to_medium(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Missing severity should receive a conservative default."""
-output = """
+    """Missing severity should receive a conservative default."""
+    output = """
 {
 "findings": [
 {
@@ -283,17 +278,16 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["severity"] == "medium"
+    assert findings[0]["severity"] == "medium"
 
 
 def test_confidence_defaults_to_confirmed(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Manual evidence is treated as confirmed by default."""
-output = """
+    """Manual evidence is treated as confirmed by default."""
+    output = """
 {
 "findings": [
 {
@@ -303,17 +297,16 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["confidence"] == "confirmed"
+    assert findings[0]["confidence"] == "confirmed"
 
 
 def test_evidence_list_is_combined(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""A list of evidence entries should be preserved as text."""
-output = """
+    """A list of evidence entries should be preserved as text."""
+    output = """
 {
 "findings": [
 {
@@ -328,21 +321,20 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["evidence"] == (
-    "Step 1 succeeded.\\n"
-    "Step 2 reproduced the issue.\\n"
-    "Step 3 confirmed impact."
-)
+    assert findings[0]["evidence"] == (
+        "Step 1 succeeded.\n"
+        "Step 2 reproduced the issue.\n"
+        "Step 3 confirmed impact."
+    )
 
 
 def test_requirement_mapping(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Common manually validated issue types should map to requirements."""
-output = """
+    """Common manually validated issue types should map to requirements."""
+    output = """
 {
 "findings": [
 {
@@ -365,20 +357,19 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["security_requirement"] == "SF-INPUT-001"
-assert findings[1]["security_requirement"] == "SF-AUTH-001"
-assert findings[2]["security_requirement"] == "SF-SECRET-001"
-assert findings[3]["security_requirement"] == "SF-TRANSPORT-001"
+    assert findings[0]["security_requirement"] == "SF-INPUT-001"
+    assert findings[1]["security_requirement"] == "SF-AUTH-001"
+    assert findings[2]["security_requirement"] == "SF-SECRET-001"
+    assert findings[3]["security_requirement"] == "SF-TRANSPORT-001"
 
 
 def test_authz_requirement_mapping(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Authorization-related manual findings should map to SF-AUTHZ-001."""
-output = """
+    """Authorization-related manual findings should map to SF-AUTHZ-001."""
+    output = """
 {
 "findings": [
 {
@@ -389,17 +380,16 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["security_requirement"] == "SF-AUTHZ-001"
+    assert findings[0]["security_requirement"] == "SF-AUTHZ-001"
 
 
 def test_target_asset_is_used(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""The configured target should become the finding asset."""
-output = """
+    """The configured target should become the finding asset."""
+    output = """
 {
 "findings": [
 {
@@ -410,43 +400,45 @@ output = """
 }
 """
 
+    findings = integration.normalize(
+        output,
+        target={"host": "10.10.10.50"},
+    )
 
-findings = integration.normalize(
-    output,
-    target={"host": "10.10.10.50"},
-)
-
-assert findings[0]["asset"] == "10.10.10.50"
+    assert findings[0]["asset"] == "10.10.10.50"
 
 
 def test_empty_output_fails(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Empty manual evidence should fail clearly."""
-with pytest.raises(IntegrationParseError):
-integration.normalize("")
+    """Empty manual evidence should fail clearly."""
+    with pytest.raises(IntegrationParseError):
+        integration.normalize("")
+
 
 def test_invalid_json_fails(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Invalid JSON should produce a parse error."""
-with pytest.raises(IntegrationParseError):
-integration.normalize("{invalid-json}")
+    """Invalid JSON should produce a parse error."""
+    with pytest.raises(IntegrationParseError):
+        integration.normalize("{invalid-json}")
+
 
 def test_empty_findings_fail(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""An empty findings collection should fail."""
-with pytest.raises(IntegrationParseError):
-integration.normalize(
-'{"findings": []}'
-)
+    """An empty findings collection should fail."""
+    with pytest.raises(IntegrationParseError):
+        integration.normalize(
+            '{"findings": []}'
+        )
+
 
 def test_non_dict_entries_are_skipped(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Malformed individual entries should not crash parsing."""
-output = """
+    """Malformed individual entries should not crash parsing."""
+    output = """
 [
 "invalid",
 {
@@ -456,42 +448,40 @@ output = """
 ]
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert len(findings) == 1
-assert findings[0]["finding_id"] == "MANUAL-001"
+    assert len(findings) == 1
+    assert findings[0]["finding_id"] == "MANUAL-001"
 
 
 def test_create_evidence(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Raw manual evidence should preserve source information."""
-evidence = integration.create_evidence(
-source_reference="evidence/burp.json",
-target="securecommerce",
-raw_data={
-"finding": "BOLA",
-},
-metadata={
-"tool": "Burp Suite Professional",
-},
-)
+    """Raw manual evidence should preserve source information."""
+    evidence = integration.create_evidence(
+        source_reference="evidence/burp.json",
+        target="securecommerce",
+        raw_data={
+            "finding": "BOLA",
+        },
+        metadata={
+            "tool": "Burp Suite Professional",
+        },
+    )
 
-
-assert evidence.source == "manual"
-assert evidence.source_reference == "evidence/burp.json"
-assert evidence.target == "securecommerce"
-assert evidence.raw_data["finding"] == "BOLA"
-assert evidence.metadata["tool"] == "Burp Suite Professional"
-assert evidence.metadata["integration"] == "manual"
+    assert evidence.source == "manual"
+    assert evidence.source_reference == "evidence/burp.json"
+    assert evidence.target == "securecommerce"
+    assert evidence.raw_data["finding"] == "BOLA"
+    assert evidence.metadata["tool"] == "Burp Suite Professional"
+    assert evidence.metadata["integration"] == "manual"
 
 
 def test_metadata_is_preserved(
-integration: ManualEvidenceIntegration,
+    integration: ManualEvidenceIntegration,
 ) -> None:
-"""Custom finding metadata should be retained."""
-output = """
+    """Custom finding metadata should be retained."""
+    output = """
 {
 "findings": [
 {
@@ -505,10 +495,8 @@ output = """
 }
 """
 
+    findings = integration.normalize(output)
 
-findings = integration.normalize(output)
-
-assert findings[0]["metadata"]["tester"] == "security-team"
-assert findings[0]["metadata"]["case_id"] == "CASE-100"
-assert findings[0]["metadata"]["manual_validation"] is True
-
+    assert findings[0]["metadata"]["tester"] == "security-team"
+    assert findings[0]["metadata"]["case_id"] == "CASE-100"
+    assert findings[0]["metadata"]["manual_validation"] is True
