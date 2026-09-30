@@ -31,6 +31,7 @@ class Confidence(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
+    CONFIRMED = "confirmed"
 
 
 class FindingStatus(StrEnum):
