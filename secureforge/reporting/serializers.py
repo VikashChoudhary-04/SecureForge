@@ -58,3 +58,8 @@ class SecurityReportSerializer:
         )
 
         return output_path
+
+
+__all__ = [
+    "SecurityReportSerializer",
+]
