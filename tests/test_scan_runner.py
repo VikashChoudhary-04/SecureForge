@@ -125,7 +125,7 @@ def build_result(
     )
 
 
-def build_normalizer() -> ScanResultNormalizer:
+def build_normalizer():
     """Create a runner with controlled normalization adapters."""
     registry = NormalizationRegistry()
 
