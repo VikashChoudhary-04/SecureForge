@@ -59,28 +59,18 @@ def test_build_regression_report_preserves_suite_metadata():
         duration_seconds=2.0,
     )
 
-    report = build_regression_report(
-        result
-    )
+    report = build_regression_report(result)
 
-    assert report.suite_id == (
-        "securecommerce-regression"
-    )
-    assert report.suite_name == (
-        "SecureCommerce Regression Suite"
-    )
+    assert report.suite_id == "securecommerce-regression"
+    assert report.suite_name == "SecureCommerce Regression Suite"
     assert report.status == "failed"
     assert report.total == 2
     assert report.passed == 1
     assert report.failed == 1
     assert report.errors == 0
     assert report.skipped == 0
-    assert report.started_at == (
-        "2026-09-27T10:00:00+00:00"
-    )
-    assert report.completed_at == (
-        "2026-09-27T10:00:02+00:00"
-    )
+    assert report.started_at == "2026-09-27T10:00:00+00:00"
+    assert report.completed_at == "2026-09-27T10:00:02+00:00"
     assert report.duration_seconds == 2.0
 
 
@@ -113,9 +103,7 @@ def test_build_regression_report_preserves_test_results():
         duration_seconds=4.0,
     )
 
-    report = build_regression_report(
-        result
-    )
+    report = build_regression_report(result)
 
     assert len(report.tests) == 4
 
@@ -153,9 +141,7 @@ def test_build_regression_report_handles_empty_suite():
         duration_seconds=0.0,
     )
 
-    report = build_regression_report(
-        result
-    )
+    report = build_regression_report(result)
 
     assert report.suite_id == "empty-suite"
     assert report.suite_name == "Empty Suite"
@@ -186,12 +172,8 @@ def test_build_regression_report_preserves_evidence():
                     "matches": [],
                     "values_redacted": True,
                 },
-                started_at=(
-                    "2026-09-27T10:00:00+00:00"
-                ),
-                completed_at=(
-                    "2026-09-27T10:00:01+00:00"
-                ),
+                started_at="2026-09-27T10:00:00+00:00",
+                completed_at="2026-09-27T10:00:01+00:00",
                 duration_seconds=1.0,
             )
         ],
@@ -200,9 +182,7 @@ def test_build_regression_report_preserves_evidence():
         duration_seconds=1.0,
     )
 
-    report = build_regression_report(
-        result
-    )
+    report = build_regression_report(result)
 
     assert report.tests[0].evidence == {
         "matches": [],
