@@ -206,7 +206,12 @@ class ToolExecutor:
         return datetime.now(timezone.utc)
 
 
+class ScanExecutor(ToolExecutor):
+    """Compatibility executor exposed by the scan package API."""
+
+
 __all__ = [
     "ScanExecutionError",
+    "ScanExecutor",
     "ToolExecutor",
 ]
