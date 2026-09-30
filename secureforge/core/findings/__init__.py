@@ -1,7 +1,14 @@
 """Finding models and helpers for SecureForge."""
 
-from .factory import build_finding
-from .identifiers import build_finding_id
+from .factory import (
+    FindingFactory,
+    build_finding,
+)
+from .identifiers import (
+    FindingIdentifier,
+    FindingIdentifierError,
+    build_finding_id,
+)
 from .models import (
     Confidence,
     Evidence,
@@ -12,14 +19,18 @@ from .models import (
 )
 from .store import FindingStore
 
+
 __all__ = [
     "Confidence",
     "Evidence",
     "Finding",
+    "FindingFactory",
+    "FindingIdentifier",
+    "FindingIdentifierError",
     "FindingStatus",
+    "FindingStore",
     "Severity",
     "ValidationStatus",
-    "FindingStore",
     "build_finding",
     "build_finding_id",
 ]
