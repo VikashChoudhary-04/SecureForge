@@ -50,6 +50,7 @@ class ValidationStatus(StrEnum):
     NOT_VALIDATED = "not_validated"
     INCONCLUSIVE = "inconclusive"
     CONFIRMED = "confirmed"
+    VALIDATED = "validated"
     REJECTED = "rejected"
 
 
