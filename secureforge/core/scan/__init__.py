@@ -4,6 +4,7 @@ from .executor import (
     ScanExecutionError,
     ScanExecutor,
     ToolExecutor,
+    build_scan_executor,
 )
 from .factory import ScanRunFactory
 from .models import (
@@ -62,4 +63,5 @@ __all__ = [
     "ToolExecutionResult",
     "ToolExecutionStatus",
     "ToolExecutor",
+    "build_scan_executor",
 ]
