@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class RiskLevel(str, Enum):
@@ -62,19 +62,85 @@ class RiskAssessment(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    finding_id: str
+    finding_id: str | None = None
 
-    base_severity: RiskLevel
-    contextual_risk: RiskLevel
+    base_severity: RiskLevel = RiskLevel.INFO
+    contextual_risk: RiskLevel = RiskLevel.INFO
 
-    context: RiskContext
+    context: RiskContext = Field(
+        default_factory=RiskContext
+    )
 
-    risk_score: float = Field(ge=0.0, le=100.0)
+    risk_score: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=100.0,
+    )
 
     factors: list[str] = Field(default_factory=list)
 
-    explanation: str
+    explanation: str = ""
 
     evaluated_at: str
 
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    # Legacy aggregate risk-assessment fields retained for
+    # compatibility with existing callers and fixtures.
+    score: float | None = None
+    highest_severity: Any | None = None
+    finding_count: int | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_fields(
+        cls,
+        value: Any,
+    ) -> Any:
+        """Normalize the legacy aggregate assessment contract."""
+        if not isinstance(value, dict):
+            return value
+
+        normalized = dict(value)
+
+        if (
+            "risk_score" not in normalized
+            and "score" in normalized
+        ):
+            normalized["risk_score"] = normalized["score"]
+
+        highest_severity = normalized.get(
+            "highest_severity"
+        )
+
+        if (
+            "base_severity" not in normalized
+            and highest_severity is not None
+        ):
+            normalized["base_severity"] = (
+                cls._normalize_risk_level(
+                    highest_severity
+                )
+            )
+
+        if (
+            "contextual_risk" not in normalized
+            and highest_severity is not None
+        ):
+            normalized["contextual_risk"] = (
+                cls._normalize_risk_level(
+                    highest_severity
+                )
+            )
+
+        return normalized
+
+    @staticmethod
+    def _normalize_risk_level(
+        value: Any,
+    ) -> RiskLevel:
+        """Normalize a severity-like value to RiskLevel."""
+        raw = getattr(value, "value", value)
+
+        try:
+            return RiskLevel(str(raw).lower())
+        except ValueError:
+            return RiskLevel.INFO
