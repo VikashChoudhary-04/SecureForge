@@ -2,6 +2,7 @@
 
 from .executor import (
     ScanExecutionError,
+    ScanExecutor,
     ToolExecutor,
 )
 from .factory import ScanRunFactory
@@ -39,6 +40,7 @@ __all__ = [
     "ScanEvidenceNormalizer",
     "ScanExecution",
     "ScanExecutionError",
+    "ScanExecutor",
     "ScanOrchestrator",
     "ScanPlanner",
     "ScanProfile",
