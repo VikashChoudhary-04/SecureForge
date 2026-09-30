@@ -40,6 +40,26 @@ class ToolExecutionStatus(str, Enum):
     TIMEOUT = "timeout"
 
 
+class RawEvidence(BaseModel):
+    """Raw evidence produced by a security integration."""
+
+    model_config = ConfigDict(extra="allow")
+
+    source: str
+    source_version: str = "unknown"
+    source_reference: str | None = None
+    target: Any | None = None
+    raw_data: Any = None
+
+    collected_at: datetime = Field(
+        default_factory=utc_now
+    )
+
+    metadata: dict[str, Any] = Field(
+        default_factory=dict
+    )
+
+
 class ScanConfiguration(BaseModel):
     """Configuration used to start a SecureForge scan."""
 
@@ -437,6 +457,7 @@ class SecurityScanResult(BaseModel):
 
 
 __all__ = [
+    "RawEvidence",
     "ScanConfiguration",
     "ScanExecution",
     "ScanProfile",
