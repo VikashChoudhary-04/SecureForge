@@ -1,110 +1,221 @@
-"""Runtime construction for SecureForge."""
+"""Runtime configuration loading for SecureForge."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-from secureforge.core.config.loader import ConfigLoader
-from secureforge.core.correlation.engine import CorrelationEngine
-from secureforge.core.policy.engine import PolicyEngine
-from secureforge.core.release_gate.engine import ReleaseGateEngine
-from secureforge.core.risk.engine import RiskEngine
-from secureforge.core.scan.orchestrator import ScanOrchestrator
-from secureforge.core.scan.planner import ScanPlanner
-from secureforge.core.scan.runner import ScanRunner
-from secureforge.core.scan.security_pipeline import SecurityPipeline
-from secureforge.core.scan.store import ScanResultStore
-from secureforge.integrations.registry_factory import (
-    build_default_registry,
-)
-from secureforge.regression.engine import RegressionEngine
-from secureforge.validation.factory import build_validation_engine
-from secureforge.validation.planner import ValidationPlanner
+import yaml
+
+class RuntimeConfigurationError(Exception):
+"""Raised when SecureForge runtime configuration is invalid."""
+
+class RuntimeConfiguration:
+"""Loaded and validated SecureForge runtime configuration."""
 
 
-@dataclass(frozen=True)
-class SecureForgeRuntime:
-    """Fully constructed SecureForge runtime."""
-
-    orchestrator: ScanOrchestrator
-    store: ScanResultStore
-    pipeline: SecurityPipeline
-
-
-def build_runtime(
+def __init__(
+    self,
     *,
-    profile: str = "standard",
-    target: str | None = None,
-    source_path: Path | None = None,
-    config_path: Path | None = None,
-) -> SecureForgeRuntime:
-    """Build all services required for a SecureForge scan."""
-    config_loader = ConfigLoader()
+    path: Path,
+    data: dict[str, Any],
+) -> None:
+    self.path = path
+    self._data = data
 
-    configuration = config_loader.load(
-        profile=profile,
-        config_path=config_path,
+@property
+def project(self) -> dict[str, Any]:
+    """Return the project configuration section."""
+    return self._section("project")
+
+@property
+def scan(self) -> dict[str, Any]:
+    """Return the scan configuration section."""
+    return self._section("scan")
+
+@property
+def target(self) -> dict[str, Any]:
+    """Return the target configuration section."""
+    return self._section("target")
+
+@property
+def integrations(self) -> dict[str, Any]:
+    """Return the integrations configuration section."""
+    return self._section("integrations")
+
+@property
+def policy(self) -> dict[str, Any]:
+    """Return the policy configuration section."""
+    return self._section("policy")
+
+@property
+def requirements(self) -> dict[str, Any]:
+    """Return the requirements configuration section."""
+    return self._section("requirements")
+
+@property
+def output(self) -> dict[str, Any]:
+    """Return the output configuration section."""
+    return self._section("output")
+
+@property
+def logging(self) -> dict[str, Any]:
+    """Return the logging configuration section."""
+    return self._section("logging")
+
+@property
+def profile(self) -> str:
+    """Return the normalized scan profile."""
+    profile = self.scan.get("profile")
+
+    if profile is None:
+        raise RuntimeConfigurationError(
+            "scan.profile is required"
+        )
+
+    return str(profile).strip().lower()
+
+def integration(
+    self,
+    name: str,
+) -> dict[str, Any]:
+    """Return configuration for one integration."""
+    integrations = self.integrations
+    value = integrations.get(name)
+
+    if value is None:
+        return {}
+
+    if not isinstance(value, dict):
+        raise RuntimeConfigurationError(
+            f"Integration '{name}' configuration must be a mapping"
+        )
+
+    return value
+
+def enabled_integrations(self) -> list[str]:
+    """Return integrations explicitly enabled."""
+    enabled: list[str] = []
+
+    for name, configuration in self.integrations.items():
+        if not isinstance(configuration, dict):
+            raise RuntimeConfigurationError(
+                f"Integration '{name}' configuration must be a mapping"
+            )
+
+        if configuration.get("enabled") is True:
+            enabled.append(name)
+
+    return enabled
+
+def _section(
+    self,
+    name: str,
+) -> dict[str, Any]:
+    """Return a configuration section as a mapping."""
+    value = self._data.get(name)
+
+    if value is None:
+        return {}
+
+    if not isinstance(value, dict):
+        raise RuntimeConfigurationError(
+            f"Configuration section '{name}' must be a mapping"
+        )
+
+    return value
+
+
+def load_runtime_configuration(
+path: Path | str,
+) -> RuntimeConfiguration:
+"""Load and validate a SecureForge runtime configuration."""
+configuration_path = Path(path)
+
+
+if not configuration_path.exists():
+    raise RuntimeConfigurationError(
+        f"Configuration file does not exist: {configuration_path}"
     )
 
-    integration_registry = build_default_registry(
-        configuration=configuration,
+try:
+    with configuration_path.open(
+        "r",
+        encoding="utf-8",
+    ) as handle:
+        data = yaml.safe_load(handle)
+except yaml.YAMLError as exc:
+    raise RuntimeConfigurationError(
+        f"Invalid YAML configuration: {exc}"
+    ) from exc
+except OSError as exc:
+    raise RuntimeConfigurationError(
+        f"Unable to read configuration file: {configuration_path}"
+    ) from exc
+
+if not isinstance(data, dict):
+    raise RuntimeConfigurationError(
+        "root configuration value must be a mapping"
     )
 
-    planner = ScanPlanner(
-        configuration=configuration,
-        registry=integration_registry,
+project = data.get("project")
+
+if not isinstance(project, dict):
+    project = {}
+
+if not project.get("name"):
+    raise RuntimeConfigurationError(
+        "project.name is required"
     )
 
-    runner = ScanRunner(
-        planner=planner,
-        registry=integration_registry,
+if not project.get("application"):
+    raise RuntimeConfigurationError(
+        "project.application is required"
     )
 
-    correlation_engine = CorrelationEngine()
-    risk_engine = RiskEngine()
+scan = data.get("scan")
 
-    policy_engine = PolicyEngine(
-        configuration.policy
+if not isinstance(scan, dict):
+    scan = {}
+
+if not scan.get("profile"):
+    raise RuntimeConfigurationError(
+        "scan.profile is required"
     )
 
-    release_gate_engine = ReleaseGateEngine()
+integrations = data.get("integrations")
 
-    regression_engine = RegressionEngine(
-        configuration.regression
+if not isinstance(integrations, dict):
+    raise RuntimeConfigurationError(
+        "At least one integration must be configured"
     )
 
-    validation_engine = build_validation_engine()
-
-    validation_planner = ValidationPlanner(
-        validator="secureforge",
+if not integrations:
+    raise RuntimeConfigurationError(
+        "At least one integration must be configured"
     )
 
-    pipeline = SecurityPipeline(
-        correlation_engine=correlation_engine,
-        risk_engine=risk_engine,
-        policy_engine=policy_engine,
-        release_gate_engine=release_gate_engine,
-        regression_engine=regression_engine,
-        validation_engine=validation_engine,
-    )
+for name, configuration in integrations.items():
+    if not isinstance(configuration, dict):
+        raise RuntimeConfigurationError(
+            f"Integration '{name}' configuration must be a mapping"
+        )
 
-    orchestrator = ScanOrchestrator(
-        runner=runner,
-        pipeline=pipeline,
-        validation_planner=validation_planner,
-    )
+normalized_data = dict(data)
+normalized_scan = dict(scan)
+normalized_scan["profile"] = (
+    str(scan["profile"]).strip().lower()
+)
+normalized_data["scan"] = normalized_scan
 
-    store = ScanResultStore()
-
-    return SecureForgeRuntime(
-        orchestrator=orchestrator,
-        store=store,
-        pipeline=pipeline,
-    )
+return RuntimeConfiguration(
+    path=configuration_path,
+    data=normalized_data,
+)
 
 
 __all__ = [
-    "SecureForgeRuntime",
-    "build_runtime",
+"RuntimeConfiguration",
+"RuntimeConfigurationError",
+"load_runtime_configuration",
 ]
