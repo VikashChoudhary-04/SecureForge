@@ -15,6 +15,10 @@ from .models import (
 )
 
 
+class ScanExecutionError(Exception):
+    """Base exception for scan tool execution failures."""
+
+
 class ToolExecutor:
     """Execute configured security tools as controlled subprocesses."""
 
@@ -200,3 +204,9 @@ class ToolExecutor:
     def _utc_now() -> datetime:
         """Return the current UTC timestamp."""
         return datetime.now(timezone.utc)
+
+
+__all__ = [
+    "ScanExecutionError",
+    "ToolExecutor",
+]
