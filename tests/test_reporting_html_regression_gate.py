@@ -1,5 +1,3 @@
-"""Tests for regression-gate rendering in HTML reports."""
-
 from pathlib import Path
 
 from secureforge.reporting import (
@@ -13,9 +11,7 @@ def test_html_renderer_includes_regression_gate(
     """Render regression-gate information in the HTML report."""
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     gate = sample_security_report.regression_gate
 
@@ -39,9 +35,7 @@ def test_html_renderer_includes_failed_regression_tests(
     """Render failed regression identifiers."""
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     gate = sample_security_report.regression_gate
 
@@ -97,9 +91,7 @@ def test_html_renderer_escapes_regression_gate_content(
 
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        report
-    )
+    html = renderer.render(report)
 
     assert "<script>alert('xss')</script>" not in html
     assert "<img src=x onerror=alert(1)>" not in html
@@ -117,10 +109,7 @@ def test_html_renderer_writes_regression_gate_report(
     """Write an HTML report containing regression-gate evidence."""
     renderer = SecurityHTMLReportRenderer()
 
-    output_path = (
-        tmp_path
-        / "security-report.html"
-    )
+    output_path = tmp_path / "security-report.html"
 
     renderer.write_html(
         sample_security_report,
@@ -129,9 +118,7 @@ def test_html_renderer_writes_regression_gate_report(
 
     assert output_path.is_file()
 
-    html = output_path.read_text(
-        encoding="utf-8"
-    )
+    html = output_path.read_text(encoding="utf-8")
 
     if sample_security_report.regression_gate is not None:
         assert "Regression Gate" in html
