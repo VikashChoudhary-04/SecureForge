@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
+from hashlib import sha256
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 def utc_now() -> datetime:
@@ -54,15 +55,120 @@ class ValidationStatus(StrEnum):
 class Evidence(BaseModel):
     """Evidence supporting a finding."""
 
-    evidence_id: str
+    evidence_id: str = ""
     source: str
-    evidence_type: str
+    evidence_type: str = ""
     collected_at: datetime = Field(
         default_factory=utc_now
     )
     data: dict[str, Any] = Field(
         default_factory=dict
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_fields(
+        cls,
+        value: Any,
+    ) -> Any:
+        """Normalize legacy evidence fields into the current model."""
+        if not isinstance(value, dict):
+            return value
+
+        normalized = dict(value)
+
+        evidence_type = normalized.get(
+            "evidence_type"
+        )
+
+        if not evidence_type:
+            evidence_type = normalized.get(
+                "type"
+            )
+
+        if evidence_type:
+            normalized["evidence_type"] = evidence_type
+
+        evidence_id = normalized.get(
+            "evidence_id"
+        )
+
+        if not evidence_id:
+            evidence_id = cls._generate_evidence_id(
+                normalized
+            )
+
+        normalized["evidence_id"] = evidence_id
+
+        data = normalized.get("data")
+
+        if not isinstance(data, dict):
+            data = {}
+
+        if "content" in normalized:
+            data.setdefault(
+                "content",
+                normalized["content"],
+            )
+
+        if "location" in normalized:
+            data.setdefault(
+                "location",
+                normalized["location"],
+            )
+
+        normalized["data"] = data
+
+        return normalized
+
+    @staticmethod
+    def _generate_evidence_id(
+        value: dict[str, Any],
+    ) -> str:
+        """Generate a deterministic identifier for evidence."""
+        source = str(
+            value.get(
+                "source",
+                "",
+            )
+        )
+        evidence_type = str(
+            value.get(
+                "evidence_type",
+                value.get(
+                    "type",
+                    "",
+                ),
+            )
+        )
+        content = str(
+            value.get(
+                "content",
+                "",
+            )
+        )
+        location = str(
+            value.get(
+                "location",
+                "",
+            )
+        )
+
+        canonical = "|".join(
+            [
+                source,
+                evidence_type,
+                content,
+                location,
+            ]
+        )
+
+        return (
+            "evidence-"
+            + sha256(
+                canonical.encode("utf-8")
+            ).hexdigest()[:16]
+        )
 
 
 class Finding(BaseModel):
