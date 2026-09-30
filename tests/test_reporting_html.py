@@ -120,9 +120,7 @@ def test_html_contains_release_information():
     """HTML should expose important release metadata."""
     report = build_report()
 
-    html = SecurityHTMLReportRenderer().render(
-        report
-    )
+    html = SecurityHTMLReportRenderer().render(report)
 
     assert "SecureCommerce" in html
     assert "release-html-001" in html
@@ -134,9 +132,7 @@ def test_html_contains_release_decision():
     """HTML should clearly display the release decision."""
     report = build_report()
 
-    html = SecurityHTMLReportRenderer().render(
-        report
-    )
+    html = SecurityHTMLReportRenderer().render(report)
 
     assert "Release Decision" in html
     assert "block" in html
@@ -148,9 +144,7 @@ def test_html_contains_finding_information():
     """HTML should display normalized finding information."""
     report = build_report()
 
-    html = SecurityHTMLReportRenderer().render(
-        report
-    )
+    html = SecurityHTMLReportRenderer().render(report)
 
     assert "SF-XSS-001" in html
     assert "CWE-79" not in html
@@ -164,14 +158,9 @@ def test_html_escapes_untrusted_finding_content():
     """Finding content should be HTML escaped."""
     report = build_report()
 
-    html = SecurityHTMLReportRenderer().render(
-        report
-    )
+    html = SecurityHTMLReportRenderer().render(report)
 
-    assert (
-        "Reflected XSS &lt;script&gt;"
-        in html
-    )
+    assert "Reflected XSS &lt;script&gt;" in html
     assert "<script>" not in html
 
 
@@ -179,9 +168,7 @@ def test_html_contains_regression_results():
     """HTML should display regression test results."""
     report = build_report()
 
-    html = SecurityHTMLReportRenderer().render(
-        report
-    )
+    html = SecurityHTMLReportRenderer().render(report)
 
     assert "Regression Testing" in html
     assert "XSS-001" in html
@@ -193,9 +180,7 @@ def test_html_contains_policy_information():
     """HTML should display policy actions."""
     report = build_report()
 
-    html = SecurityHTMLReportRenderer().render(
-        report
-    )
+    html = SecurityHTMLReportRenderer().render(report)
 
     assert "Policy Evaluation" in html
     assert "default" in html
@@ -209,11 +194,7 @@ def test_html_writer_creates_file(tmp_path):
     """Renderer should write a standalone HTML report."""
     report = build_report()
 
-    output_path = (
-        tmp_path
-        / "reports"
-        / "security-report.html"
-    )
+    output_path = tmp_path / "reports" / "security-report.html"
 
     result = SecurityHTMLReportRenderer().write_html(
         report,
@@ -223,12 +204,8 @@ def test_html_writer_creates_file(tmp_path):
     assert result == output_path
     assert output_path.is_file()
 
-    content = output_path.read_text(
-        encoding="utf-8"
-    )
+    content = output_path.read_text(encoding="utf-8")
 
-    assert content.startswith(
-        "<!DOCTYPE html>"
-    )
+    assert content.startswith("<!DOCTYPE html>")
     assert "SecureForge Security Report" in content
     assert "SF-XSS-001" in content
