@@ -3,29 +3,48 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from secureforge.core.scan.models import SecurityScanResult
 
+from .builder import SecurityReportBuilder
 from .html import HTMLReportRenderer
 from .loader import SecurityReportLoader
-from .models import SecurityReport
-from .scan import build_scan_report
+from .models import (
+    ReleaseMetadata,
+    ScanMetadata,
+    SecurityReport,
+)
+
+
+@dataclass(frozen=True)
+class ReportPaths:
+    """Paths for persisted security report artifacts."""
+
+    json_path: Path
+    html_path: Path
 
 
 class ReportingError(Exception):
     """Raised when report generation fails."""
 
 
-class ReportingService:
-    """Generate and persist SecureForge security reports."""
+class SecurityReportService:
+    """Build, validate, and persist complete SecureForge security reports."""
 
     def __init__(
         self,
         *,
+        builder: SecurityReportBuilder | None = None,
         renderer: HTMLReportRenderer | None = None,
         loader: SecurityReportLoader | None = None,
     ) -> None:
+        self.builder = (
+            builder
+            if builder is not None
+            else SecurityReportBuilder()
+        )
         self.renderer = (
             renderer
             if renderer is not None
@@ -37,12 +56,66 @@ class ReportingService:
             else SecurityReportLoader()
         )
 
-    def build(
+    def build_from_scan_result(
         self,
+        *,
         result: SecurityScanResult,
+        release: ReleaseMetadata,
+        scan: ScanMetadata,
     ) -> SecurityReport:
-        """Build a validated security report."""
-        return build_scan_report(result)
+        """Build a complete security report from a completed scan result."""
+        pipeline = result.pipeline
+
+        return self.builder.build(
+            release=release,
+            scan=scan,
+            findings=list(result.findings),
+            risk=pipeline.risk,
+            policy=pipeline.policy,
+            decision=pipeline.release_gate,
+            remediation=getattr(
+                pipeline,
+                "remediation",
+                None,
+            ),
+            regression=getattr(
+                pipeline,
+                "regression",
+                None,
+            ),
+            regression_gate=getattr(
+                pipeline,
+                "regression_gate",
+                None,
+            ),
+        )
+
+    def generate_from_scan_result(
+        self,
+        *,
+        result: SecurityScanResult,
+        release: ReleaseMetadata,
+        scan: ScanMetadata,
+        paths: ReportPaths,
+    ) -> ReportPaths:
+        """Build and persist JSON and HTML reports from a scan result."""
+        report = self.build_from_scan_result(
+            result=result,
+            release=release,
+            scan=scan,
+        )
+
+        self.write_json(
+            report,
+            paths.json_path,
+        )
+
+        self.write_html(
+            report,
+            paths.html_path,
+        )
+
+        return paths
 
     def write_json(
         self,
@@ -96,6 +169,45 @@ class ReportingService:
 
         return output_path
 
+    def load(
+        self,
+        input_path: Path,
+    ) -> SecurityReport:
+        """Load and validate an existing security report."""
+        return self.loader.load(input_path)
+
+
+class ReportingService(SecurityReportService):
+    """Backward-compatible reporting service."""
+
+    def build(
+        self,
+        result: SecurityScanResult,
+    ) -> SecurityReport:
+        """Build a security report using scan execution metadata."""
+        execution = result.execution
+
+        release = ReleaseMetadata(
+            application=execution.application,
+            version=execution.version,
+            commit_sha=execution.commit_sha,
+            environment=execution.environment,
+        )
+
+        scan = ScanMetadata(
+            scan_id=execution.scan_id,
+            profile=execution.profile,
+            target=execution.target,
+            started_at=execution.started_at,
+            completed_at=execution.completed_at,
+        )
+
+        return self.build_from_scan_result(
+            result=result,
+            release=release,
+            scan=scan,
+        )
+
     def generate(
         self,
         result: SecurityScanResult,
@@ -121,15 +233,10 @@ class ReportingService:
 
         return report
 
-    def load(
-        self,
-        input_path: Path,
-    ) -> SecurityReport:
-        """Load and validate an existing security report."""
-        return self.loader.load(input_path)
-
 
 __all__ = [
+    "ReportPaths",
     "ReportingError",
     "ReportingService",
+    "SecurityReportService",
 ]
