@@ -1,11 +1,19 @@
-"""Runtime configuration loading for SecureForge."""
+"""Runtime configuration loading and runtime construction for SecureForge."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+from secureforge.core.scan import (
+    ScanOrchestrator,
+    ScanResultStore,
+    ScanRunner,
+    SecurityPipeline,
+)
 
 
 class RuntimeConfigurationError(Exception):
@@ -81,8 +89,7 @@ class RuntimeConfiguration:
         name: str,
     ) -> dict[str, Any]:
         """Return configuration for one integration."""
-        integrations = self.integrations
-        value = integrations.get(name)
+        value = self.integrations.get(name)
 
         if value is None:
             return {}
@@ -125,6 +132,54 @@ class RuntimeConfiguration:
             )
 
         return value
+
+
+@dataclass
+class SecureForgeRuntime:
+    """Runtime services used to execute SecureForge scans."""
+
+    orchestrator: ScanOrchestrator
+    store: ScanResultStore
+    pipeline: SecurityPipeline
+    runner: ScanRunner
+
+
+def build_runtime(
+    *,
+    profile: str = "quick",
+    source_path: str | Path | None = None,
+    target: str | None = None,
+) -> SecureForgeRuntime:
+    """Build the core SecureForge runtime services."""
+    normalized_profile = str(
+        profile
+    ).strip().lower()
+
+    if normalized_profile not in {
+        "quick",
+        "standard",
+        "full",
+        "ci",
+    }:
+        raise RuntimeConfigurationError(
+            f"Unsupported scan profile '{profile}'"
+        )
+
+    runner = ScanRunner()
+    pipeline = SecurityPipeline()
+    store = ScanResultStore()
+
+    orchestrator = ScanOrchestrator(
+        runner=runner,
+        pipeline=pipeline,
+    )
+
+    return SecureForgeRuntime(
+        orchestrator=orchestrator,
+        store=store,
+        pipeline=pipeline,
+        runner=runner,
+    )
 
 
 def load_runtime_configuration(
@@ -217,5 +272,7 @@ def load_runtime_configuration(
 __all__ = [
     "RuntimeConfiguration",
     "RuntimeConfigurationError",
+    "SecureForgeRuntime",
+    "build_runtime",
     "load_runtime_configuration",
 ]
