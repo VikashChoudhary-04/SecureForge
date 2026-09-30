@@ -8,7 +8,7 @@ from typing import Any
 from .models import SecurityReport
 
 
-class HTMLReportRenderer:
+class SecurityHTMLReportRenderer:
     """Render SecureForge security reports as HTML."""
 
     def render(
@@ -787,6 +787,11 @@ pre {{
         return "".join(items)
 
 
+# Backward-compatible name used by existing reporting service code.
+HTMLReportRenderer = SecurityHTMLReportRenderer
+
+
 __all__ = [
     "HTMLReportRenderer",
+    "SecurityHTMLReportRenderer",
 ]
