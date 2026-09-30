@@ -23,7 +23,10 @@ from .normalizer import ScanResultNormalizer
 ScanEvidenceNormalizer = ScanResultNormalizer
 
 from .orchestrator import ScanOrchestrator
-from .planner import ScanPlanner
+from .planner import (
+    ScanPlan,
+    ScanPlanner,
+)
 from .runner import ScanRunner
 from .security_pipeline import (
     SecurityPipeline,
@@ -42,6 +45,7 @@ __all__ = [
     "ScanExecutionError",
     "ScanExecutor",
     "ScanOrchestrator",
+    "ScanPlan",
     "ScanPlanner",
     "ScanProfile",
     "ScanResultNormalizer",
