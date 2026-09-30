@@ -25,9 +25,29 @@ class CommandValidator(BaseValidator):
         self,
         *,
         allowed_commands: set[str] | None = None,
+        allowlist: set[str] | None = None,
         timeout: float = 10.0,
     ) -> None:
-        self.allowed_commands = allowed_commands or {
+        """Configure the command validator.
+
+        ``allowlist`` is accepted as a compatibility alias for
+        ``allowed_commands`` because the validation factory exposes the
+        configuration using that name.
+        """
+        if allowed_commands is not None and allowlist is not None:
+            if allowed_commands != allowlist:
+                raise ValueError(
+                    "allowed_commands and allowlist must contain the same "
+                    "commands when both are provided."
+                )
+
+        configured_commands = (
+            allowed_commands
+            if allowed_commands is not None
+            else allowlist
+        )
+
+        self.allowed_commands = configured_commands or {
             "curl",
             "nmap",
         }
