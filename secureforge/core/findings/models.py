@@ -185,6 +185,7 @@ class Finding(BaseModel):
     parameter: str | None = None
     cwe: str | None = None
     owasp: str | None = None
+    owasp_mapping: str | None = None
     security_requirement: str | None = None
     severity: Severity = Severity.INFO
     confidence: Confidence = Confidence.MEDIUM
