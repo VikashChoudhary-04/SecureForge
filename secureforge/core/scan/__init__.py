@@ -1,6 +1,9 @@
 """Scan models and orchestration components for SecureForge."""
 
-from .executor import ToolExecutor
+from .executor import (
+    ScanExecutionError,
+    ToolExecutor,
+)
 from .factory import ScanRunFactory
 from .models import (
     ScanConfiguration,
@@ -35,6 +38,7 @@ __all__ = [
     "ScanConfiguration",
     "ScanEvidenceNormalizer",
     "ScanExecution",
+    "ScanExecutionError",
     "ScanOrchestrator",
     "ScanPlanner",
     "ScanProfile",
