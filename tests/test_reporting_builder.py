@@ -58,7 +58,7 @@ def test_build_security_report(
     assert report.release == release
     assert report.scan == scan
 
-    assert len(report.findings) == len(
+    assert len(report.findings) == len(   
         sample_findings
     )
 
