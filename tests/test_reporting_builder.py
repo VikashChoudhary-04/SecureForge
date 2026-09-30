@@ -10,6 +10,7 @@ from secureforge.reporting import (
     ReportFinding,
     RiskReport,
     ScanMetadata,
+    SecurityReport,
     SecurityReportBuilder,
 )
 
