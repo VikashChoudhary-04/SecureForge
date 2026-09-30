@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -16,12 +16,60 @@ class PolicyAction(str, Enum):
     BLOCK = "block"
 
 
-class PolicyDecision(str, Enum):
-    """Final decision produced by policy evaluation."""
+class PolicyDecision(BaseModel):
+    """Final decision produced by policy evaluation.
 
-    PASS = "pass"
-    REVIEW = "review"
-    BLOCK = "block"
+    The model supports both the structured decision contract and the
+    enum-like PASS/REVIEW/BLOCK constants used by the policy engine.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    policy_name: str = "default"
+    action: PolicyAction
+    allowed: bool
+    reason: str = ""
+    violations: list[str] = Field(default_factory=list)
+
+    PASS: ClassVar["PolicyDecision"]
+    REVIEW: ClassVar["PolicyDecision"]
+    BLOCK: ClassVar["PolicyDecision"]
+
+    def __init__(
+        self,
+        value: str | PolicyAction | None = None,
+        **data: Any,
+    ) -> None:
+        """Create a structured decision or an enum-style decision."""
+        if value is not None:
+            if data:
+                raise TypeError(
+                    "Positional decision value cannot be combined "
+                    "with keyword fields."
+                )
+
+            action = PolicyAction(value)
+            data = {
+                "action": action,
+                "allowed": action == PolicyAction.PASS,
+                "policy_name": "default",
+            }
+
+        super().__init__(**data)
+
+    def __eq__(self, other: object) -> bool:
+        """Compare decisions by their policy action."""
+        if isinstance(other, PolicyDecision):
+            return self.action == other.action
+
+        if isinstance(other, PolicyAction):
+            return self.action == other
+
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        """Hash decisions by their policy action."""
+        return hash(self.action)
 
 
 class PolicyRule(BaseModel):
@@ -107,3 +155,21 @@ class PolicyEvaluation(BaseModel):
     policy_id: str
 
     policy_version: str
+
+
+# Enum-style decision constants retained for compatibility with the
+# policy engine and existing callers.
+PolicyDecision.model_rebuild()
+
+PolicyDecision.PASS = PolicyDecision(
+    action=PolicyAction.PASS,
+    allowed=True,
+)
+PolicyDecision.REVIEW = PolicyDecision(
+    action=PolicyAction.REVIEW,
+    allowed=False,
+)
+PolicyDecision.BLOCK = PolicyDecision(
+    action=PolicyAction.BLOCK,
+    allowed=False,
+)
