@@ -30,6 +30,7 @@ from .models import (
 from .regression import build_regression_report
 from .regression_gate import build_regression_gate_report
 from .scan import build_scan_report
+from .serializers import SecurityReportSerializer
 from .service import (
     ReportPaths,
     ReportingError,
@@ -58,6 +59,7 @@ __all__ = [
     "SecurityReportBuilder",
     "SecurityReportLoadError",
     "SecurityReportLoader",
+    "SecurityReportSerializer",
     "SecurityReportService",
     "ValidationGateReport",
     "ValidationReport",
