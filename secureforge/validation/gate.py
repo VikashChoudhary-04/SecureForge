@@ -1,4 +1,4 @@
-# Validation gate evaluation
+"""Validation gate evaluation."""
 
 from __future__ import annotations
 
@@ -41,20 +41,39 @@ def evaluate_validation_run(
 ) -> ValidationGateDecision:
     """Evaluate validation results without replacing release policy."""
     confirmed: list[str] = []
+    unresolved: list[str] = []
     inconclusive: list[str] = []
     errored: list[str] = []
+    remediated: list[str] = []
 
     for result in run.results:
         if result.outcome == ValidationOutcome.CONFIRMED:
             confirmed.append(
                 result.finding_id
             )
+            unresolved.append(
+                result.finding_id
+            )
         elif result.outcome == ValidationOutcome.INCONCLUSIVE:
             inconclusive.append(
                 result.finding_id
             )
+            unresolved.append(
+                result.finding_id
+            )
         elif result.outcome == ValidationOutcome.ERROR:
             errored.append(
+                result.finding_id
+            )
+            unresolved.append(
+                result.finding_id
+            )
+
+        if (
+            result.outcome == ValidationOutcome.REJECTED
+            and result.remediation_verified
+        ):
+            remediated.append(
                 result.finding_id
             )
 
@@ -70,9 +89,11 @@ def evaluate_validation_run(
                 confirmed
             ),
             unresolved_findings=tuple(
-                confirmed
+                unresolved
             ),
-            remediation_verified=(),
+            remediation_verified=tuple(
+                remediated
+            ),
             inconclusive_findings=tuple(
                 inconclusive
             ),
@@ -83,15 +104,19 @@ def evaluate_validation_run(
 
     if errored:
         return ValidationGateDecision(
-            allowed=True,
+            allowed=False,
             status="error",
             reason=(
                 "One or more validation attempts failed "
                 "to complete."
             ),
             confirmed_findings=(),
-            unresolved_findings=(),
-            remediation_verified=(),
+            unresolved_findings=tuple(
+                unresolved
+            ),
+            remediation_verified=tuple(
+                remediated
+            ),
             inconclusive_findings=tuple(
                 inconclusive
             ),
@@ -102,15 +127,19 @@ def evaluate_validation_run(
 
     if inconclusive:
         return ValidationGateDecision(
-            allowed=True,
+            allowed=False,
             status="review",
             reason=(
                 "One or more validation results were "
                 "inconclusive."
             ),
             confirmed_findings=(),
-            unresolved_findings=(),
-            remediation_verified=(),
+            unresolved_findings=tuple(
+                unresolved
+            ),
+            remediation_verified=tuple(
+                remediated
+            ),
             inconclusive_findings=tuple(
                 inconclusive
             ),
@@ -126,7 +155,9 @@ def evaluate_validation_run(
         ),
         confirmed_findings=(),
         unresolved_findings=(),
-        remediation_verified=(),
+        remediation_verified=tuple(
+            remediated
+        ),
         inconclusive_findings=(),
         errored_findings=(),
     )
@@ -137,12 +168,13 @@ def evaluate_retest_run(
 ) -> ValidationGateDecision:
     """Evaluate retest results after remediation."""
     confirmed: list[str] = []
+    unresolved: list[str] = []
     inconclusive: list[str] = []
     errored: list[str] = []
     remediated: list[str] = []
 
     for result in run.results:
-        if result.fixed:
+        if result.remediation_verified:
             remediated.append(
                 result.finding_id
             )
@@ -153,6 +185,9 @@ def evaluate_retest_run(
             confirmed.append(
                 result.finding_id
             )
+            unresolved.append(
+                result.finding_id
+            )
 
         elif result.current_outcome == (
             ValidationOutcome.INCONCLUSIVE
@@ -160,11 +195,17 @@ def evaluate_retest_run(
             inconclusive.append(
                 result.finding_id
             )
+            unresolved.append(
+                result.finding_id
+            )
 
         elif result.current_outcome == (
             ValidationOutcome.ERROR
         ):
             errored.append(
+                result.finding_id
+            )
+            unresolved.append(
                 result.finding_id
             )
 
@@ -180,7 +221,7 @@ def evaluate_retest_run(
                 confirmed
             ),
             unresolved_findings=tuple(
-                confirmed
+                unresolved
             ),
             remediation_verified=tuple(
                 remediated
@@ -195,14 +236,16 @@ def evaluate_retest_run(
 
     if errored:
         return ValidationGateDecision(
-            allowed=True,
+            allowed=False,
             status="error",
             reason=(
                 "One or more remediation retests failed "
                 "to complete."
             ),
             confirmed_findings=(),
-            unresolved_findings=(),
+            unresolved_findings=tuple(
+                unresolved
+            ),
             remediation_verified=tuple(
                 remediated
             ),
@@ -216,14 +259,16 @@ def evaluate_retest_run(
 
     if inconclusive:
         return ValidationGateDecision(
-            allowed=True,
+            allowed=False,
             status="review",
             reason=(
                 "One or more remediation retests were "
                 "inconclusive."
             ),
             confirmed_findings=(),
-            unresolved_findings=(),
+            unresolved_findings=tuple(
+                unresolved
+            ),
             remediation_verified=tuple(
                 remediated
             ),
