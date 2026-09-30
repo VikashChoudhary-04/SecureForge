@@ -4,6 +4,7 @@ from .engine import (
     ReleaseGateEngine,
 )
 from .evaluator import (
+    ReleaseDecisionEvaluator,
     ReleaseGateEvaluator,
 )
 from .models import (
@@ -23,6 +24,7 @@ from .regression import (
 __all__ = [
     "ReleaseDecision",
     "ReleaseDecisionRecord",
+    "ReleaseDecisionEvaluator",
     "ReleaseGateAction",
     "ReleaseGateDecision",
     "ReleaseGateEngine",
