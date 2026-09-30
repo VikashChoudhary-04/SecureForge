@@ -35,12 +35,8 @@ def build_report(
                     "status_code": 200,
                     "endpoint": "/api/orders/2",
                 },
-                started_at=(
-                    "2026-09-27T10:00:00+00:00"
-                ),
-                completed_at=(
-                    "2026-09-27T10:00:01+00:00"
-                ),
+                started_at="2026-09-27T10:00:00+00:00",
+                completed_at="2026-09-27T10:00:01+00:00",
                 duration_seconds=1.0,
             ),
             RegressionResult(
@@ -53,12 +49,8 @@ def build_report(
                 evidence={
                     "status_code": 400,
                 },
-                started_at=(
-                    "2026-09-27T10:00:01+00:00"
-                ),
-                completed_at=(
-                    "2026-09-27T10:00:02+00:00"
-                ),
+                started_at="2026-09-27T10:00:01+00:00",
+                completed_at="2026-09-27T10:00:02+00:00",
                 duration_seconds=1.0,
             ),
         ],
@@ -67,24 +59,18 @@ def build_report(
         duration_seconds=2.0,
     )
 
-    return build_regression_report(
-        result
-    )
+    return build_regression_report(result)
 
 
 def test_html_contains_regression_section(
     sample_security_report,
 ):
     """HTML should contain the regression section."""
-    sample_security_report.regression = (
-        build_report()
-    )
+    sample_security_report.regression = build_report()
 
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     assert "<h2>Regression Testing</h2>" in html
     assert "SecureCommerce Regression Suite" in html
@@ -98,15 +84,11 @@ def test_html_contains_regression_summary(
     sample_security_report,
 ):
     """HTML should display regression summary metrics."""
-    sample_security_report.regression = (
-        build_report()
-    )
+    sample_security_report.regression = build_report()
 
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     assert "Total" in html
     assert "Passed" in html
@@ -119,15 +101,11 @@ def test_html_contains_regression_expected_and_actual(
     sample_security_report,
 ):
     """HTML should show expected and actual regression outcomes."""
-    sample_security_report.regression = (
-        build_report()
-    )
+    sample_security_report.regression = build_report()
 
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     assert "HTTP 403" in html
     assert "HTTP 200" in html
@@ -142,15 +120,11 @@ def test_html_renders_regression_evidence(
     sample_security_report,
 ):
     """Regression evidence should be visible in the report."""
-    sample_security_report.regression = (
-        build_report()
-    )
+    sample_security_report.regression = build_report()
 
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     assert "status_code" in html
     assert "/api/orders/2" in html
@@ -160,13 +134,9 @@ def test_html_escapes_regression_evidence(
     sample_security_report,
 ):
     """Untrusted regression evidence should be HTML escaped."""
-    sample_security_report.regression = (
-        build_report()
-    )
+    sample_security_report.regression = build_report()
 
-    sample_security_report.regression.tests[
-        0
-    ].evidence = {
+    sample_security_report.regression.tests[0].evidence = {
         "payload": (
             "<script>"
             "alert('xss')"
@@ -176,34 +146,25 @@ def test_html_escapes_regression_evidence(
 
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     assert "<script>alert('xss')</script>" not in html
-    assert (
-        "&lt;script&gt;"
-        in html
-    )
+    assert "&lt;script&gt;" in html
 
 
 def test_html_handles_no_regression_tests(
     sample_security_report,
 ):
     """HTML should clearly indicate when regressions were not run."""
-    sample_security_report.regression = (
-        build_report(
-            status=RegressionStatus.SKIPPED
-        )
+    sample_security_report.regression = build_report(
+        status=RegressionStatus.SKIPPED
     )
 
     sample_security_report.regression.tests = []
 
     renderer = SecurityHTMLReportRenderer()
 
-    html = renderer.render(
-        sample_security_report
-    )
+    html = renderer.render(sample_security_report)
 
     assert "No regression tests were executed." in html
     assert "securecommerce-regression" in html
@@ -214,14 +175,9 @@ def test_html_write_html_persists_regression_report(
     tmp_path,
 ):
     """HTML writer should persist regression information."""
-    sample_security_report.regression = (
-        build_report()
-    )
+    sample_security_report.regression = build_report()
 
-    output = (
-        tmp_path
-        / "security-report.html"
-    )
+    output = tmp_path / "security-report.html"
 
     renderer = SecurityHTMLReportRenderer()
 
@@ -233,9 +189,7 @@ def test_html_write_html_persists_regression_report(
     assert result == output
     assert output.is_file()
 
-    content = output.read_text(
-        encoding="utf-8"
-    )
+    content = output.read_text(encoding="utf-8")
 
     assert "Regression Testing" in content
     assert "BOLA-001" in content
