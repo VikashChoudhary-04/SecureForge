@@ -11,7 +11,7 @@ from secureforge.core.risk.models import RiskAssessment
 from secureforge.regression import (
     RegressionGateDecision,
     RegressionSuiteResult,
-    )
+)
 
 from .models import (
     DecisionReport,
@@ -24,13 +24,14 @@ from .models import (
     RiskReport,
     ScanMetadata,
     SecurityReport,
-    )
+)
 from .regression import build_regression_report
 from .regression_gate import build_regression_gate_report
 
+
 class SecurityReportBuilder:
     """Convert SecureForge domain results into a security report."""
-    
+
     def build(
         self,
         *,
@@ -47,16 +48,12 @@ class SecurityReportBuilder:
     ) -> SecurityReport:
         """Build a complete security report."""
         report_findings = [
-            self._build_finding(
-                finding
-            )
+            self._build_finding(finding)
             for finding in findings
         ]
-    
+
         regression_report = (
-            build_regression_report(
-                regression
-            )
+            build_regression_report(regression)
             if regression is not None
             else RegressionReport(
                 suite_id="not-run",
@@ -73,25 +70,19 @@ class SecurityReportBuilder:
                 duration_seconds=0.0,
             )
         )
-    
+
         regression_gate_report = (
-            build_regression_gate_report(
-                regression_gate
-            )
+            build_regression_gate_report(regression_gate)
             if regression_gate is not None
             else None
         )
-    
+
         return SecurityReport(
             release=release,
             scan=scan,
             findings=report_findings,
-            risk=self._build_risk(
-                risk
-            ),
-            policy=self._build_policy(
-                policy
-            ),
+            risk=self._build_risk(risk),
+            policy=self._build_policy(policy),
             remediation=(
                 remediation
                 if remediation is not None
@@ -106,124 +97,93 @@ class SecurityReportBuilder:
             ),
             regression=regression_report,
             regression_gate=regression_gate_report,
-            decision=self._build_decision(
-                decision
-            ),
+            decision=self._build_decision(decision),
             generated_at=(
                 generated_at
                 if generated_at is not None
-                else datetime.now(
-                    timezone.utc
-                ).isoformat()
+                else datetime.now(timezone.utc).isoformat()
             ),
         )
 
-@staticmethod
-def _build_finding(
-    finding: Finding,
-) -> ReportFinding:
-    """Convert a domain finding into a report finding."""
-    return ReportFinding(
-        finding_id=finding.finding_id,
-        title=finding.title,
-        source=finding.source,
-        asset=finding.asset,
-        application=finding.application,
-        endpoint=finding.endpoint,
-        parameter=finding.parameter,
-        severity=finding.severity.value,
-        confidence=finding.confidence.value,
-        status=finding.status.value,
-        validation_status=(
-            finding.validation_status.value
-        ),
-        cwe=finding.cwe,
-        owasp_mapping=finding.owasp_mapping,
-        security_requirement=(
-            finding.security_requirement
-        ),
-        description=finding.description,
-        impact=finding.impact,
-        remediation=finding.remediation,
-        evidence=[
-            evidence.model_dump()
-            for evidence in finding.evidence
-        ],
-        correlations=list(
-            finding.correlations
-        ),
-        regression_test=(
-            finding.regression_test
-        ),
-    )
+    @staticmethod
+    def _build_finding(
+        finding: Finding,
+    ) -> ReportFinding:
+        """Convert a domain finding into a report finding."""
+        return ReportFinding(
+            finding_id=finding.finding_id,
+            title=finding.title,
+            source=finding.source,
+            asset=finding.asset,
+            application=finding.application,
+            endpoint=finding.endpoint,
+            parameter=finding.parameter,
+            severity=finding.severity.value,
+            confidence=finding.confidence.value,
+            status=finding.status.value,
+            validation_status=finding.validation_status.value,
+            cwe=finding.cwe,
+            owasp_mapping=finding.owasp_mapping,
+            security_requirement=finding.security_requirement,
+            description=finding.description,
+            impact=finding.impact,
+            remediation=finding.remediation,
+            evidence=[
+                evidence.model_dump()
+                for evidence in finding.evidence
+            ],
+            correlations=list(finding.correlations),
+            regression_test=finding.regression_test,
+        )
 
-@staticmethod
-def _build_risk(
-    risk: RiskAssessment,
-) -> RiskReport:
-    """Convert a risk assessment into a report risk section."""
-    return RiskReport(
-        score=risk.score,
-        highest_severity=(
-            risk.highest_severity.value
-        ),
-        confirmed_critical=(
-            risk.confirmed_critical
-        ),
-        confirmed_high=(
-            risk.confirmed_high
-        ),
-        factors=[
-            factor.model_dump()
-            if hasattr(
-                factor,
-                "model_dump",
-            )
-            else factor
-            for factor in risk.factors
-        ],
-    )
+    @staticmethod
+    def _build_risk(
+        risk: RiskAssessment,
+    ) -> RiskReport:
+        """Convert a risk assessment into a report risk section."""
+        return RiskReport(
+            score=risk.score,
+            highest_severity=risk.highest_severity.value,
+            confirmed_critical=risk.confirmed_critical,
+            confirmed_high=risk.confirmed_high,
+            factors=[
+                factor.model_dump()
+                if hasattr(factor, "model_dump")
+                else factor
+                for factor in risk.factors
+            ],
+        )
 
-@staticmethod
-def _build_policy(
-    policy: PolicyDecision,
-) -> PolicyReport:
-    """Convert a policy decision into a report policy section."""
-    return PolicyReport(
-        policy_name=policy.policy_name,
-        actions=[
-            action.model_dump()
-            if hasattr(
-                action,
-                "model_dump",
-            )
-            else action
-            for action in policy.actions
-        ],
-        tool_errors=list(
-            policy.tool_errors
-        ),
-        regression_failures=list(
-            policy.regression_failures
-        ),
-        exceptions=[
-            exception.model_dump()
-            if hasattr(
-                exception,
-                "model_dump",
-            )
-            else exception
-            for exception in policy.exceptions
-        ],
-    )
+    @staticmethod
+    def _build_policy(
+        policy: PolicyDecision,
+    ) -> PolicyReport:
+        """Convert a policy decision into a report policy section."""
+        return PolicyReport(
+            policy_name=policy.policy_name,
+            actions=[
+                action.model_dump()
+                if hasattr(action, "model_dump")
+                else action
+                for action in policy.actions
+            ],
+            tool_errors=list(policy.tool_errors),
+            regression_failures=list(policy.regression_failures),
+            exceptions=[
+                exception.model_dump()
+                if hasattr(exception, "model_dump")
+                else exception
+                for exception in policy.exceptions
+            ],
+        )
 
-@staticmethod
-def _build_decision(
-    decision: ReleaseGateDecision,
-) -> DecisionReport:
-    """Convert a release-gate decision into a report decision."""
-    return DecisionReport(
-        status=decision.status.value,
-        reason=decision.reason,
-        release_allowed=decision.release_allowed,
-    )
+    @staticmethod
+    def _build_decision(
+        decision: ReleaseGateDecision,
+    ) -> DecisionReport:
+        """Convert a release-gate decision into a report decision."""
+        return DecisionReport(
+            status=decision.status.value,
+            reason=decision.reason,
+            release_allowed=decision.release_allowed,
+        )
