@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from secureforge.config.models import ScanProfile
 from secureforge.config.runtime import (
     RuntimeConfiguration,
     RuntimeConfigurationError,
 )
 from secureforge.core.config.models import (
     ScanConfiguration,
-    ScanProfile,
     TargetConfiguration,
     TargetType,
 )
@@ -37,7 +37,6 @@ def build_scan_configuration(
     runtime: RuntimeConfiguration,
 ) -> ScanConfiguration:
     """Build a typed scan configuration from runtime YAML."""
-
     profile = runtime.profile
 
     try:
@@ -75,7 +74,7 @@ def build_scan_configuration(
             "version",
             "unknown",
         ),
-        profile=scan_profile,
+        profile=scan_profile.value,
         environment=runtime.project.get(
             "environment",
             "lab",
