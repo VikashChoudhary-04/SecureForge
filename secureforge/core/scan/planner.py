@@ -21,6 +21,15 @@ class PlannedTool:
     metadata: dict[str, object] = field(default_factory=dict)
 
 
+@dataclass
+class ScanPlan:
+    """A collection of planned security-tool executions."""
+
+    tools: list[PlannedTool] = field(
+        default_factory=list
+    )
+
+
 class ScanPlanner:
     """Select enabled security integrations for a scan."""
 
@@ -163,5 +172,6 @@ class ScanPlanner:
 
 __all__ = [
     "PlannedTool",
+    "ScanPlan",
     "ScanPlanner",
 ]
