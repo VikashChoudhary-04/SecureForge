@@ -210,8 +210,14 @@ class ScanExecutor(ToolExecutor):
     """Compatibility executor exposed by the scan package API."""
 
 
+def build_scan_executor() -> ScanExecutor:
+    """Build and return a SecureForge scan executor."""
+    return ScanExecutor()
+
+
 __all__ = [
     "ScanExecutionError",
     "ScanExecutor",
     "ToolExecutor",
+    "build_scan_executor",
 ]
