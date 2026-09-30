@@ -47,53 +47,35 @@ def test_build_scan_report(
     )
 
     assert report.risk.highest_severity == (
-        sample_scan_result.pipeline
-        .risk
-        .highest_severity
-        .value
+        sample_scan_result.pipeline.risk.highest_severity.value
     )
 
     assert report.risk.finding_count == (
-        sample_scan_result.pipeline
-        .risk
-        .finding_count
+        sample_scan_result.pipeline.risk.finding_count
     )
 
     assert report.policy.policy_name == (
-        sample_scan_result.pipeline
-        .policy
-        .policy_name
+        sample_scan_result.pipeline.policy.policy_name
     )
 
     assert report.policy.action == (
-        sample_scan_result.pipeline
-        .policy
-        .action
+        sample_scan_result.pipeline.policy.action
     )
 
     assert report.policy.allowed == (
-        sample_scan_result.pipeline
-        .policy
-        .allowed
+        sample_scan_result.pipeline.policy.allowed
     )
 
     assert report.decision.release_allowed == (
-        sample_scan_result.pipeline
-        .release_gate
-        .release_allowed
+        sample_scan_result.pipeline.release_gate.release_allowed
     )
 
     assert report.decision.status == (
-        sample_scan_result.pipeline
-        .release_gate
-        .status
-        .value
+        sample_scan_result.pipeline.release_gate.status.value
     )
 
     assert report.decision.reason == (
-        sample_scan_result.pipeline
-        .release_gate
-        .reason
+        sample_scan_result.pipeline.release_gate.reason
     )
 
     assert report.remediation.total == len(
