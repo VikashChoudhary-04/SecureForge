@@ -8,31 +8,46 @@ from .models import (
     ScanProfile,
     ScanRun,
     ScanStatus,
+    ScanSummary,
     SecurityScanResult,
     ToolExecutionResult,
     ToolExecutionStatus,
 )
 from .normalizer import ScanResultNormalizer
+
+# Backward-compatible public name used by the scan package API.
+ScanEvidenceNormalizer = ScanResultNormalizer
+
 from .orchestrator import ScanOrchestrator
 from .planner import ScanPlanner
 from .runner import ScanRunner
-from .security_pipeline import SecurityPipeline
-from .store import ScanResultStore
+from .security_pipeline import (
+    SecurityPipeline,
+    SecurityPipelineResult,
+)
+from .store import (
+    ScanResultStore,
+    ScanResultStoreError,
+)
 
 
 __all__ = [
     "ScanConfiguration",
+    "ScanEvidenceNormalizer",
     "ScanExecution",
     "ScanOrchestrator",
     "ScanPlanner",
     "ScanProfile",
     "ScanResultNormalizer",
     "ScanResultStore",
+    "ScanResultStoreError",
     "ScanRun",
     "ScanRunFactory",
     "ScanRunner",
     "ScanStatus",
+    "ScanSummary",
     "SecurityPipeline",
+    "SecurityPipelineResult",
     "SecurityScanResult",
     "ToolExecutionResult",
     "ToolExecutionStatus",
