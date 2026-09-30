@@ -7,6 +7,14 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+class IntegrationConfigurationError(ValueError):
+    """Raised when an integration configuration is invalid."""
+
+
+class IntegrationParseError(ValueError):
+    """Raised when integration output cannot be parsed."""
+
+
 @dataclass
 class IntegrationContext:
     """Execution context supplied to a security integration."""
