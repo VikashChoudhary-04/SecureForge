@@ -16,8 +16,16 @@ class ScanResultNormalizer:
     def __init__(
         self,
         pipeline: NormalizationPipeline | None = None,
+        finding_factory: Any | None = None,
     ) -> None:
         self.pipeline = pipeline or NormalizationPipeline()
+
+        if finding_factory is None:
+            from secureforge.core.findings.factory import FindingFactory
+
+            finding_factory = FindingFactory()
+
+        self.finding_factory = finding_factory
 
     def findings_from_results(
         self,
@@ -44,7 +52,9 @@ class ScanResultNormalizer:
 
             if normalized.success:
                 findings.extend(
-                    normalized.findings
+                    self.finding_factory.create_many(
+                        normalized.findings
+                    )
                 )
 
         return normalization_results, findings
