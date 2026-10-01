@@ -30,6 +30,11 @@ class HTTPValidator(BaseValidator):
 
     def validate(self, request: ValidationRequest) -> ValidationResult:
         """Send a controlled HTTP request and record the response."""
+        if not request.target:
+            raise ValidationError(
+                "HTTP validation requires a target."
+            )
+
         if not request.endpoint:
             raise ValidationError(
                 "HTTP validation requires an endpoint."
