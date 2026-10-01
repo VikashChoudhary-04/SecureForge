@@ -24,6 +24,10 @@ class IntegrationContext:
     version: str = "unknown"
     environment: str = "lab"
     workspace: str | None = None
+    source_path: str | None = None
+    configuration: dict[str, Any] = field(
+        default_factory=dict
+    )
     metadata: dict[str, Any] = field(
         default_factory=dict
     )
