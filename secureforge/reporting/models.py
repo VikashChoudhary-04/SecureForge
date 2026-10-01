@@ -28,10 +28,11 @@ class ScanMetadata(BaseModel):
 
     scan_id: str
     profile: str
-    application: str
-    version: str
+    application: str = "securecommerce"
+    version: str = "1.0.0"
+    target: str
     commit_sha: str | None = None
-    environment: str
+    environment: str = "test"
     started_at: str
     completed_at: str
     tools: list[str] = Field(default_factory=list)
@@ -61,10 +62,11 @@ class ReportFinding(BaseModel):
     remediation: str
     status: str
     validation_status: str
-    first_seen: str
-    last_seen: str
+    first_seen: str = ""
+    last_seen: str = ""
     regression_test: str | None = None
     correlation_ids: list[str] = Field(default_factory=list)
+    correlations: list[Any] = Field(default_factory=list)
 
 
 class RiskReport(BaseModel):
@@ -72,11 +74,23 @@ class RiskReport(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    overall_score: float
-    overall_severity: str
-    blocked: bool
+    score: float
+    highest_severity: str
+    finding_count: int = 0
+    confirmed_critical: int = 0
+    confirmed_high: int = 0
     factors: list[dict[str, Any]] = Field(default_factory=list)
-    evaluated_at: str
+    evaluated_at: str = ""
+
+    @property
+    def overall_score(self) -> float:
+        """Return the aggregate risk score."""
+        return self.score
+
+    @property
+    def overall_severity(self) -> str:
+        """Return the aggregate severity."""
+        return self.highest_severity
 
 
 class PolicyReport(BaseModel):
@@ -84,11 +98,20 @@ class PolicyReport(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    allowed: bool
-    status: str
-    reason: str
+    policy_name: str = "default"
+    action: str = ""
+    allowed: bool = False
+    reason: str = ""
+    violations: list[str] = Field(default_factory=list)
     actions: list[dict[str, Any]] = Field(default_factory=list)
+    tool_errors: list[str] = Field(default_factory=list)
+    regression_failures: list[str] = Field(default_factory=list)
     exceptions: list[dict[str, Any]] = Field(default_factory=list)
+
+    @property
+    def status(self) -> str:
+        """Return the policy action as its status."""
+        return self.action
 
 
 class RemediationItem(BaseModel):
@@ -108,9 +131,22 @@ class RemediationReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     total: int
-    open_count: int
-    remediated_count: int
-    findings: list[dict[str, Any]] = Field(default_factory=list)
+    open: int = 0
+    remediated: int = 0
+    verified: int = 0
+    in_progress: int = 0
+    resolved: int = 0
+    items: list[RemediationItem] = Field(default_factory=list)
+
+    @property
+    def open_count(self) -> int:
+        """Return the number of open findings."""
+        return self.open
+
+    @property
+    def remediated_count(self) -> int:
+        """Return the number of remediated findings."""
+        return self.remediated
 
 
 class RegressionTestReport(BaseModel):
@@ -213,10 +249,19 @@ class DecisionReport(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    allowed: bool
-    blocked: bool
     status: str
     reason: str
+    release_allowed: bool = False
+
+    @property
+    def allowed(self) -> bool:
+        """Return whether the release is allowed."""
+        return self.release_allowed
+
+    @property
+    def blocked(self) -> bool:
+        """Return whether the release is blocked."""
+        return not self.release_allowed
 
 
 class SecurityReport(BaseModel):
