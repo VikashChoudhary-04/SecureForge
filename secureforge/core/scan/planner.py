@@ -118,11 +118,9 @@ class ScanPlanner:
         self,
         configuration: ScanConfiguration,
     ) -> list[str]:
-        """Return integrations required by the profile but not configured."""
-        required = set(
-            self.required_integrations(
-                configuration
-            )
+        """Return required but unconfigured integrations in profile order."""
+        required = self.required_integrations(
+            configuration
         )
 
         configured = {
@@ -130,29 +128,34 @@ class ScanPlanner:
             for tool in configuration.tools
         }
 
-        return sorted(
-            required - configured
-        )
+        return [
+            integration
+            for integration in required
+            if integration not in configured
+        ]
 
     def disabled_integrations(
         self,
         configuration: ScanConfiguration,
     ) -> list[str]:
         """Return configured profile integrations that are disabled."""
-        required = set(
-            self.required_integrations(
-                configuration
-            )
+        required = self.required_integrations(
+            configuration
         )
 
-        return sorted(
-            tool.name.strip().lower()
+        configured = {
+            tool.name.strip().lower(): tool
             for tool in configuration.tools
+        }
+
+        return [
+            integration
+            for integration in required
             if (
-                tool.name.strip().lower() in required
-                and not tool.enabled
+                integration in configured
+                and not configured[integration].enabled
             )
-        )
+        ]
 
     @staticmethod
     def _normalize_profile(
