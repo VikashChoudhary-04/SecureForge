@@ -51,6 +51,7 @@ class ValidationStatus(StrEnum):
     INCONCLUSIVE = "inconclusive"
     CONFIRMED = "confirmed"
     VALIDATED = "validated"
+    VERIFIED = "verified"
     REJECTED = "rejected"
 
 
@@ -191,6 +192,7 @@ class Finding(BaseModel):
 
     def mark_verified(self) -> None:
         """Mark a remediated finding as verified."""
+        self.validation_status = ValidationStatus.VERIFIED
         self.status = FindingStatus.VERIFIED
         self.last_seen = utc_now()
 
