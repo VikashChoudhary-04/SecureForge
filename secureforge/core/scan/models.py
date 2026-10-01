@@ -50,14 +50,8 @@ class RawEvidence(BaseModel):
     source_reference: str | None = None
     target: Any | None = None
     raw_data: Any = None
-
-    collected_at: datetime = Field(
-        default_factory=utc_now
-    )
-
-    metadata: dict[str, Any] = Field(
-        default_factory=dict
-    )
+    collected_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ScanConfiguration(BaseModel):
@@ -82,28 +76,16 @@ class ToolExecutionResult(BaseModel):
     tool_name: str
     integration: str
     status: ToolExecutionStatus
-
     command: list[str] = Field(default_factory=list)
-
     exit_code: int | None = None
-
     stdout: str = ""
     stderr: str = ""
-
-    duration_seconds: float = Field(
-        default=0.0,
-        ge=0.0,
-    )
-
+    duration_seconds: float = Field(default=0.0, ge=0.0)
     evidence_path: str | None = None
     error: str | None = None
-
     started_at: datetime | None = None
     completed_at: datetime | None = None
-
-    metadata: dict[str, Any] = Field(
-        default_factory=dict
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def succeeded(self) -> bool:
@@ -126,8 +108,8 @@ class ScanExecution(BaseModel):
 
     scan_id: str
     profile: str
-    application: str
-    version: str
+    application: str = "securecommerce"
+    version: str = "1.0.0"
     commit_sha: str | None = None
     environment: str = "lab"
 
@@ -217,47 +199,31 @@ class ScanRun(BaseModel):
 
     commit_sha: str | None = None
 
-    started_at: datetime = Field(
-        default_factory=utc_now
-    )
-
+    started_at: datetime = Field(default_factory=utc_now)
     completed_at: datetime | None = None
 
     tool_results: list[ToolExecutionResult] = Field(
         default_factory=list
     )
 
-    findings: list[Finding] = Field(
-        default_factory=list
-    )
+    findings: list[Finding] = Field(default_factory=list)
 
     risk_assessments: list[RiskAssessment] = Field(
         default_factory=list
     )
 
     policy_evaluation: PolicyEvaluation | None = None
-
     release_decision: ReleaseDecisionRecord | None = None
 
     regression_failures: list[str] = Field(
         default_factory=list
     )
 
-    errors: list[str] = Field(
-        default_factory=list
-    )
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
-    warnings: list[str] = Field(
-        default_factory=list
-    )
-
-    summary: ScanSummary = Field(
-        default_factory=ScanSummary
-    )
-
-    metadata: dict[str, Any] = Field(
-        default_factory=dict
-    )
+    summary: ScanSummary = Field(default_factory=ScanSummary)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     def start(self) -> None:
         """Mark the scan as running."""
@@ -271,10 +237,7 @@ class ScanRun(BaseModel):
         self.status = ScanStatus.COMPLETED
         self.completed_at = utc_now()
 
-    def fail(
-        self,
-        error: str,
-    ) -> None:
+    def fail(self, error: str) -> None:
         """Mark the scan as failed and record the error."""
         self.status = ScanStatus.FAILED
         self.completed_at = utc_now()
@@ -289,9 +252,7 @@ class ScanRun(BaseModel):
         """Add an integration execution result."""
         self.tool_results.append(result)
 
-        self.summary.tool_count = len(
-            self.tool_results
-        )
+        self.summary.tool_count = len(self.tool_results)
 
         self.summary.successful_tools = sum(
             item.succeeded
@@ -314,19 +275,14 @@ class ScanRun(BaseModel):
     ) -> None:
         """Add normalized findings to the scan."""
         self.findings.extend(findings)
-
-        self.summary.update_findings(
-            self.findings
-        )
+        self.summary.update_findings(self.findings)
 
     def add_risk_assessments(
         self,
         assessments: list[RiskAssessment],
     ) -> None:
         """Add contextual risk assessments."""
-        self.risk_assessments.extend(
-            assessments
-        )
+        self.risk_assessments.extend(assessments)
 
     def add_regression_failure(
         self,
@@ -334,26 +290,18 @@ class ScanRun(BaseModel):
     ) -> None:
         """Record a failed security regression."""
         if regression_id not in self.regression_failures:
-            self.regression_failures.append(
-                regression_id
-            )
+            self.regression_failures.append(regression_id)
 
         self.summary.regression_failure_count = len(
             self.regression_failures
         )
 
-    def add_error(
-        self,
-        error: str,
-    ) -> None:
+    def add_error(self, error: str) -> None:
         """Record a non-fatal scan error."""
         if error and error not in self.errors:
             self.errors.append(error)
 
-    def add_warning(
-        self,
-        warning: str,
-    ) -> None:
+    def add_warning(self, warning: str) -> None:
         """Record a scan warning."""
         if warning and warning not in self.warnings:
             self.warnings.append(warning)
@@ -391,11 +339,7 @@ class SecurityScanResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     execution: ScanExecution
-
-    findings: list[Finding] = Field(
-        default_factory=list
-    )
-
+    findings: list[Finding] = Field(default_factory=list)
     pipeline: Any | None = None
 
     scan_id: str | None = None
@@ -405,7 +349,6 @@ class SecurityScanResult(BaseModel):
     environment: str | None = None
 
     status: ScanStatus | str = ScanStatus.COMPLETED
-
     commit_sha: str | None = None
 
     risk_assessments: list[RiskAssessment] = Field(
@@ -413,7 +356,6 @@ class SecurityScanResult(BaseModel):
     )
 
     policy_evaluation: PolicyEvaluation | None = None
-
     release_decision: ReleaseDecisionRecord | None = None
 
     tool_results: list[ToolExecutionResult] = Field(
@@ -424,21 +366,11 @@ class SecurityScanResult(BaseModel):
         default_factory=list
     )
 
-    errors: list[str] = Field(
-        default_factory=list
-    )
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
-    warnings: list[str] = Field(
-        default_factory=list
-    )
-
-    summary: ScanSummary = Field(
-        default_factory=ScanSummary
-    )
-
-    metadata: dict[str, Any] = Field(
-        default_factory=dict
-    )
+    summary: ScanSummary = Field(default_factory=ScanSummary)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def passed(self) -> bool:
