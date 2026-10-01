@@ -12,13 +12,13 @@ class ReleaseMetadata(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    scan_id: str
+    scan_id: str = ""
     application: str
     version: str
     commit_sha: str | None = None
     environment: str
-    release_allowed: bool
-    release_blocked: bool
+    release_allowed: bool = False
+    release_blocked: bool = False
 
 
 class ScanMetadata(BaseModel):
@@ -209,7 +209,7 @@ class ValidationGateReport(BaseModel):
 
 
 class DecisionReport(BaseModel):
-    """Final release decision represented in a report."""
+    """Final release decision represented in a security report."""
 
     model_config = ConfigDict(extra="forbid")
 
