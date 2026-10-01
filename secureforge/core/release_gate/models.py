@@ -14,6 +14,9 @@ class ReleaseDecision(str, Enum):
     REVIEW = "review"
     BLOCK = "block"
 
+    # Compatibility name used by release-gate fixtures and callers.
+    BLOCKED = "block"
+
 
 @dataclass
 class ReleaseGateInput:
