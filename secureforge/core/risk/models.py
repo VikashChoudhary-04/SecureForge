@@ -65,68 +65,61 @@ class RiskAssessment(BaseModel):
     contextual_risk: RiskLevel = RiskLevel.INFO
     context: RiskContext = Field(default_factory=RiskContext)
     risk_score: float = Field(default=0.0, ge=0.0, le=100.0)
-    factors: list[str] = Field(default_factory=list)
+    factors: list[Any] | dict[str, Any] = Field(default_factory=list)
     explanation: str = ""
-    evaluated_at: str
+    evaluated_at: str = ""
 
-    # Legacy aggregate risk-assessment fields retained for
-    # compatibility with existing callers and fixtures.
     score: float | None = None
     highest_severity: Severity | RiskLevel | str | None = None
     finding_count: int | None = None
+    confirmed_critical: int = 0
+    confirmed_high: int = 0
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_legacy_fields(
-        cls,
-        value: Any,
-    ) -> Any:
-        """Normalize the legacy aggregate assessment contract."""
+    def normalize_legacy_fields(cls, value: Any) -> Any:
+        """Normalize legacy aggregate risk-assessment construction."""
         if not isinstance(value, dict):
             return value
 
         normalized = dict(value)
 
-        if (
-            "risk_score" not in normalized
-            and "score" in normalized
-        ):
+        if "risk_score" not in normalized and "score" in normalized:
             normalized["risk_score"] = normalized["score"]
 
-        highest_severity = normalized.get(
-            "highest_severity"
-        )
+        highest = normalized.get("highest_severity")
+        if "base_severity" not in normalized and highest is not None:
+            normalized["base_severity"] = cls._normalize_risk_level(highest)
 
-        if (
-            "base_severity" not in normalized
-            and highest_severity is not None
-        ):
-            normalized["base_severity"] = (
-                cls._normalize_risk_level(
-                    highest_severity
-                )
-            )
-
-        if (
-            "contextual_risk" not in normalized
-            and highest_severity is not None
-        ):
-            normalized["contextual_risk"] = (
-                cls._normalize_risk_level(
-                    highest_severity
-                )
-            )
+        if "contextual_risk" not in normalized and highest is not None:
+            normalized["contextual_risk"] = cls._normalize_risk_level(highest)
 
         return normalized
 
     @staticmethod
-    def _normalize_risk_level(
-        value: Any,
-    ) -> RiskLevel:
-        """Normalize a severity-like value to RiskLevel."""
+    def _normalize_risk_level(value: Any) -> RiskLevel:
         raw = getattr(value, "value", value)
-
         try:
             return RiskLevel(str(raw).lower())
         except ValueError:
             return RiskLevel.INFO
+
+    @property
+    def overall_score(self) -> float:
+        """Return the effective numeric score."""
+        return self.score if self.score is not None else self.risk_score
+
+    @property
+    def overall_severity(self) -> str:
+        """Return the effective highest severity."""
+        value = self.highest_severity or self.contextual_risk
+        return getattr(value, "value", str(value))
+
+    def model_post_init(self, __context: Any) -> None:
+        """Populate legacy aggregate aliases from modern fields."""
+        if self.score is None:
+            self.score = self.risk_score
+        if self.highest_severity is None:
+            self.highest_severity = self.contextual_risk
+        if self.finding_count is None and self.finding_id is not None:
+            self.finding_count = 1
