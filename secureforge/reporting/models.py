@@ -55,9 +55,7 @@ class ReportFinding(BaseModel):
     security_requirement: str | None = None
     severity: str
     confidence: str
-    evidence: list[dict[str, Any]] = Field(
-        default_factory=list
-    )
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
     description: str
     impact: str
     remediation: str
@@ -66,9 +64,7 @@ class ReportFinding(BaseModel):
     first_seen: str
     last_seen: str
     regression_test: str | None = None
-    correlation_ids: list[str] = Field(
-        default_factory=list
-    )
+    correlation_ids: list[str] = Field(default_factory=list)
 
 
 class RiskReport(BaseModel):
@@ -79,9 +75,7 @@ class RiskReport(BaseModel):
     overall_score: float
     overall_severity: str
     blocked: bool
-    factors: list[dict[str, Any]] = Field(
-        default_factory=list
-    )
+    factors: list[dict[str, Any]] = Field(default_factory=list)
     evaluated_at: str
 
 
@@ -93,12 +87,8 @@ class PolicyReport(BaseModel):
     allowed: bool
     status: str
     reason: str
-    actions: list[dict[str, Any]] = Field(
-        default_factory=list
-    )
-    exceptions: list[dict[str, Any]] = Field(
-        default_factory=list
-    )
+    actions: list[dict[str, Any]] = Field(default_factory=list)
+    exceptions: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class RemediationItem(BaseModel):
@@ -120,9 +110,7 @@ class RemediationReport(BaseModel):
     total: int
     open_count: int
     remediated_count: int
-    findings: list[dict[str, Any]] = Field(
-        default_factory=list
-    )
+    findings: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class RegressionTestReport(BaseModel):
@@ -140,14 +128,19 @@ class RegressionReport(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    suite_id: str
+    suite_name: str = ""
+    status: str = ""
     total: int
     passed: int
     failed: int
-    errored: int
-    skipped: int
-    tests: list[RegressionTestReport] = Field(
-        default_factory=list
-    )
+    errors: int = 0
+    errored: int = 0
+    skipped: int = 0
+    tests: list[RegressionTestReport] = Field(default_factory=list)
+    started_at: str | None = None
+    completed_at: str | None = None
+    duration_seconds: float = 0.0
 
 
 class RegressionGateReport(BaseModel):
@@ -159,18 +152,10 @@ class RegressionGateReport(BaseModel):
     blocked: bool
     status: str
     reason: str
-    failed_tests: list[str] = Field(
-        default_factory=list
-    )
-    errored_tests: list[str] = Field(
-        default_factory=list
-    )
-    skipped_tests: list[str] = Field(
-        default_factory=list
-    )
-    failures: list[str] = Field(
-        default_factory=list
-    )
+    failed_tests: list[str] = Field(default_factory=list)
+    errored_tests: list[str] = Field(default_factory=list)
+    skipped_tests: list[str] = Field(default_factory=list)
+    failures: list[str] = Field(default_factory=list)
 
 
 class ValidationResultReport(BaseModel):
@@ -188,9 +173,7 @@ class ValidationResultReport(BaseModel):
     rejected: bool
     inconclusive: bool
     failed: bool
-    evidence: list[dict[str, Any]] = Field(
-        default_factory=list
-    )
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ValidationReport(BaseModel):
@@ -205,9 +188,7 @@ class ValidationReport(BaseModel):
     errors: int
     remediated: int
     all_validated: bool
-    results: list[ValidationResultReport] = Field(
-        default_factory=list
-    )
+    results: list[ValidationResultReport] = Field(default_factory=list)
 
 
 class ValidationGateReport(BaseModel):
@@ -219,21 +200,11 @@ class ValidationGateReport(BaseModel):
     blocked: bool
     status: str
     reason: str
-    confirmed_findings: list[str] = Field(
-        default_factory=list
-    )
-    unresolved_findings: list[str] = Field(
-        default_factory=list
-    )
-    remediation_verified: list[str] = Field(
-        default_factory=list
-    )
-    inconclusive_findings: list[str] = Field(
-        default_factory=list
-    )
-    errored_findings: list[str] = Field(
-        default_factory=list
-    )
+    confirmed_findings: list[str] = Field(default_factory=list)
+    unresolved_findings: list[str] = Field(default_factory=list)
+    remediation_verified: list[str] = Field(default_factory=list)
+    inconclusive_findings: list[str] = Field(default_factory=list)
+    errored_findings: list[str] = Field(default_factory=list)
     requires_attention: bool
 
 
@@ -255,9 +226,7 @@ class SecurityReport(BaseModel):
 
     release: ReleaseMetadata
     scan: ScanMetadata
-    findings: list[ReportFinding] = Field(
-        default_factory=list
-    )
+    findings: list[ReportFinding] = Field(default_factory=list)
     risk: RiskReport
     policy: PolicyReport
     decision: DecisionReport
@@ -265,9 +234,7 @@ class SecurityReport(BaseModel):
     regression: RegressionReport | None = None
     regression_gate: RegressionGateReport | None = None
     validation: ValidationReport | None = None
-    validation_results: list[ValidationResultReport] = Field(
-        default_factory=list
-    )
+    validation_results: list[ValidationResultReport] = Field(default_factory=list)
     validation_gate: ValidationGateReport | None = None
     generated_at: str
 
