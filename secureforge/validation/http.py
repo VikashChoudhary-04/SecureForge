@@ -32,7 +32,7 @@ class HTTPValidator(BaseValidator):
         """Send a controlled HTTP request and record the response."""
         if not request.target:
             raise ValidationError(
-                "HTTP validation requires a target."
+                "Target must not be empty."
             )
 
         if not request.endpoint:
