@@ -23,11 +23,15 @@ class ScanOrchestrator:
         self,
         *,
         runner: ScanRunner,
-        pipeline: SecurityPipeline,
+        pipeline: SecurityPipeline | None = None,
         validation_planner: ValidationPlanner | None = None,
     ) -> None:
         self.runner = runner
-        self.pipeline = pipeline
+        self.pipeline = (
+            pipeline
+            if pipeline is not None
+            else SecurityPipeline()
+        )
         self.validation_planner = (
             validation_planner
             if validation_planner is not None
