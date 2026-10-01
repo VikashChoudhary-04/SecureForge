@@ -60,45 +60,29 @@ class Evidence(BaseModel):
     evidence_id: str = ""
     source: str
     evidence_type: str = ""
-    collected_at: datetime = Field(
-        default_factory=utc_now
-    )
-    data: dict[str, Any] = Field(
-        default_factory=dict
-    )
+    collected_at: datetime = Field(default_factory=utc_now)
+    data: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_legacy_fields(
-        cls,
-        value: Any,
-    ) -> Any:
+    def normalize_legacy_fields(cls, value: Any) -> Any:
         """Normalize legacy evidence fields into the current model."""
         if not isinstance(value, dict):
             return value
 
         normalized = dict(value)
-
-        evidence_type = normalized.get(
-            "evidence_type"
-        )
+        evidence_type = normalized.get("evidence_type")
 
         if not evidence_type:
-            evidence_type = normalized.get(
-                "type"
-            )
+            evidence_type = normalized.get("type")
 
         if evidence_type:
             normalized["evidence_type"] = evidence_type
 
-        evidence_id = normalized.get(
-            "evidence_id"
-        )
+        evidence_id = normalized.get("evidence_id")
 
         if not evidence_id:
-            evidence_id = cls._generate_evidence_id(
-                normalized
-            )
+            evidence_id = cls._generate_evidence_id(normalized)
 
         normalized["evidence_id"] = evidence_id
 
@@ -108,53 +92,26 @@ class Evidence(BaseModel):
             data = {}
 
         if "content" in normalized:
-            data.setdefault(
-                "content",
-                normalized["content"],
-            )
+            data.setdefault("content", normalized["content"])
 
         if "location" in normalized:
-            data.setdefault(
-                "location",
-                normalized["location"],
-            )
+            data.setdefault("location", normalized["location"])
 
         normalized["data"] = data
-
         return normalized
 
     @staticmethod
-    def _generate_evidence_id(
-        value: dict[str, Any],
-    ) -> str:
+    def _generate_evidence_id(value: dict[str, Any]) -> str:
         """Generate a deterministic identifier for evidence."""
-        source = str(
-            value.get(
-                "source",
-                "",
-            )
-        )
+        source = str(value.get("source", ""))
         evidence_type = str(
             value.get(
                 "evidence_type",
-                value.get(
-                    "type",
-                    "",
-                ),
+                value.get("type", ""),
             )
         )
-        content = str(
-            value.get(
-                "content",
-                "",
-            )
-        )
-        location = str(
-            value.get(
-                "location",
-                "",
-            )
-        )
+        content = str(value.get("content", ""))
+        location = str(value.get("location", ""))
 
         canonical = "|".join(
             [
@@ -167,9 +124,7 @@ class Evidence(BaseModel):
 
         return (
             "evidence-"
-            + sha256(
-                canonical.encode("utf-8")
-            ).hexdigest()[:16]
+            + sha256(canonical.encode("utf-8")).hexdigest()[:16]
         )
 
 
@@ -189,29 +144,17 @@ class Finding(BaseModel):
     security_requirement: str | None = None
     severity: Severity = Severity.INFO
     confidence: Confidence = Confidence.MEDIUM
-    evidence: list[Evidence] = Field(
-        default_factory=list
-    )
+    evidence: list[Evidence] = Field(default_factory=list)
     description: str = ""
     impact: str = ""
     remediation: str = ""
     status: FindingStatus = FindingStatus.OPEN
-    validation_status: ValidationStatus = (
-        ValidationStatus.NOT_VALIDATED
-    )
-    first_seen: datetime = Field(
-        default_factory=utc_now
-    )
-    last_seen: datetime = Field(
-        default_factory=utc_now
-    )
-    correlation_ids: list[str] = Field(
-        default_factory=list
-    )
+    validation_status: ValidationStatus = ValidationStatus.NOT_VALIDATED
+    first_seen: datetime = Field(default_factory=utc_now)
+    last_seen: datetime = Field(default_factory=utc_now)
+    correlation_ids: list[str] = Field(default_factory=list)
     regression_test: str | None = None
-    metadata: dict[str, Any] = Field(
-        default_factory=dict
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     def add_evidence(
         self,
@@ -219,36 +162,25 @@ class Finding(BaseModel):
     ) -> None:
         """Attach supporting evidence."""
         if isinstance(evidence, dict):
-            evidence = Evidence.model_validate(
-                evidence
-            )
+            evidence = Evidence.model_validate(evidence)
 
         self.evidence.append(evidence)
         self.last_seen = utc_now()
 
-    def add_correlation(
-        self,
-        correlation_id: str,
-    ) -> None:
+    def add_correlation(self, correlation_id: str) -> None:
         """Attach a correlation identifier."""
         if correlation_id not in self.correlation_ids:
-            self.correlation_ids.append(
-                correlation_id
-            )
+            self.correlation_ids.append(correlation_id)
 
     def mark_validated(self) -> None:
-        """Mark the finding as validated."""
-        self.validation_status = (
-            ValidationStatus.CONFIRMED
-        )
+        """Mark the finding as validated by security testing."""
+        self.validation_status = ValidationStatus.VALIDATED
         self.status = FindingStatus.VALIDATED
         self.last_seen = utc_now()
 
     def mark_rejected(self) -> None:
         """Mark the finding as rejected."""
-        self.validation_status = (
-            ValidationStatus.REJECTED
-        )
+        self.validation_status = ValidationStatus.REJECTED
         self.status = FindingStatus.REJECTED
         self.last_seen = utc_now()
 
@@ -265,7 +197,15 @@ class Finding(BaseModel):
     def reopen(self) -> None:
         """Reopen a previously closed finding."""
         self.status = FindingStatus.OPEN
-        self.validation_status = (
-            ValidationStatus.INCONCLUSIVE
-        )
+        self.validation_status = ValidationStatus.INCONCLUSIVE
         self.last_seen = utc_now()
+
+
+__all__ = [
+    "Confidence",
+    "Evidence",
+    "Finding",
+    "FindingStatus",
+    "Severity",
+    "ValidationStatus",
+]
