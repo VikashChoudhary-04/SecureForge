@@ -33,6 +33,11 @@ class SecurityPipelineResult:
     warnings: list[str] = field(default_factory=list)
 
     @property
+    def pipeline(self) -> "SecurityPipelineResult":
+        """Return this result through the legacy pipeline interface."""
+        return self
+
+    @property
     def execution(self) -> ScanExecution:
         """Return execution metadata for reporting compatibility."""
         application = (
@@ -143,14 +148,20 @@ class SecurityPipeline:
             return engine.evaluate(risk_assessments)
         return None
 
-    def _run_validation(self, result: SecurityPipelineResult, validation_requests: list[Any]) -> None:
+    def _run_validation(
+        self,
+        result: SecurityPipelineResult,
+        validation_requests: list[Any],
+    ) -> None:
         """Execute requested vulnerability validation."""
         try:
             engine = self.validation_engine
             if engine is not None:
                 service_result = engine.validate_many(validation_requests)
             elif self.validation_service is not None:
-                service_result = self.validation_service.validate_many(validation_requests)
+                service_result = self.validation_service.validate_many(
+                    validation_requests
+                )
             else:
                 service_result = []
             if isinstance(service_result, tuple):
@@ -167,6 +178,7 @@ class SecurityPipeline:
         regression_gate = None
         try:
             from secureforge.regression.gate import RegressionGate
+
             gate = RegressionGate()
             if hasattr(gate, "evaluate"):
                 regression_gate = gate.evaluate(result.correlated_findings)
@@ -176,7 +188,10 @@ class SecurityPipeline:
             result.errors.append(f"Regression evaluation failed: {exc}")
         result.regression_gate = regression_gate
 
-    def _evaluate_release_gate(self, result: SecurityPipelineResult) -> Any | None:
+    def _evaluate_release_gate(
+        self,
+        result: SecurityPipelineResult,
+    ) -> Any | None:
         """Produce the final release decision."""
         if not hasattr(self.release_gate_engine, "evaluate"):
             return None
@@ -191,3 +206,9 @@ class SecurityPipeline:
         except Exception as exc:
             result.errors.append(f"Release-gate evaluation failed: {exc}")
             return None
+
+
+__all__ = [
+    "SecurityPipeline",
+    "SecurityPipelineResult",
+]
