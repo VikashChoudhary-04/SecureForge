@@ -19,6 +19,10 @@ from secureforge.regression.gate import (
     RegressionGateDecision,
 )
 
+from secureforge.validation.engine import (
+    ValidationEngine,
+)
+
 from secureforge.validation.gate import (
     ValidationGateDecision,
 )
@@ -39,9 +43,29 @@ class SecurityPipelineResult:
     release_decision: Any | None = None
     validation_gate: ValidationGateDecision | None = None
     regression_gate: RegressionGateDecision | None = None
-    validation_results: list[Any] = field(default_factory=list)
+    validation_results: list[Any] | None = None
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+
+    @property
+    def release_blocked(self) -> bool:
+        """Return whether the release decision blocks the release."""
+        decision = self.release_decision
+
+        if decision is None:
+            return False
+
+        if hasattr(decision, "release_allowed"):
+            return not bool(decision.release_allowed)
+
+        if hasattr(decision, "allowed"):
+            return not bool(decision.allowed)
+
+        if hasattr(decision, "decision"):
+            value = getattr(decision, "decision")
+            return getattr(value, "value", value) == "block"
+
+        return False
 
 
 class SecurityPipeline:
@@ -55,6 +79,7 @@ class SecurityPipeline:
         policy_engine: PolicyEngine | None = None,
         release_gate_engine: ReleaseGateEngine | None = None,
         validation_service: ValidationService | None = None,
+        validation_engine: ValidationEngine | None = None,
     ) -> None:
         self.correlation_engine = (
             correlation_engine
@@ -72,10 +97,14 @@ class SecurityPipeline:
             release_gate_engine
             or ReleaseGateEngine()
         )
-        self.validation_service = (
-            validation_service
-            or ValidationService()
-        )
+        self.validation_service = validation_service
+        self.validation_engine = validation_engine
+
+        if (
+            self.validation_service is None
+            and self.validation_engine is None
+        ):
+            self.validation_service = ValidationService()
 
     def run(
         self,
@@ -206,9 +235,20 @@ class SecurityPipeline:
     ) -> None:
         """Execute requested vulnerability validation."""
         try:
-            service_result = self.validation_service.validate_many(
-                validation_requests
-            )
+            engine = self.validation_engine
+
+            if engine is not None:
+                service_result = engine.validate_many(
+                    validation_requests
+                )
+            elif self.validation_service is not None:
+                service_result = (
+                    self.validation_service.validate_many(
+                        validation_requests
+                    )
+                )
+            else:
+                service_result = []
 
             if isinstance(service_result, tuple):
                 validation_results, validation_gate = (
