@@ -28,18 +28,44 @@ class SecurityPipelineResult:
     release_decision: Any | None = None
     validation_gate: ValidationGateDecision | None = None
     regression_gate: RegressionGateDecision | None = None
-    validation_results: list[Any] | None = None
+    validation_results: list[Any] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
     @property
     def pipeline(self) -> "SecurityPipelineResult":
-        """Return this result through the legacy pipeline interface."""
         return self
 
     @property
+    def risk(self) -> Any | None:
+        """Legacy alias for the aggregate risk section."""
+        if not self.risk_assessments:
+            return None
+        return self.risk_assessments
+
+    @property
+    def policy(self) -> Any | None:
+        """Legacy alias for the policy decision."""
+        return self.policy_decision
+
+    @property
+    def release_gate(self) -> Any | None:
+        """Legacy alias for the release decision."""
+        return self.release_decision
+
+    @property
+    def validation(self) -> Any | None:
+        """Legacy validation summary alias."""
+        if self.validation_results is None:
+            return None
+        try:
+            from secureforge.validation.service import ValidationService
+            return ValidationService().summarize(self.validation_results)
+        except Exception:
+            return self.validation_results
+
+    @property
     def execution(self) -> ScanExecution:
-        """Return execution metadata for reporting compatibility."""
         application = (
             self.findings[0].application
             if self.findings
@@ -57,7 +83,6 @@ class SecurityPipelineResult:
 
     @property
     def release_blocked(self) -> bool:
-        """Return whether the release decision blocks the release."""
         decision = self.release_decision
         if decision is None:
             return False
@@ -69,6 +94,34 @@ class SecurityPipelineResult:
             value = getattr(decision, "decision")
             return getattr(value, "value", value) == "block"
         return False
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-compatible compatibility representation."""
+        def dump(value: Any) -> Any:
+            if value is None:
+                return None
+            if hasattr(value, "model_dump"):
+                return value.model_dump(mode="json")
+            if isinstance(value, list):
+                return [dump(item) for item in value]
+            if isinstance(value, dict):
+                return {key: dump(item) for key, item in value.items()}
+            return value
+
+        return {
+            "findings": dump(self.findings),
+            "correlated_findings": dump(self.correlated_findings),
+            "risk": dump(self.risk),
+            "policy": dump(self.policy),
+            "release_gate": dump(self.release_gate),
+            "validation": dump(self.validation),
+            "validation_results": dump(self.validation_results),
+            "validation_gate": dump(self.validation_gate),
+            "regression_gate": dump(self.regression_gate),
+            "errors": list(self.errors),
+            "warnings": list(self.warnings),
+            "release_blocked": self.release_blocked,
+        }
 
 
 class SecurityPipeline:
@@ -87,11 +140,13 @@ class SecurityPipeline:
         self.correlation_engine = correlation_engine or CorrelationEngine()
         self.risk_engine = risk_engine or RiskEngine()
         self.policy_engine = policy_engine or PolicyEngine()
-        self.release_gate_engine = release_gate_engine or ReleaseGateEngine()
+        self.release_gate_engine = (
+            release_gate_engine or ReleaseGateEngine()
+        )
+        if validation_service is None and validation_engine is None:
+            validation_service = ValidationService()
         self.validation_service = validation_service
         self.validation_engine = validation_engine
-        if self.validation_service is None and self.validation_engine is None:
-            self.validation_service = ValidationService()
 
     def run(
         self,
@@ -100,52 +155,61 @@ class SecurityPipeline:
         validation_requests: list[Any] | None = None,
         run_regression: bool = False,
     ) -> SecurityPipelineResult:
-        """Run the complete security verification pipeline."""
         result = SecurityPipelineResult(findings=list(findings))
+
         try:
             correlated = self._correlate(findings)
             result.correlated_findings = correlated
             result.risk_assessments = self._assess_risk(correlated)
-            result.policy_decision = self._evaluate_policy(result.risk_assessments)
+            result.policy_decision = self._evaluate_policy(
+                result.risk_assessments
+            )
+
             if validation_requests:
-                self._run_validation(result, validation_requests)
+                self._run_validation(
+                    result,
+                    validation_requests,
+                )
+
             if run_regression:
                 self._run_regression(result)
-            result.release_decision = self._evaluate_release_gate(result)
+
+            result.release_decision = self._evaluate_release_gate(
+                result
+            )
         except Exception as exc:
-            result.errors.append(f"Security pipeline failed: {exc}")
+            result.errors.append(
+                f"Security pipeline failed: {exc}"
+            )
+
         return result
 
     def _correlate(self, findings: list[Finding]) -> list[Finding]:
-        """Correlate duplicate or related findings."""
         if not findings:
             return []
-        engine = self.correlation_engine
-        if hasattr(engine, "correlate"):
-            correlated = engine.correlate(findings)
-            if correlated is None:
-                return findings
-            return list(correlated)
+        if hasattr(self.correlation_engine, "correlate"):
+            correlated = self.correlation_engine.correlate(findings)
+            return findings if correlated is None else list(correlated)
         return findings
 
     def _assess_risk(self, findings: list[Finding]) -> list[Any]:
-        """Calculate contextual risk assessments."""
         if not findings:
             return []
-        engine = self.risk_engine
-        if hasattr(engine, "assess_many"):
-            return list(engine.assess_many(findings))
-        if hasattr(engine, "assess"):
-            return [engine.assess(finding) for finding in findings]
+        if hasattr(self.risk_engine, "assess_many"):
+            return list(self.risk_engine.assess_many(findings))
+        if hasattr(self.risk_engine, "evaluate_many"):
+            return list(self.risk_engine.evaluate_many(findings))
+        if hasattr(self.risk_engine, "assess"):
+            return [self.risk_engine.assess(finding) for finding in findings]
+        if hasattr(self.risk_engine, "evaluate"):
+            return [self.risk_engine.evaluate(finding) for finding in findings]
         return []
 
     def _evaluate_policy(self, risk_assessments: list[Any]) -> Any | None:
-        """Evaluate configured security policy."""
-        engine = self.policy_engine
-        if hasattr(engine, "evaluate_many"):
-            return engine.evaluate_many(risk_assessments)
-        if hasattr(engine, "evaluate"):
-            return engine.evaluate(risk_assessments)
+        if hasattr(self.policy_engine, "evaluate_many"):
+            return self.policy_engine.evaluate_many(risk_assessments)
+        if hasattr(self.policy_engine, "evaluate"):
+            return self.policy_engine.evaluate(risk_assessments)
         return None
 
     def _run_validation(
@@ -153,46 +217,53 @@ class SecurityPipeline:
         result: SecurityPipelineResult,
         validation_requests: list[Any],
     ) -> None:
-        """Execute requested vulnerability validation."""
         try:
-            engine = self.validation_engine
-            if engine is not None:
-                service_result = engine.validate_many(validation_requests)
+            if self.validation_engine is not None:
+                service_result = self.validation_engine.validate_many(
+                    validation_requests
+                )
             elif self.validation_service is not None:
                 service_result = self.validation_service.validate_many(
                     validation_requests
                 )
             else:
                 service_result = []
+
             if isinstance(service_result, tuple):
                 validation_results, validation_gate = service_result
                 result.validation_results = list(validation_results)
                 result.validation_gate = validation_gate
             else:
-                result.validation_results = list(service_result)
+                result.validation_results = list(
+                    getattr(service_result, "results", service_result)
+                )
         except Exception as exc:
             result.errors.append(f"Validation failed: {exc}")
 
     def _run_regression(self, result: SecurityPipelineResult) -> None:
-        """Run regression controls when available."""
         regression_gate = None
         try:
             from secureforge.regression.gate import RegressionGate
 
             gate = RegressionGate()
             if hasattr(gate, "evaluate"):
-                regression_gate = gate.evaluate(result.correlated_findings)
+                regression_gate = gate.evaluate(
+                    result.correlated_findings
+                )
         except (ImportError, AttributeError):
-            result.warnings.append("Regression gate is not configured.")
+            result.warnings.append(
+                "Regression gate is not configured."
+            )
         except Exception as exc:
-            result.errors.append(f"Regression evaluation failed: {exc}")
+            result.errors.append(
+                f"Regression evaluation failed: {exc}"
+            )
         result.regression_gate = regression_gate
 
     def _evaluate_release_gate(
         self,
         result: SecurityPipelineResult,
     ) -> Any | None:
-        """Produce the final release decision."""
         if not hasattr(self.release_gate_engine, "evaluate"):
             return None
         try:
@@ -204,7 +275,9 @@ class SecurityPipeline:
                 validation_gate=result.validation_gate,
             )
         except Exception as exc:
-            result.errors.append(f"Release-gate evaluation failed: {exc}")
+            result.errors.append(
+                f"Release-gate evaluation failed: {exc}"
+            )
             return None
 
 
