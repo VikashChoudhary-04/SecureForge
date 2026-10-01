@@ -136,6 +136,12 @@ class ScriptValidator(BaseValidator):
             message = (
                 "Validation script completed successfully."
             )
+        elif completed.returncode == 127:
+            outcome = ValidationOutcome.ERROR
+            message = (
+                "Validation script could not be executed: "
+                "command or executable not found."
+            )
         else:
             outcome = ValidationOutcome.REJECTED
             message = (
@@ -157,11 +163,12 @@ class ScriptValidator(BaseValidator):
                     output=output,
                     expected="Exit code 0.",
                     observed=(
-                        f"Exit code {completed.returncode}."
+                        "Command or executable not found."
+                        if completed.returncode == 127
+                        else f"Exit code {completed.returncode}."
                     ),
                 )
             ],
             validator=self.name,
             validated_at=validated_at,
         )
-        
