@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from secureforge.core.findings.models import Finding
 
@@ -147,11 +148,39 @@ class ValidationPlanner:
         test value.
         """
         for evidence in finding.evidence:
-            metadata = getattr(
+            metadata: Any = getattr(
                 evidence,
                 "metadata",
                 None,
             )
+
+            if metadata is None and isinstance(
+                evidence,
+                dict,
+            ):
+                metadata = evidence.get(
+                    "metadata"
+                )
+
+                if metadata is None:
+                    data = evidence.get(
+                        "data"
+                    )
+                    if isinstance(data, dict):
+                        metadata = data.get(
+                            "metadata"
+                        )
+
+            if metadata is None:
+                data = getattr(
+                    evidence,
+                    "data",
+                    None,
+                )
+                if isinstance(data, dict):
+                    metadata = data.get(
+                        "metadata"
+                    )
 
             if isinstance(
                 metadata,
@@ -161,7 +190,7 @@ class ValidationPlanner:
                     "validation_payload"
                 )
 
-                if payload:
+                if payload is not None:
                     return str(payload)
 
         return None
