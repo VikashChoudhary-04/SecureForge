@@ -59,11 +59,11 @@ class RegressionResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     test_id: str
-    security_requirement: str
+    security_requirement: str = ""
 
     status: RegressionStatus
 
-    expected_result: str
+    expected_result: str = ""
     actual_result: str | None = None
 
     message: str | None = None
@@ -126,7 +126,7 @@ class RegressionSuiteResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     suite_id: str
-    suite_name: str
+    suite_name: str = ""
 
     status: RegressionStatus
 
@@ -187,6 +187,10 @@ class RegressionSuiteResult(BaseModel):
             and self.failed == 0
             and self.errors == 0
         )
+
+
+RegressionResult.model_rebuild()
+RegressionSuiteResult.model_rebuild()
 
 
 __all__ = [
