@@ -158,9 +158,9 @@ class ReleaseGateDecision:
         return self.is_blocked
 
     @property
-    def status(self) -> str:
-        """Return the decision as a string status."""
-        return self.decision.value
+    def status(self) -> ReleaseDecision:
+        """Return the decision as its enum status."""
+        return self.decision
 
     @property
     def reason(self) -> str:
@@ -174,7 +174,7 @@ class ReleaseGateDecision:
             "version": self.version,
             "commit_sha": self.commit_sha,
             "decision": self.decision.value,
-            "status": self.status,
+            "status": self.status.value,
             "release_allowed": self.release_allowed,
             "passed": self.passed,
             "requires_review": self.requires_review,
