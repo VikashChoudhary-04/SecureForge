@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import UTC, datetime
 
@@ -43,6 +44,8 @@ class HTTPValidator(BaseValidator):
         url = self._build_url(
             request.target,
             request.endpoint,
+            request.parameter,
+            request.payload,
         )
 
         method = request.metadata.get(
@@ -51,11 +54,13 @@ class HTTPValidator(BaseValidator):
         ).upper()
 
         headers = self._build_headers(request)
-        body = (
-            request.payload.encode("utf-8")
-            if request.payload is not None
-            else None
-        )
+
+        body = None
+        if (
+            request.payload is not None
+            and request.parameter is None
+        ):
+            body = request.payload.encode("utf-8")
 
         validated_at = datetime.now(UTC).isoformat()
 
@@ -85,6 +90,32 @@ class HTTPValidator(BaseValidator):
             )
             status_code = exc.code
             response_headers = dict(exc.headers.items())
+
+            return ValidationResult(
+                finding_id=request.finding_id,
+                outcome=ValidationOutcome.INCONCLUSIVE,
+                message=(
+                    "HTTP request completed with an HTTP error "
+                    "response."
+                ),
+                evidence=[
+                    ValidationEvidence(
+                        method=ValidationMethod.HTTP,
+                        description=(
+                            "Controlled HTTP security validation."
+                        ),
+                        request=f"{method} {url}",
+                        response=response_body,
+                        expected=self._build_expected_description(
+                            request.metadata.get("expected_status"),
+                            request.metadata.get("expected_text"),
+                        ),
+                        observed=f"HTTP {status_code}",
+                    )
+                ],
+                validator=self.name,
+                validated_at=validated_at,
+            )
 
         except (
             urllib.error.URLError,
@@ -188,6 +219,8 @@ class HTTPValidator(BaseValidator):
     def _build_url(
         target: str,
         endpoint: str,
+        parameter: str | None = None,
+        payload: str | None = None,
     ) -> str:
         """Build an HTTP URL from the target and endpoint."""
         base = target.rstrip("/")
@@ -201,7 +234,18 @@ class HTTPValidator(BaseValidator):
         if not path.startswith("/"):
             path = f"/{path}"
 
-        return f"{base}{path}"
+        url = f"{base}{path}"
+
+        if parameter is not None:
+            query = urllib.parse.urlencode(
+                {
+                    parameter: payload or "",
+                }
+            )
+            separator = "&" if "?" in url else "?"
+            url = f"{url}{separator}{query}"
+
+        return url
 
     @staticmethod
     def _build_headers(
