@@ -9,10 +9,7 @@ from datetime import datetime, timezone
 
 from secureforge.core.config import ToolConfiguration
 
-from .models import (
-    ToolExecutionResult,
-    ToolExecutionStatus,
-)
+from .models import ToolExecutionResult, ToolExecutionStatus
 
 
 class ScanExecutionError(Exception):
@@ -51,7 +48,6 @@ class ToolExecutor:
             )
 
             error = None
-
             if status == ToolExecutionStatus.FAILED:
                 error = (
                     f"Tool '{tool.name}' exited with "
@@ -75,35 +71,26 @@ class ToolExecutor:
 
         except subprocess.TimeoutExpired as exc:
             duration = time.monotonic() - start_time
-            completed_at = self._utc_now()
-
-            stdout = self._decode_output(
-                exc.stdout
-            )
-            stderr = self._decode_output(
-                exc.stderr
-            )
 
             return ToolExecutionResult(
                 tool_name=tool.name,
                 integration=tool.name,
                 status=ToolExecutionStatus.TIMEOUT,
                 command=command,
-                stdout=stdout,
-                stderr=stderr,
+                stdout=self._decode_output(exc.stdout),
+                stderr=self._decode_output(exc.stderr),
                 duration_seconds=duration,
                 error=(
                     f"Tool '{tool.name}' exceeded the "
                     f"{tool.timeout_seconds}-second timeout."
                 ),
                 started_at=started_at,
-                completed_at=completed_at,
+                completed_at=self._utc_now(),
                 metadata=tool.metadata,
             )
 
         except FileNotFoundError:
             duration = time.monotonic() - start_time
-            completed_at = self._utc_now()
 
             return ToolExecutionResult(
                 tool_name=tool.name,
@@ -116,13 +103,12 @@ class ToolExecutor:
                     "was not found."
                 ),
                 started_at=started_at,
-                completed_at=completed_at,
+                completed_at=self._utc_now(),
                 metadata=tool.metadata,
             )
 
-        except OSError as exc:
+        except (OSError, ValueError) as exc:
             duration = time.monotonic() - start_time
-            completed_at = self._utc_now()
 
             return ToolExecutionResult(
                 tool_name=tool.name,
@@ -135,7 +121,7 @@ class ToolExecutor:
                     f"'{tool.name}': {exc}"
                 ),
                 started_at=started_at,
-                completed_at=completed_at,
+                completed_at=self._utc_now(),
                 metadata=tool.metadata,
             )
 
@@ -143,7 +129,6 @@ class ToolExecutor:
         self,
         tools: list[ToolConfiguration],
     ) -> list[ToolExecutionResult]:
-        """Execute multiple configured tools sequentially."""
         return [
             self.execute(tool)
             for tool in tools
@@ -153,7 +138,6 @@ class ToolExecutor:
     def _build_command(
         tool: ToolConfiguration,
     ) -> list[str]:
-        """Build the final subprocess command."""
         if tool.command:
             return [
                 *tool.command,
@@ -175,20 +159,17 @@ class ToolExecutor:
     def _build_environment(
         tool: ToolConfiguration,
     ) -> dict[str, str] | None:
-        """Build the process environment when configured."""
         if not tool.environment:
             return None
 
         environment = os.environ.copy()
         environment.update(tool.environment)
-
         return environment
 
     @staticmethod
     def _decode_output(
         output: str | bytes | None,
     ) -> str:
-        """Normalize subprocess timeout output to text."""
         if output is None:
             return ""
 
@@ -202,7 +183,6 @@ class ToolExecutor:
 
     @staticmethod
     def _utc_now() -> datetime:
-        """Return the current UTC timestamp."""
         return datetime.now(timezone.utc)
 
 
@@ -211,7 +191,6 @@ class ScanExecutor(ToolExecutor):
 
 
 def build_scan_executor() -> ScanExecutor:
-    """Build and return a SecureForge scan executor."""
     return ScanExecutor()
 
 
