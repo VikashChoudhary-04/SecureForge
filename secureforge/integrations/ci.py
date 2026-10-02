@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from secureforge.core.findings.models import (
     Confidence,
     Finding,
-    Severity,
+    InformationalSeverity,
 )
 from secureforge.integrations.base import (
     IntegrationContext,
@@ -24,34 +24,20 @@ class CIIntegrationResult(IntegrationResult):
 
 
 class CIIntegration(SecurityIntegration):
-    """Generate deterministic CI evidence without running an external scanner."""
+    """Generate deterministic CI evidence without an external scanner."""
 
     name = "ci"
     integration_name = "ci"
 
-    def supports(
-        self,
-        context: IntegrationContext,
-    ) -> bool:
-        """Return whether the integration supports the supplied environment."""
-        return context.environment.lower() in {
-            "ci",
-            "test",
-        }
+    def supports(self, context: IntegrationContext) -> bool:
+        return context.environment.lower() in {"ci", "test"}
 
-    def execute(
-        self,
-        context: IntegrationContext,
-    ) -> CIIntegrationResult:
-        """Execute deterministic CI verification."""
+    def execute(self, context: IntegrationContext) -> CIIntegrationResult:
         if not self.supports(context):
             return CIIntegrationResult(
                 integration=self.name,
                 success=False,
-                error=(
-                    "CI integration only supports "
-                    "ci or test environments."
-                ),
+                error="CI integration only supports ci or test environments.",
                 metadata={
                     "mode": "synthetic",
                     "source": "secureforge-ci",
@@ -59,14 +45,13 @@ class CIIntegration(SecurityIntegration):
             )
 
         target = context.target or "secureforge-ci"
-
         finding = Finding(
             finding_id="CI-001",
             title="SecureForge CI verification executed",
             source="ci",
             asset=target,
             application=context.application,
-            severity=Severity.INFO,
+            severity=InformationalSeverity.INFORMATIONAL,
             confidence=Confidence.HIGH,
             description=(
                 "SecureForge executed its deterministic CI verification "
@@ -95,17 +80,8 @@ class CIIntegration(SecurityIntegration):
             },
         )
 
-    def run(
-        self,
-        context: IntegrationContext,
-    ) -> CIIntegrationResult:
-        """Execute the CI integration through the common interface."""
+    def run(self, context: IntegrationContext) -> CIIntegrationResult:
         return self.execute(context)
 
     def describe(self) -> dict[str, str]:
-        """Return descriptive metadata for the integration."""
-        return {
-            "name": self.name,
-            "type": "ci",
-            "mode": "synthetic",
-        }
+        return {"name": self.name, "type": "ci", "mode": "synthetic"}
