@@ -25,7 +25,11 @@ class ValidationService:
         planner: ValidationPlanner | None = None,
         retest_service: RetestService | None = None,
     ) -> None:
-        self.engine = engine or build_validation_engine()
+        self.engine = (
+            engine
+            if engine is not None
+            else build_validation_engine()
+        )
         self.planner = planner or ValidationPlanner()
         self.retest_service = (
             retest_service
@@ -33,14 +37,20 @@ class ValidationService:
             else RetestService(self)
         )
 
-    def validate(self, request: ValidationRequest) -> ValidationResult:
+    def validate(
+        self,
+        request: ValidationRequest,
+    ) -> ValidationResult:
         return self.engine.validate(request)
 
     def validate_many(
         self,
         requests: list[ValidationRequest],
     ) -> ValidationSummary:
-        results = [self.validate(request) for request in requests]
+        results = [
+            self.validate(request)
+            for request in requests
+        ]
         return self.summarize(results)
 
     def plan(
@@ -68,30 +78,43 @@ class ValidationService:
             target=target,
             method=method,
         )
-        return self.validate_many(list(plan.requests))
+        return self.validate_many(
+            list(plan.requests)
+        )
 
+    @staticmethod
     def summarize(
-        self,
         results: list[ValidationResult] | None = None,
     ) -> ValidationSummary:
         results = list(results or [])
 
         return ValidationSummary(
             total=len(results),
-            confirmed=sum(result.confirmed for result in results),
-            rejected=sum(result.rejected for result in results),
-            inconclusive=sum(
-                result.inconclusive for result in results
+            confirmed=sum(
+                result.confirmed
+                for result in results
             ),
-            errors=sum(result.failed for result in results),
+            rejected=sum(
+                result.rejected
+                for result in results
+            ),
+            inconclusive=sum(
+                result.inconclusive
+                for result in results
+            ),
+            errors=sum(
+                result.failed
+                for result in results
+            ),
             remediated=sum(
-                result.remediation_verified for result in results
+                result.remediation_verified
+                for result in results
             ),
             results=results,
         )
 
+    @staticmethod
     def remediation_candidates(
-        self,
         results: list[ValidationResult] | None = None,
     ) -> list[ValidationResult]:
         return [
@@ -100,8 +123,8 @@ class ValidationService:
             if result.remediation_verified
         ]
 
+    @staticmethod
     def regression_candidates(
-        self,
         results: list[ValidationResult] | None = None,
     ) -> list[ValidationResult]:
         return [
@@ -110,8 +133,14 @@ class ValidationService:
             if result.confirmed
         ]
 
-    def assessments(self, results: list[ValidationResult]):
-        return [assess_validation(result) for result in results]
+    @staticmethod
+    def assessments(
+        results: list[ValidationResult],
+    ):
+        return [
+            assess_validation(result)
+            for result in results
+        ]
 
     def retest(
         self,
@@ -123,8 +152,15 @@ class ValidationService:
             previous_outcome,
         )
 
-    def retest_many(self, requests) -> list[RetestResult]:
-        return self.retest_service.retest_many(requests)
+    def retest_many(
+        self,
+        requests,
+    ) -> list[RetestResult]:
+        return self.retest_service.retest_many(
+            requests
+        )
 
 
-__all__ = ["ValidationService"]
+__all__ = [
+    "ValidationService",
+]
