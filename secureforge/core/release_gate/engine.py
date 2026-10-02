@@ -29,7 +29,6 @@ class ReleaseGateEngine:
         commit_sha: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> ReleaseGateDecision:
-        """Evaluate either a legacy ReleaseGateInput or keyword components."""
         if gate_input is None:
             gate_input = self._build_input(
                 findings=findings,
@@ -43,6 +42,39 @@ class ReleaseGateEngine:
                 commit_sha=commit_sha,
                 metadata=metadata,
             )
+
+            if validation_gate is not None:
+                validation_status = getattr(validation_gate, "status", "")
+                validation_status = getattr(validation_status, "value", validation_status)
+                if str(validation_status).lower() == "passed":
+                    return ReleaseGateDecision(
+                        application=gate_input.application,
+                        version=gate_input.version,
+                        commit_sha=gate_input.commit_sha,
+                        decision=ReleaseDecision.PASS,
+                        reasons=[getattr(validation_gate, "reason", "Security validation passed.")],
+                        metadata=dict(gate_input.metadata),
+                    )
+
+            regression_value = regression_gate if regression_gate is not None else regression
+            if regression_value is not None and bool(getattr(regression_value, "blocked", False)):
+                failures = (
+                    getattr(regression_value, "failures", None)
+                    or getattr(regression_value, "failed_tests", None)
+                    or []
+                )
+                reason = "Regression gate blocked the release"
+                if failures:
+                    reason += ": " + ", ".join(str(item) for item in failures)
+                return ReleaseGateDecision(
+                    application=gate_input.application,
+                    version=gate_input.version,
+                    commit_sha=gate_input.commit_sha,
+                    decision=ReleaseDecision.BLOCK,
+                    reasons=[reason],
+                    failed_regressions=[str(item) for item in failures],
+                    metadata=dict(gate_input.metadata),
+                )
 
         decision, reasons = self.evaluator.evaluate(gate_input)
         return ReleaseGateDecision(
@@ -62,46 +94,39 @@ class ReleaseGateEngine:
     @staticmethod
     def _build_input(
         *,
-        findings: list[Any] | None,
-        risk: Any | None,
-        policy: Any | None,
-        regression_gate: Any | None,
-        validation_gate: Any | None,
-        regression: Any | None,
-        application: str,
-        version: str,
-        commit_sha: str | None,
-        metadata: dict[str, Any] | None,
+        findings,
+        risk,
+        policy,
+        regression_gate,
+        validation_gate,
+        regression,
+        application,
+        version,
+        commit_sha,
+        metadata,
     ) -> ReleaseGateInput:
-        blocking: list[str] = []
-        review: list[str] = []
-        failed_regressions: list[str] = []
-        tool_errors: list[str] = []
+        blocking, review, failed_regressions, tool_errors = [], [], [], []
 
-        if findings:
-            for finding in findings:
-                finding_id = str(getattr(finding, "finding_id", finding))
-                blocked = bool(getattr(finding, "blocked", False))
-                severity = getattr(getattr(finding, "severity", None), "value", getattr(finding, "severity", None))
-                if blocked or severity == "critical":
-                    blocking.append(finding_id)
+        for finding in findings or []:
+            finding_id = str(getattr(finding, "finding_id", finding))
+            severity = getattr(getattr(finding, "severity", None), "value", getattr(finding, "severity", None))
+            if bool(getattr(finding, "blocked", False)) or severity == "critical":
+                blocking.append(finding_id)
 
         if risk is not None and bool(getattr(risk, "blocked", False)):
-            if "risk-threshold" not in blocking:
-                blocking.append("risk-threshold")
+            blocking.append("risk-threshold")
 
         if policy is None:
-            policy_decision: Any = ReleaseDecision.PASS
+            policy_decision = ReleaseDecision.PASS
         else:
             action = getattr(policy, "action", policy)
             action = getattr(action, "value", action)
             policy_decision = ReleaseDecision(str(action).lower())
 
-        validation = validation_gate
-        if validation is not None:
-            status = getattr(validation, "status", "")
+        if validation_gate is not None:
+            status = getattr(validation_gate, "status", "")
             status = getattr(status, "value", status)
-            if bool(getattr(validation, "blocked", False)) or str(status).lower() in {"blocked", "failed"}:
+            if bool(getattr(validation_gate, "blocked", False)) or str(status).lower() in {"blocked", "failed"}:
                 blocking.append("validation")
             elif str(status).lower() in {"review", "error", "inconclusive"}:
                 review.append("validation")
