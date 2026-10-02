@@ -23,17 +23,29 @@ class ValidationGateDecision:
 
     @property
     def blocked(self) -> bool:
-        """Return whether validation itself blocks release."""
         return self.status == "blocked"
 
     @property
     def requires_attention(self) -> bool:
-        """Return whether validation requires follow-up."""
         return bool(
             self.unresolved_findings
             or self.inconclusive_findings
             or self.errored_findings
         )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "allowed": self.allowed,
+            "blocked": self.blocked,
+            "status": self.status,
+            "reason": self.reason,
+            "confirmed_findings": list(self.confirmed_findings),
+            "unresolved_findings": list(self.unresolved_findings),
+            "remediation_verified": list(self.remediation_verified),
+            "inconclusive_findings": list(self.inconclusive_findings),
+            "errored_findings": list(self.errored_findings),
+            "requires_attention": self.requires_attention,
+        }
 
 
 def evaluate_validation_run(
@@ -48,58 +60,33 @@ def evaluate_validation_run(
 
     for result in run.results:
         if result.outcome == ValidationOutcome.CONFIRMED:
-            confirmed.append(
-                result.finding_id
-            )
-            unresolved.append(
-                result.finding_id
-            )
+            confirmed.append(result.finding_id)
+            unresolved.append(result.finding_id)
         elif result.outcome == ValidationOutcome.INCONCLUSIVE:
-            inconclusive.append(
-                result.finding_id
-            )
-            unresolved.append(
-                result.finding_id
-            )
+            inconclusive.append(result.finding_id)
+            unresolved.append(result.finding_id)
         elif result.outcome == ValidationOutcome.ERROR:
-            errored.append(
-                result.finding_id
-            )
-            unresolved.append(
-                result.finding_id
-            )
+            errored.append(result.finding_id)
+            unresolved.append(result.finding_id)
 
         if (
             result.outcome == ValidationOutcome.REJECTED
             and result.remediation_verified
         ):
-            remediated.append(
-                result.finding_id
-            )
+            remediated.append(result.finding_id)
 
     if confirmed:
         return ValidationGateDecision(
             allowed=False,
             status="blocked",
             reason=(
-                "Security validation confirmed one or more "
-                "findings."
+                "Security validation confirmed one or more findings."
             ),
-            confirmed_findings=tuple(
-                confirmed
-            ),
-            unresolved_findings=tuple(
-                unresolved
-            ),
-            remediation_verified=tuple(
-                remediated
-            ),
-            inconclusive_findings=tuple(
-                inconclusive
-            ),
-            errored_findings=tuple(
-                errored
-            ),
+            confirmed_findings=tuple(confirmed),
+            unresolved_findings=tuple(unresolved),
+            remediation_verified=tuple(remediated),
+            inconclusive_findings=tuple(inconclusive),
+            errored_findings=tuple(errored),
         )
 
     if errored:
@@ -107,22 +94,13 @@ def evaluate_validation_run(
             allowed=False,
             status="error",
             reason=(
-                "One or more validation attempts failed "
-                "to complete."
+                "One or more validation attempts failed to complete."
             ),
             confirmed_findings=(),
-            unresolved_findings=tuple(
-                unresolved
-            ),
-            remediation_verified=tuple(
-                remediated
-            ),
-            inconclusive_findings=tuple(
-                inconclusive
-            ),
-            errored_findings=tuple(
-                errored
-            ),
+            unresolved_findings=tuple(unresolved),
+            remediation_verified=tuple(remediated),
+            inconclusive_findings=tuple(inconclusive),
+            errored_findings=tuple(errored),
         )
 
     if inconclusive:
@@ -130,19 +108,12 @@ def evaluate_validation_run(
             allowed=False,
             status="review",
             reason=(
-                "One or more validation results were "
-                "inconclusive."
+                "One or more validation results were inconclusive."
             ),
             confirmed_findings=(),
-            unresolved_findings=tuple(
-                unresolved
-            ),
-            remediation_verified=tuple(
-                remediated
-            ),
-            inconclusive_findings=tuple(
-                inconclusive
-            ),
+            unresolved_findings=tuple(unresolved),
+            remediation_verified=tuple(remediated),
+            inconclusive_findings=tuple(inconclusive),
             errored_findings=(),
         )
 
@@ -150,14 +121,11 @@ def evaluate_validation_run(
         allowed=True,
         status="passed",
         reason=(
-            "Security validation completed without "
-            "confirmed findings."
+            "Security validation completed without confirmed findings."
         ),
         confirmed_findings=(),
         unresolved_findings=(),
-        remediation_verified=tuple(
-            remediated
-        ),
+        remediation_verified=tuple(remediated),
         inconclusive_findings=(),
         errored_findings=(),
     )
@@ -175,63 +143,31 @@ def evaluate_retest_run(
 
     for result in run.results:
         if result.remediation_verified:
-            remediated.append(
-                result.finding_id
-            )
+            remediated.append(result.finding_id)
 
-        if result.current_outcome == (
-            ValidationOutcome.CONFIRMED
-        ):
-            confirmed.append(
-                result.finding_id
-            )
-            unresolved.append(
-                result.finding_id
-            )
-
-        elif result.current_outcome == (
-            ValidationOutcome.INCONCLUSIVE
-        ):
-            inconclusive.append(
-                result.finding_id
-            )
-            unresolved.append(
-                result.finding_id
-            )
-
-        elif result.current_outcome == (
-            ValidationOutcome.ERROR
-        ):
-            errored.append(
-                result.finding_id
-            )
-            unresolved.append(
-                result.finding_id
-            )
+        if result.current_outcome == ValidationOutcome.CONFIRMED:
+            confirmed.append(result.finding_id)
+            unresolved.append(result.finding_id)
+        elif result.current_outcome == ValidationOutcome.INCONCLUSIVE:
+            inconclusive.append(result.finding_id)
+            unresolved.append(result.finding_id)
+        elif result.current_outcome == ValidationOutcome.ERROR:
+            errored.append(result.finding_id)
+            unresolved.append(result.finding_id)
 
     if confirmed:
         return ValidationGateDecision(
             allowed=False,
             status="blocked",
             reason=(
-                "Retesting confirmed that one or more "
-                "previously identified findings remain."
+                "Retesting confirmed that one or more previously "
+                "identified findings remain."
             ),
-            confirmed_findings=tuple(
-                confirmed
-            ),
-            unresolved_findings=tuple(
-                unresolved
-            ),
-            remediation_verified=tuple(
-                remediated
-            ),
-            inconclusive_findings=tuple(
-                inconclusive
-            ),
-            errored_findings=tuple(
-                errored
-            ),
+            confirmed_findings=tuple(confirmed),
+            unresolved_findings=tuple(unresolved),
+            remediation_verified=tuple(remediated),
+            inconclusive_findings=tuple(inconclusive),
+            errored_findings=tuple(errored),
         )
 
     if errored:
@@ -239,22 +175,13 @@ def evaluate_retest_run(
             allowed=False,
             status="error",
             reason=(
-                "One or more remediation retests failed "
-                "to complete."
+                "One or more remediation retests failed to complete."
             ),
             confirmed_findings=(),
-            unresolved_findings=tuple(
-                unresolved
-            ),
-            remediation_verified=tuple(
-                remediated
-            ),
-            inconclusive_findings=tuple(
-                inconclusive
-            ),
-            errored_findings=tuple(
-                errored
-            ),
+            unresolved_findings=tuple(unresolved),
+            remediation_verified=tuple(remediated),
+            inconclusive_findings=tuple(inconclusive),
+            errored_findings=tuple(errored),
         )
 
     if inconclusive:
@@ -262,19 +189,12 @@ def evaluate_retest_run(
             allowed=False,
             status="review",
             reason=(
-                "One or more remediation retests were "
-                "inconclusive."
+                "One or more remediation retests were inconclusive."
             ),
             confirmed_findings=(),
-            unresolved_findings=tuple(
-                unresolved
-            ),
-            remediation_verified=tuple(
-                remediated
-            ),
-            inconclusive_findings=tuple(
-                inconclusive
-            ),
+            unresolved_findings=tuple(unresolved),
+            remediation_verified=tuple(remediated),
+            inconclusive_findings=tuple(inconclusive),
             errored_findings=(),
         )
 
@@ -282,14 +202,11 @@ def evaluate_retest_run(
         allowed=True,
         status="passed",
         reason=(
-            "All remediation retests completed without "
-            "confirmed findings."
+            "All remediation retests completed without confirmed findings."
         ),
         confirmed_findings=(),
         unresolved_findings=(),
-        remediation_verified=tuple(
-            remediated
-        ),
+        remediation_verified=tuple(remediated),
         inconclusive_findings=(),
         errored_findings=(),
     )
