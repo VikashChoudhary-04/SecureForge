@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ReleaseMetadata(BaseModel):
@@ -21,6 +21,7 @@ class ReleaseMetadata(BaseModel):
 
 class ScanMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     scan_id: str
     profile: str
     application: str = "securecommerce"
@@ -34,6 +35,14 @@ class ScanMetadata(BaseModel):
     tools: list[str] = Field(default_factory=list)
     tool_errors: list[str] = Field(default_factory=list)
     integrations: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_target(cls, value: Any) -> Any:
+        if isinstance(value, dict) and value.get("target") is None:
+            value = dict(value)
+            value["target"] = ""
+        return value
 
 
 class ReportFinding(BaseModel):
@@ -120,6 +129,11 @@ class RemediationReport(BaseModel):
     in_progress: int = 0
     resolved: int = 0
     items: list[RemediationItem] = Field(default_factory=list)
+
+    @property
+    def findings(self) -> list[RemediationItem]:
+        """Legacy alias for remediation items."""
+        return self.items
 
     @property
     def open_count(self) -> int:
@@ -232,9 +246,7 @@ class SecurityReport(BaseModel):
     regression: RegressionReport | None = None
     regression_gate: RegressionGateReport | None = None
     validation: ValidationReport | None = None
-    validation_results: list[ValidationResultReport] = Field(
-        default_factory=list
-    )
+    validation_results: list[ValidationResultReport] = Field(default_factory=list)
     validation_gate: ValidationGateReport | None = None
     generated_at: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
