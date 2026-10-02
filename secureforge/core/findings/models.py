@@ -11,13 +11,10 @@ from pydantic import BaseModel, Field, model_validator
 
 
 def utc_now() -> datetime:
-    """Return the current UTC timestamp."""
     return datetime.now(UTC)
 
 
 class Severity(StrEnum):
-    """Finding severity."""
-
     INFO = "info"
     LOW = "low"
     MEDIUM = "medium"
@@ -26,14 +23,10 @@ class Severity(StrEnum):
 
 
 class InformationalSeverity(StrEnum):
-    """Legacy synthetic informational severity used by CI evidence."""
-
     INFORMATIONAL = "informational"
 
 
 class Confidence(StrEnum):
-    """Confidence level of a finding."""
-
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -41,8 +34,6 @@ class Confidence(StrEnum):
 
 
 class FindingStatus(StrEnum):
-    """Lifecycle status of a finding."""
-
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     VALIDATED = "validated"
@@ -53,8 +44,6 @@ class FindingStatus(StrEnum):
 
 
 class ValidationStatus(StrEnum):
-    """Validation status of a finding."""
-
     NOT_VALIDATED = "not_validated"
     INCONCLUSIVE = "inconclusive"
     CONFIRMED = "confirmed"
@@ -64,8 +53,6 @@ class ValidationStatus(StrEnum):
 
 
 class Evidence(BaseModel):
-    """Evidence supporting a finding."""
-
     evidence_id: str = ""
     source: str
     evidence_type: str = ""
@@ -79,56 +66,39 @@ class Evidence(BaseModel):
     def normalize_legacy_fields(cls, value: Any) -> Any:
         if not isinstance(value, dict):
             return value
-
         normalized = dict(value)
-        evidence_type = (
-            normalized.get("evidence_type")
-            or normalized.get("type")
-            or ""
-        )
-        normalized["evidence_type"] = evidence_type
-
+        normalized["evidence_type"] = normalized.get("evidence_type") or normalized.get("type") or ""
         if not normalized.get("evidence_id"):
-            normalized["evidence_id"] = (
-                "evidence-" + cls._generate_evidence_id(normalized)
-            )
-
+            normalized["evidence_id"] = "evidence-" + cls._generate_evidence_id(normalized)
         data = normalized.get("data")
         if not isinstance(data, dict):
             data = {}
-
         if "content" in normalized:
             data.setdefault("content", normalized["content"])
         if "location" in normalized:
             data.setdefault("location", normalized["location"])
-
         normalized["data"] = data
         if not normalized.get("description"):
             normalized["description"] = str(data.get("content", ""))
-
         return normalized
 
     @staticmethod
     def _generate_evidence_id(value: dict[str, Any]) -> str:
-        canonical = "|".join(
-            [
-                str(value.get("source", "")),
-                str(value.get("evidence_type", value.get("type", ""))),
-                str(value.get("content", "")),
-                str(value.get("location", "")),
-            ]
-        )
+        canonical = "|".join([
+            str(value.get("source", "")),
+            str(value.get("evidence_type", value.get("type", ""))),
+            str(value.get("content", "")),
+            str(value.get("location", "")),
+        ])
         return sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
 class Finding(BaseModel):
-    """Normalized security finding."""
-
     finding_id: str
     title: str
     source: str
     source_finding_id: str | None = None
-    asset: str
+    asset: str = ""
     application: str = "SecureCommerce"
     endpoint: str | None = None
     parameter: str | None = None
@@ -195,11 +165,6 @@ class Finding(BaseModel):
 
 
 __all__ = [
-    "Confidence",
-    "Evidence",
-    "Finding",
-    "FindingStatus",
-    "InformationalSeverity",
-    "Severity",
-    "ValidationStatus",
+    "Confidence", "Evidence", "Finding", "FindingStatus",
+    "InformationalSeverity", "Severity", "ValidationStatus",
 ]
