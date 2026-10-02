@@ -6,15 +6,10 @@ from secureforge.core.scan.models import SecurityScanResult
 from .builder import SecurityReportBuilder
 
 
-def build_scan_report(
-    result: SecurityScanResult,
-    *,
-    release=None,
-    scan=None,
-):
+def build_scan_report(result: SecurityScanResult, *, release=None, scan=None):
     """Convert a scan result into the complete reporting model."""
     pipeline = result.pipeline
-    return SecurityReportBuilder().build(
+    report = SecurityReportBuilder().build(
         release=release,
         scan=scan,
         findings=list(result.findings),
@@ -27,6 +22,10 @@ def build_scan_report(
         validation_results=getattr(pipeline, "validation_results", None),
         validation_gate=getattr(pipeline, "validation_gate", None),
     )
+    source_status = getattr(pipeline.release_gate, "status", "")
+    source_status = getattr(source_status, "value", source_status)
+    report.decision.status = str(source_status)
+    return report
 
 
 __all__ = ["build_scan_report"]
