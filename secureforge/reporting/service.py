@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from secureforge.core.scan.models import SecurityScanResult
 
@@ -53,6 +52,9 @@ class SecurityReportService:
         remediation=None,
         regression=None,
         regression_gate=None,
+        validation=None,
+        validation_results=None,
+        validation_gate=None,
     ) -> SecurityReport:
         return self.builder.build(
             release=release,
@@ -64,6 +66,9 @@ class SecurityReportService:
             remediation=remediation,
             regression=regression,
             regression_gate=regression_gate,
+            validation=validation,
+            validation_results=validation_results,
+            validation_gate=validation_gate,
         )
 
     def generate_from_results(
@@ -79,6 +84,9 @@ class SecurityReportService:
         remediation=None,
         regression=None,
         regression_gate=None,
+        validation=None,
+        validation_results=None,
+        validation_gate=None,
     ) -> ReportPaths:
         report = self.build_report(
             release=release,
@@ -90,6 +98,9 @@ class SecurityReportService:
             remediation=remediation,
             regression=regression,
             regression_gate=regression_gate,
+            validation=validation,
+            validation_results=validation_results,
+            validation_gate=validation_gate,
         )
         self.write_json(report, paths.json_path)
         self.write_html(report, paths.html_path)
@@ -112,9 +123,16 @@ class SecurityReportService:
             decision=pipeline.release_gate,
             remediation=getattr(pipeline, "remediation", None),
             regression=getattr(pipeline, "regression", None),
-            regression_gate=getattr(
+            regression_gate=getattr(pipeline, "regression_gate", None),
+            validation=getattr(pipeline, "validation", None),
+            validation_results=getattr(
                 pipeline,
-                "regression_gate",
+                "validation_results",
+                None,
+            ),
+            validation_gate=getattr(
+                pipeline,
+                "validation_gate",
                 None,
             ),
         )
