@@ -34,6 +34,11 @@ class ReleaseGateInput:
     exceptions_applied: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        raw = getattr(self.policy_decision, "action", self.policy_decision)
+        raw = getattr(raw, "value", raw)
+        self.policy_decision = ReleaseDecision(str(raw).lower())
+
 
 @dataclass(init=False)
 class ReleaseGateDecision:
@@ -56,14 +61,8 @@ class ReleaseGateDecision:
         release_allowed: bool | None = None,
     ) -> None:
         raw = decision if decision is not None else status
-
         if raw is None:
-            raw = (
-                ReleaseDecision.BLOCK
-                if release_allowed is False
-                else ReleaseDecision.PASS
-            )
-
+            raw = ReleaseDecision.BLOCK if release_allowed is False else ReleaseDecision.PASS
         raw_value = getattr(raw, "value", raw)
         aliases = {
             "passed": ReleaseDecision.PASS,
@@ -72,36 +71,23 @@ class ReleaseGateDecision:
             "blocked": ReleaseDecision.BLOCK,
             "block": ReleaseDecision.BLOCK,
         }
-        if isinstance(raw, ReleaseDecision):
-            resolved = raw
-        else:
-            resolved = aliases.get(str(raw_value).lower())
-            if resolved is None:
-                resolved = ReleaseDecision(str(raw_value).lower())
+        resolved = raw if isinstance(raw, ReleaseDecision) else aliases.get(str(raw_value).lower())
+        if resolved is None:
+            resolved = ReleaseDecision(str(raw_value).lower())
 
         self.decision = resolved
         self.application = application
         self.version = version
         self.commit_sha = commit_sha
-        self.reasons = (
-            list(reasons)
-            if reasons is not None
-            else ([reason] if reason else [])
-        )
+        self.reasons = list(reasons) if reasons is not None else ([reason] if reason else [])
         self.blocking_findings = list(blocking_findings or [])
         self.review_findings = list(review_findings or [])
         self.failed_regressions = list(failed_regressions or [])
         self.tool_errors = list(tool_errors or [])
         self.exceptions_applied = list(exceptions_applied or [])
         self.metadata = dict(metadata or {})
-
-        if (
-            release_allowed is not None
-            and release_allowed != self.release_allowed
-        ):
-            raise ValueError(
-                "release_allowed conflicts with the release decision."
-            )
+        if release_allowed is not None and release_allowed != self.release_allowed:
+            raise ValueError("release_allowed conflicts with the release decision.")
 
     @property
     def passed(self) -> bool:
