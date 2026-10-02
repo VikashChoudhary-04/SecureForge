@@ -7,9 +7,27 @@ from .models import AssetImportance, Environment, RiskContext
 
 
 class RiskScorer:
-    SEVERITY_SCORES = {Severity.CRITICAL: 90.0, Severity.HIGH: 70.0, Severity.MEDIUM: 50.0, Severity.LOW: 25.0, Severity.INFO: 5.0}
-    ASSET_ADJUSTMENTS = {AssetImportance.CRITICAL: 6.0, AssetImportance.HIGH: 6.0, AssetImportance.MEDIUM: 0.0, AssetImportance.LOW: -5.0}
-    ENVIRONMENT_ADJUSTMENTS = {Environment.PRODUCTION: 5.0, Environment.STAGING: 2.0, Environment.TEST: 0.0, Environment.DEVELOPMENT: -5.0, Environment.LAB: -10.0, Environment.UNKNOWN: 0.0}
+    SEVERITY_SCORES = {
+        Severity.CRITICAL: 90.0,
+        Severity.HIGH: 70.0,
+        Severity.MEDIUM: 50.0,
+        Severity.LOW: 25.0,
+        Severity.INFO: 5.0,
+    }
+    ASSET_ADJUSTMENTS = {
+        AssetImportance.CRITICAL: 6.0,
+        AssetImportance.HIGH: 6.0,
+        AssetImportance.MEDIUM: 0.0,
+        AssetImportance.LOW: -5.0,
+    }
+    ENVIRONMENT_ADJUSTMENTS = {
+        Environment.PRODUCTION: 5.0,
+        Environment.STAGING: 2.0,
+        Environment.TEST: 0.0,
+        Environment.DEVELOPMENT: -5.0,
+        Environment.LAB: -10.0,
+        Environment.UNKNOWN: 0.0,
+    }
 
     @staticmethod
     def severity_score(severity: Severity) -> float:
@@ -20,27 +38,47 @@ class RiskScorer:
     def base_score(self, finding: Finding) -> float:
         return self.severity_score(finding.severity)
 
-    def calculate(self, finding: Finding, context: RiskContext) -> tuple[float, list[str]]:
+    def calculate(
+        self,
+        finding: Finding,
+        context: RiskContext,
+    ) -> tuple[float, list[str]]:
         score = self.base_score(finding)
         factors: list[str] = []
-        if context.asset_importance == AssetImportance.CRITICAL:
-            score += 6.0
-            factors.extend(["critical-importance asset", "critical asset"])
-        else:
-            score, factor = self.apply_asset_importance(score, context.asset_importance)
-            if factor:
-                factors.append(factor)
-        score, factor = self.apply_internet_exposure(score, context.internet_exposed)
-        if factor: factors.append(factor)
-        score, factor = self.apply_authentication(score, context.authentication_required)
-        if factor: factors.append(factor)
-        score, factor = self.apply_sensitive_data(score, context.sensitive_data)
-        if factor: factors.append(factor)
-        score, factor = self.apply_exploit_evidence(score, context.exploit_evidence)
-        if factor: factors.append(factor)
-        return self.clamp(self.apply_environment(score, context.environment)), factors
+        score, factor = self.apply_asset_importance(
+            score, context.asset_importance
+        )
+        if factor:
+            factors.append(factor)
+        score, factor = self.apply_internet_exposure(
+            score, context.internet_exposed
+        )
+        if factor:
+            factors.append(factor)
+        score, factor = self.apply_authentication(
+            score, context.authentication_required
+        )
+        if factor:
+            factors.append(factor)
+        score, factor = self.apply_sensitive_data(
+            score, context.sensitive_data
+        )
+        if factor:
+            factors.append(factor)
+        score, factor = self.apply_exploit_evidence(
+            score, context.exploit_evidence
+        )
+        if factor:
+            factors.append(factor)
+        return self.clamp(
+            self.apply_environment(score, context.environment)
+        ), factors
 
-    def apply_asset_importance(self, score: float, importance: AssetImportance) -> tuple[float, str | None]:
+    def apply_asset_importance(
+        self,
+        score: float,
+        importance: AssetImportance,
+    ) -> tuple[float, str | None]:
         if importance == AssetImportance.CRITICAL:
             return score + 10.0, "critical-importance asset"
         adjustment = self.ASSET_ADJUSTMENTS[importance]
@@ -50,19 +88,31 @@ class RiskScorer:
 
     @staticmethod
     def apply_internet_exposure(score: float, internet_exposed: bool):
-        return (score + 10.0, "internet-exposed asset") if internet_exposed else (score, None)
+        return (
+            score + 10.0,
+            "internet-exposed asset",
+        ) if internet_exposed else (score, None)
 
     @staticmethod
     def apply_authentication(score: float, authentication_required: bool):
-        return (score + 10.0, "no authentication required") if not authentication_required else (score, None)
+        return (
+            score + 10.0,
+            "no authentication required",
+        ) if not authentication_required else (score, None)
 
     @staticmethod
     def apply_sensitive_data(score: float, sensitive_data: bool):
-        return (score + 10.0, "sensitive data affected") if sensitive_data else (score, None)
+        return (
+            score + 10.0,
+            "sensitive data affected",
+        ) if sensitive_data else (score, None)
 
     @staticmethod
     def apply_exploit_evidence(score: float, exploit_evidence: bool):
-        return (score + 10.0, "exploit evidence available") if exploit_evidence else (score, None)
+        return (
+            score + 10.0,
+            "exploit evidence available",
+        ) if exploit_evidence else (score, None)
 
     def apply_environment(self, score: float, environment: Environment) -> float:
         return score + self.ENVIRONMENT_ADJUSTMENTS[environment]
