@@ -21,6 +21,18 @@ class ScanResultStore:
         self.directory.mkdir(parents=True, exist_ok=True)
         self._lock = RLock()
 
+    def _validate_scan_id(self, scan_id: str) -> None:
+        if not isinstance(scan_id, str) or not scan_id:
+            raise ScanResultStoreError("Scan identifier must not be empty.")
+        if "/" in scan_id or "\\" in scan_id:
+            raise ScanResultStoreError(
+                "Scan identifier contains an invalid path component."
+            )
+        if scan_id in {".", ".."}:
+            raise ScanResultStoreError(
+                "Scan identifier contains an invalid path component."
+            )
+
     def path_for(self, scan_id: str) -> Path:
         self._validate_scan_id(scan_id)
         return self.directory / f"{scan_id}.json"
@@ -42,12 +54,7 @@ class ScanResultStore:
 
         with self._lock:
             path.write_text(
-                json.dumps(
-                    payload,
-                    indent=2,
-                    sort_keys=True,
-                    ensure_ascii=False,
-                ),
+                json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False),
                 encoding="utf-8",
             )
         return path
@@ -90,19 +97,12 @@ class ScanResultStore:
         raise ScanResultStoreError("SecurityScanResult must contain a scan ID.")
 
     @classmethod
-    def _serialize_result(
-        cls,
-        result: SecurityScanResult,
-        scan_id: str,
-    ) -> dict[str, Any]:
-        # SecurityScanResult is a Pydantic model containing the pipeline
-        # dataclass. model_dump() cannot expose the pipeline's compatibility
-        # properties, so serialize that section explicitly.
-        if hasattr(result, "model_dump"):
-            payload = result.model_dump(mode="json")
-        else:
-            payload = cls._to_jsonable(result)
-
+    def _serialize_result(cls, result: SecurityScanResult, scan_id: str):
+        payload = (
+            result.model_dump(mode="json")
+            if hasattr(result, "model_dump")
+            else cls._to_jsonable(result)
+        )
         if not isinstance(payload, dict):
             raise ScanResultStoreError(
                 "SecurityScanResult must serialize to a JSON object."
@@ -111,7 +111,6 @@ class ScanResultStore:
         execution = payload.get("execution", {})
         if not isinstance(execution, dict):
             execution = {}
-
         execution.setdefault("scan_id", scan_id)
 
         pipeline_obj = getattr(result, "pipeline", None)
@@ -148,10 +147,7 @@ class ScanResultStore:
         return value
 
     @staticmethod
-    def _validate_payload(
-        payload: dict[str, Any],
-        scan_id: str,
-    ) -> None:
+    def _validate_payload(payload: dict[str, Any], scan_id: str) -> None:
         required_sections = {"scan", "findings", "pipeline"}
         if not required_sections.issubset(payload):
             raise ScanResultStoreError(
