@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from html import escape
+from pathlib import Path
 from typing import Any
 
 from .models import SecurityReport
@@ -11,787 +12,207 @@ from .models import SecurityReport
 class SecurityHTMLReportRenderer:
     """Render SecureForge security reports as HTML."""
 
-    def render(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render a complete security report."""
+    def write_html(self, report: SecurityReport, output_path: str | Path):
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(self.render(report), encoding="utf-8")
+        return path
+
+    def render(self, report: SecurityReport) -> str:
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SecureForge Security Report</title>
 <style>
-body {{
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background: #f5f7fa;
-    color: #1f2937;
-}}
-
-header {{
-    background: #111827;
-    color: white;
-    padding: 24px 32px;
-}}
-
-main {{
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-}}
-
-section {{
-    background: white;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}}
-
-h1,
-h2,
-h3 {{
-    margin-top: 0;
-}}
-
-table {{
-    width: 100%;
-    border-collapse: collapse;
-}}
-
-th,
-td {{
-    border: 1px solid #d1d5db;
-    padding: 8px;
-    text-align: left;
-    vertical-align: top;
-}}
-
-th {{
-    background: #f3f4f6;
-}}
-
-.status {{
-    display: inline-block;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-weight: bold;
-}}
-
-.pass {{
-    background: #dcfce7;
-    color: #166534;
-}}
-
-.block {{
-    background: #fee2e2;
-    color: #991b1b;
-}}
-
-.review {{
-    background: #fef3c7;
-    color: #92400e;
-}}
-
-.muted {{
-    color: #6b7280;
-}}
-
-pre {{
-    white-space: pre-wrap;
-    word-break: break-word;
-}}
-
-.finding {{
-    margin-bottom: 18px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    padding: 14px;
-}}
-
-.badge {{
-    display: inline-block;
-    margin-right: 6px;
-    margin-bottom: 4px;
-    padding: 3px 7px;
-    border-radius: 3px;
-    background: #e5e7eb;
-}}
-
+body {{ font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f5f7fa; color: #1f2937; }}
+section {{ background: white; margin-bottom: 20px; padding: 20px; border-radius: 8px; }}
+table {{ width: 100%; border-collapse: collapse; }}
+th, td {{ border: 1px solid #d1d5db; padding: 8px; text-align: left; }}
+.badge {{ display: inline-block; padding: 4px 7px; margin: 2px; background: #e5e7eb; }}
 </style>
 </head>
 <body>
 <header>
-    <h1>SecureForge Security Report</h1>
-    <p>
-        {escape(report.release.application)}
-        &mdash;
-        {escape(report.release.version)}
-    </p>
+<h1>SecureForge Security Report</h1>
+<p>{escape(report.release.application)} &mdash; {escape(report.release.version)}</p>
 </header>
-
 <main>
-    {self._render_decision(report)}
-    {self._render_release(report)}
-    {self._render_scan(report)}
-    {self._render_risk(report)}
-    {self._render_policy(report)}
-    {self._render_validation(report)}
-    {self._render_validation_results(report)}
-    {self._render_findings(report)}
-    {self._render_remediation(report)}
-    {self._render_regression(report)}
-    {self._render_metadata(report)}
+{self._render_decision(report)}
+{self._render_release(report)}
+{self._render_scan(report)}
+{self._render_risk(report)}
+{self._render_policy(report)}
+{self._render_validation(report)}
+{self._render_validation_results(report)}
+{self._render_findings(report)}
+{self._render_remediation(report)}
+{self._render_regression(report)}
+{self._render_metadata(report)}
 </main>
 </body>
-</html>
-"""
+</html>"""
 
-    def _render_decision(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render the final release decision."""
-        status_class = (
-            "pass"
-            if report.decision.allowed
-            else "block"
-        )
+    def _render_decision(self, report):
+        return f"""<section>
+<h2>Release Decision</h2>
+<p><strong>Status:</strong> {escape(report.decision.status)}</p>
+<p><strong>Release allowed:</strong> {report.decision.release_allowed}</p>
+<p><strong>Reason:</strong> {escape(report.decision.reason)}</p>
+</section>"""
 
-        status_text = (
-            "PASS"
-            if report.decision.allowed
-            else "BLOCK"
-        )
+    def _render_release(self, report):
+        return f"""<section>
+<h2>Release</h2>
+<p>{escape(report.release.application)} / {escape(report.release.version)}</p>
+<p>Environment: {escape(report.release.environment)}</p>
+</section>"""
 
-        return f"""
-<section>
-    <h2>Release Decision</h2>
-    <p>
-        <span class="status {status_class}">
-            {status_text}
-        </span>
-    </p>
-    <p>
-        <strong>Status:</strong>
-        {escape(report.decision.status)}
-    </p>
-    <p>
-        <strong>Reason:</strong>
-        {escape(report.decision.reason)}
-    </p>
-</section>
-"""
+    def _render_scan(self, report):
+        return f"""<section>
+<h2>Scan</h2>
+<p>Profile: {escape(report.scan.profile)}</p>
+<p>Target: {escape(report.scan.target)}</p>
+<p>Started: {escape(report.scan.started_at)}</p>
+<p>Completed: {escape(report.scan.completed_at)}</p>
+</section>"""
 
-    def _render_release(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render release metadata."""
-        commit_sha = (
-            escape(report.release.commit_sha)
-            if report.release.commit_sha
-            else "Not provided"
-        )
-
-        return f"""
-<section>
-    <h2>Release</h2>
-    <table>
-        <tr>
-            <th>Scan ID</th>
-            <td>{escape(report.release.scan_id)}</td>
-        </tr>
-        <tr>
-            <th>Application</th>
-            <td>{escape(report.release.application)}</td>
-        </tr>
-        <tr>
-            <th>Version</th>
-            <td>{escape(report.release.version)}</td>
-        </tr>
-        <tr>
-            <th>Commit SHA</th>
-            <td>{commit_sha}</td>
-        </tr>
-        <tr>
-            <th>Environment</th>
-            <td>{escape(report.release.environment)}</td>
-        </tr>
-    </table>
-</section>
-"""
-
-    def _render_scan(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render scan metadata."""
-        tools = (
-            ", ".join(
-                escape(tool)
-                for tool in report.scan.tools
+    def _render_risk(self, report):
+        factors = report.risk.factors
+        if isinstance(factors, dict):
+            rows = "".join(
+                f"<tr><th>{escape(str(k))}</th><td>{escape(str(v))}</td></tr>"
+                for k, v in factors.items()
             )
-            if report.scan.tools
-            else "None"
-        )
-
-        errors = (
-            "<ul>"
-            + "".join(
-                f"<li>{escape(error)}</li>"
-                for error in report.scan.tool_errors
+        else:
+            rows = "".join(
+                f"<tr><td colspan='2'>{escape(str(item))}</td></tr>"
+                for item in factors
             )
-            + "</ul>"
-            if report.scan.tool_errors
-            else "<p class=\"muted\">None</p>"
-        )
+        return f"""<section>
+<h2>Risk Assessment</h2>
+<p><strong>Score:</strong> {report.risk.score}</p>
+<p><strong>Severity:</strong> {escape(report.risk.highest_severity)}</p>
+<p><strong>Blocked:</strong> {report.risk.blocked}</p>
+<table>{rows}</table>
+</section>"""
 
-        return f"""
-<section>
-    <h2>Scan</h2>
-    <table>
-        <tr>
-            <th>Profile</th>
-            <td>{escape(report.scan.profile)}</td>
-        </tr>
-        <tr>
-            <th>Started</th>
-            <td>{escape(report.scan.started_at)}</td>
-        </tr>
-        <tr>
-            <th>Completed</th>
-            <td>{escape(report.scan.completed_at)}</td>
-        </tr>
-        <tr>
-            <th>Tools</th>
-            <td>{tools}</td>
-        </tr>
-    </table>
+    def _render_policy(self, report):
+        actions = report.policy.actions
+        action_text = escape(str(actions))
+        return f"""<section>
+<h2>Policy Evaluation</h2>
+<p><strong>Action:</strong> {escape(report.policy.action)}</p>
+<p><strong>Reason:</strong> {escape(report.policy.reason)}</p>
+<p><strong>Actions:</strong> {action_text}</p>
+<p><strong>Exceptions:</strong> {escape(str(report.policy.exceptions))}</p>
+</section>"""
 
-    <h3>Tool Errors</h3>
-    {errors}
-</section>
-"""
-
-    def _render_risk(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render risk information."""
-        factors = (
-            "<table>"
-            "<tr>"
-            "<th>Factor</th>"
-            "<th>Value</th>"
-            "</tr>"
-            + "".join(
-                self._render_dict_row(factor)
-                for factor in report.risk.factors
-            )
-            + "</table>"
-            if report.risk.factors
-            else "<p class=\"muted\">No risk factors.</p>"
-        )
-
-        return f"""
-<section>
-    <h2>Risk Assessment</h2>
-    <p>
-        <strong>Score:</strong>
-        {report.risk.overall_score}
-    </p>
-    <p>
-        <strong>Severity:</strong>
-        {escape(report.risk.overall_severity)}
-    </p>
-    <p>
-        <strong>Blocked:</strong>
-        {report.risk.blocked}
-    </p>
-    {factors}
-</section>
-"""
-
-    def _render_policy(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render policy evaluation."""
-        status_class = (
-            "pass"
-            if report.policy.allowed
-            else "block"
-        )
-
-        return f"""
-<section>
-    <h2>Policy Evaluation</h2>
-    <p>
-        <span class="status {status_class}">
-            {escape(report.policy.status)}
-        </span>
-    </p>
-    <p>
-        <strong>Reason:</strong>
-        {escape(report.policy.reason)}
-    </p>
-    <p>
-        <strong>Actions:</strong>
-        {len(report.policy.actions)}
-    </p>
-    <p>
-        <strong>Exceptions:</strong>
-        {len(report.policy.exceptions)}
-    </p>
-</section>
-"""
-
-    def _render_validation(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render validation summary and gate."""
+    def _render_validation(self, report):
         if report.validation is None:
-            return """
-<section>
-    <h2>Security Validation</h2>
-    <p class="muted">
-        Validation was not executed for this scan.
-    </p>
-</section>
-"""
-
-        gate_html = ""
-
+            return "<section><h2>Security Validation</h2><p>Validation was not executed.</p></section>"
+        gate = ""
         if report.validation_gate is not None:
-            gate_class = (
-                "pass"
-                if report.validation_gate.allowed
-                else "block"
-            )
-
-            gate_html = f"""
+            gate = f"""
 <h3>Validation Gate</h3>
-<p>
-    <span class="status {gate_class}">
-        {escape(report.validation_gate.status)}
-    </span>
-</p>
-<p>
-    <strong>Reason:</strong>
-    {escape(report.validation_gate.reason)}
-</p>
-<p>
-    <strong>Requires attention:</strong>
-    {report.validation_gate.requires_attention}
-</p>
-"""
+<p><strong>Allowed:</strong> {report.validation_gate.allowed}</p>
+<p><strong>Blocked:</strong> {report.validation_gate.blocked}</p>
+<p><strong>Status:</strong> {escape(report.validation_gate.status)}</p>
+<p><strong>Reason:</strong> {escape(report.validation_gate.reason)}</p>"""
+        return f"""<section>
+<h2>Security Validation</h2>
+<p>Total: {report.validation.total}</p>
+<p>Confirmed: {report.validation.confirmed}</p>
+<p>Rejected: {report.validation.rejected}</p>
+<p>Inconclusive: {report.validation.inconclusive}</p>
+<p>Errors: {report.validation.errors}</p>
+{gate}
+</section>"""
 
-        return f"""
-<section>
-    <h2>Security Validation</h2>
-
-    <table>
-        <tr>
-            <th>Total</th>
-            <td>{report.validation.total}</td>
-        </tr>
-        <tr>
-            <th>Confirmed</th>
-            <td>{report.validation.confirmed}</td>
-        </tr>
-        <tr>
-            <th>Rejected</th>
-            <td>{report.validation.rejected}</td>
-        </tr>
-        <tr>
-            <th>Inconclusive</th>
-            <td>{report.validation.inconclusive}</td>
-        </tr>
-        <tr>
-            <th>Errors</th>
-            <td>{report.validation.errors}</td>
-        </tr>
-        <tr>
-            <th>Remediated</th>
-            <td>{report.validation.remediated}</td>
-        </tr>
-        <tr>
-            <th>All Validated</th>
-            <td>{report.validation.all_validated}</td>
-        </tr>
-    </table>
-
-    {gate_html}
-</section>
-"""
-
-    def _render_validation_results(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render individual validation results."""
+    def _render_validation_results(self, report):
         if not report.validation_results:
             return ""
-
-        rows = []
-
-        for result in report.validation_results:
-            outcome_class = (
-                "pass"
-                if result.rejected
-                else "block"
-                if result.confirmed or result.failed
-                else "review"
-            )
-
-            rows.append(
-                f"""
-<tr>
-    <td>{escape(result.finding_id)}</td>
-    <td>
-        <span class="status {outcome_class}">
-            {escape(result.outcome)}
-        </span>
-    </td>
-    <td>{escape(result.validator)}</td>
-    <td>{escape(result.message)}</td>
-    <td>{result.remediation_verified}</td>
-</tr>
-"""
-            )
-
-        return f"""
-<section>
-    <h2>Validation Results</h2>
-    <table>
-        <tr>
-            <th>Finding</th>
-            <th>Outcome</th>
-            <th>Validator</th>
-            <th>Message</th>
-            <th>Remediation Verified</th>
-        </tr>
-        {"".join(rows)}
-    </table>
-</section>
-"""
-
-    def _render_findings(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render security findings."""
-        if not report.findings:
-            return """
-<section>
-    <h2>Findings</h2>
-    <p class="muted">
-        No findings were produced.
-    </p>
-</section>
-"""
-
-        content = []
-
-        for finding in report.findings:
-            correlation = (
-                ", ".join(
-                    escape(item)
-                    for item in finding.correlation_ids
-                )
-                if finding.correlation_ids
-                else "None"
-            )
-
-            content.append(
-                f"""
-<div class="finding">
-    <h3>
-        {escape(finding.finding_id)}
-        &mdash;
-        {escape(finding.title)}
-    </h3>
-
-    <p>
-        <span class="badge">
-            Severity: {escape(finding.severity)}
-        </span>
-        <span class="badge">
-            Confidence: {escape(finding.confidence)}
-        </span>
-        <span class="badge">
-            Status: {escape(finding.status)}
-        </span>
-        <span class="badge">
-            Validation: {escape(finding.validation_status)}
-        </span>
-    </p>
-
-    <p>
-        <strong>Source:</strong>
-        {escape(finding.source)}
-    </p>
-
-    <p>
-        <strong>Asset:</strong>
-        {escape(finding.asset)}
-    </p>
-
-    <p>
-        <strong>Endpoint:</strong>
-        {escape(finding.endpoint or "Not provided")}
-    </p>
-
-    <p>
-        <strong>Parameter:</strong>
-        {escape(finding.parameter or "Not provided")}
-    </p>
-
-    <p>
-        <strong>CWE:</strong>
-        {escape(finding.cwe or "Not mapped")}
-    </p>
-
-    <p>
-        <strong>OWASP:</strong>
-        {escape(
-            finding.owasp_mapping
-            or "Not mapped"
-        )}
-    </p>
-
-    <p>
-        <strong>Security Requirement:</strong>
-        {escape(
-            finding.security_requirement
-            or "Not mapped"
-        )}
-    </p>
-
-    <p>
-        <strong>Description:</strong>
-        {escape(finding.description)}
-    </p>
-
-    <p>
-        <strong>Impact:</strong>
-        {escape(finding.impact)}
-    </p>
-
-    <p>
-        <strong>Remediation:</strong>
-        {escape(finding.remediation)}
-    </p>
-
-    <p>
-        <strong>Correlation IDs:</strong>
-        {correlation}
-    </p>
-
-    <p>
-        <strong>Regression Test:</strong>
-        {escape(
-            finding.regression_test
-            or "None"
-        )}
-    </p>
-</div>
-"""
-            )
-
-        return f"""
-<section>
-    <h2>Findings</h2>
-    {"".join(content)}
-</section>
-"""
-
-    def _render_remediation(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render remediation summary."""
-        items = report.remediation.findings
-
-        content = (
-            "<ul>"
-            + "".join(
-                f"""
-<li>
-    <strong>
-        {escape(str(item.get("finding_id", "")))}
-    </strong>
-    &mdash;
-    {escape(str(item.get("status", "")))}
-    &mdash;
-    {escape(str(item.get("remediation", "")))}
-</li>
-"""
-                for item in items
-            )
-            + "</ul>"
-            if items
-            else "<p class=\"muted\">No remediation items.</p>"
+        rows = "".join(
+            f"<tr><td>{escape(r.finding_id)}</td><td>{escape(r.outcome)}</td><td>{escape(r.message)}</td></tr>"
+            for r in report.validation_results
         )
+        return f"<section><h2>Validation Results</h2><table><tr><th>Finding</th><th>Outcome</th><th>Message</th></tr>{rows}</table></section>"
 
-        return f"""
-<section>
-    <h2>Remediation</h2>
-    <p>
-        <strong>Total:</strong>
-        {report.remediation.total}
-    </p>
-    <p>
-        <strong>Open:</strong>
-        {report.remediation.open_count}
-    </p>
-    <p>
-        <strong>Remediated:</strong>
-        {report.remediation.remediated_count}
-    </p>
-    {content}
-</section>
-"""
+    def _render_findings(self, report):
+        if not report.findings:
+            return "<section><h2>Findings</h2><p>No findings were produced.</p></section>"
+        content = []
+        for finding in report.findings:
+            content.append(
+                f"""<div>
+<h3>{escape(finding.finding_id)} &mdash; {escape(finding.title)}</h3>
+<p><span class="badge">Severity: {escape(finding.severity)}</span>
+<span class="badge">Status: {escape(finding.status)}</span></p>
+<p>Source: {escape(finding.source)}</p>
+<p>Asset: {escape(finding.asset)}</p>
+<p>Description: {escape(finding.description)}</p>
+<p>Impact: {escape(finding.impact)}</p>
+<p>Remediation: {escape(finding.remediation)}</p>
+</div>"""
+            )
+        return f"<section><h2>Findings</h2>{''.join(content)}</section>"
 
-    def _render_regression(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render regression testing information."""
+    def _render_remediation(self, report):
+        items = report.remediation.findings
+        rows = "".join(
+            f"<li><strong>{escape(item.finding_id)}</strong> &mdash; "
+            f"{escape(item.status)} &mdash; {escape(item.remediation)}</li>"
+            for item in items
+        )
+        return f"""<section>
+<h2>Remediation</h2>
+<p>Total: {report.remediation.total}</p>
+<p>Open: {report.remediation.open_count}</p>
+<p>Remediated: {report.remediation.remediated_count}</p>
+<ul>{rows or "<li>None</li>"}</ul>
+</section>"""
+
+    def _render_regression(self, report):
         if report.regression is None:
-            return """
-<section>
-    <h2>Regression Testing</h2>
-    <p class="muted">
-        Regression testing was not executed.
-    </p>
-</section>
-"""
+            return "<section><h2>Regression Testing</h2><p>Regression testing was not executed.</p></section>"
 
         gate_html = ""
-
         if report.regression_gate is not None:
-            gate_class = (
-                "pass"
-                if report.regression_gate.allowed
-                else "block"
-            )
-
+            gate = report.regression_gate
+            failed = "".join(f"<li>{escape(str(x))}</li>" for x in gate.failed_tests) or "<li>None</li>"
+            errored = "".join(f"<li>{escape(str(x))}</li>" for x in gate.errored_tests) or "<li>None</li>"
+            skipped = "".join(f"<li>{escape(str(x))}</li>" for x in gate.skipped_tests) or "<li>None</li>"
             gate_html = f"""
 <h3>Regression Gate</h3>
-<p>
-    <span class="status {gate_class}">
-        {escape(report.regression_gate.status)}
-    </span>
-</p>
-<p>
-    <strong>Reason:</strong>
-    {escape(report.regression_gate.reason)}
-</p>
-"""
+<p><strong>Allowed:</strong> {gate.allowed}</p>
+<p><strong>Blocked:</strong> {gate.blocked}</p>
+<p><strong>Status:</strong> {escape(str(gate.status))}</p>
+<p><strong>Reason:</strong> {escape(gate.reason)}</p>
+<p><strong>Failed tests:</strong></p><ul>{failed}</ul>
+<p><strong>Errored tests:</strong></p><ul>{errored}</ul>
+<p><strong>Skipped tests:</strong></p><ul>{skipped}</ul>"""
 
         rows = "".join(
-            f"""
-<tr>
-    <td>{escape(test.test_id)}</td>
-    <td>{escape(test.status)}</td>
-    <td>{escape(test.message)}</td>
-</tr>
-"""
-            for test in report.regression.tests
+            f"<tr><td>{escape(t.test_id)}</td><td>{escape(t.status)}</td><td>{escape(t.message)}</td></tr>"
+            for t in report.regression.tests
         )
+        return f"""<section>
+<h2>Regression Testing</h2>
+<p>Suite: {escape(report.regression.suite_id)}</p>
+<p>Status: {escape(report.regression.status)}</p>
+<p>Total: {report.regression.total}</p>
+<p>Passed: {report.regression.passed}</p>
+<p>Failed: {report.regression.failed}</p>
+<p>Errored: {report.regression.errors}</p>
+{gate_html}
+<table><tr><th>Test ID</th><th>Status</th><th>Message</th></tr>{rows}</table>
+</section>"""
 
-        return f"""
-<section>
-    <h2>Regression Testing</h2>
-
-    <table>
-        <tr>
-            <th>Total</th>
-            <td>{report.regression.total}</td>
-        </tr>
-        <tr>
-            <th>Passed</th>
-            <td>{report.regression.passed}</td>
-        </tr>
-        <tr>
-            <th>Failed</th>
-            <td>{report.regression.failed}</td>
-        </tr>
-        <tr>
-            <th>Errored</th>
-            <td>{report.regression.errored}</td>
-        </tr>
-        <tr>
-            <th>Skipped</th>
-            <td>{report.regression.skipped}</td>
-        </tr>
-    </table>
-
-    {gate_html}
-
-    <h3>Tests</h3>
-
-    <table>
-        <tr>
-            <th>Test ID</th>
-            <th>Status</th>
-            <th>Message</th>
-        </tr>
-        {rows}
-    </table>
-</section>
-"""
-
-    def _render_metadata(
-        self,
-        report: SecurityReport,
-    ) -> str:
-        """Render report generation metadata."""
-        return f"""
-<section>
-    <h2>Report Metadata</h2>
-    <p>
-        <strong>Generated:</strong>
-        {escape(report.generated_at)}
-    </p>
-</section>
-"""
-
-    @staticmethod
-    def _render_dict_row(
-        value: dict[str, Any],
-    ) -> str:
-        """Render a dictionary as an HTML table row."""
-        if not value:
-            return "<tr><td colspan=\"2\">None</td></tr>"
-
-        items = []
-
-        for key, item in value.items():
-            items.append(
-                f"""
-<tr>
-    <th>{escape(str(key))}</th>
-    <td>{escape(str(item))}</td>
-</tr>
-"""
-            )
-
-        return "".join(items)
+    def _render_metadata(self, report):
+        return f"<section><h2>Report Metadata</h2><p><strong>Generated:</strong> {escape(report.generated_at)}</p></section>"
 
 
-# Backward-compatible name used by existing reporting service code.
 HTMLReportRenderer = SecurityHTMLReportRenderer
 
-
-__all__ = [
-    "HTMLReportRenderer",
-    "SecurityHTMLReportRenderer",
-]
+__all__ = ["HTMLReportRenderer", "SecurityHTMLReportRenderer"]
