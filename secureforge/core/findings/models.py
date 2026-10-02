@@ -25,6 +25,12 @@ class Severity(StrEnum):
     CRITICAL = "critical"
 
 
+class InformationalSeverity(StrEnum):
+    """Legacy synthetic informational severity used by CI evidence."""
+
+    INFORMATIONAL = "informational"
+
+
 class Confidence(StrEnum):
     """Confidence level of a finding."""
 
@@ -70,29 +76,21 @@ class Evidence(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_legacy_fields(
-        cls,
-        value: Any,
-    ) -> Any:
+    def normalize_legacy_fields(cls, value: Any) -> Any:
         if not isinstance(value, dict):
             return value
 
         normalized = dict(value)
-
         evidence_type = (
             normalized.get("evidence_type")
             or normalized.get("type")
             or ""
         )
-
         normalized["evidence_type"] = evidence_type
 
         if not normalized.get("evidence_id"):
             normalized["evidence_id"] = (
-                "evidence-"
-                + cls._generate_evidence_id(
-                    normalized
-                )
+                "evidence-" + cls._generate_evidence_id(normalized)
             )
 
         data = normalized.get("data")
@@ -100,47 +98,27 @@ class Evidence(BaseModel):
             data = {}
 
         if "content" in normalized:
-            data.setdefault(
-                "content",
-                normalized["content"],
-            )
-
+            data.setdefault("content", normalized["content"])
         if "location" in normalized:
-            data.setdefault(
-                "location",
-                normalized["location"],
-            )
+            data.setdefault("location", normalized["location"])
 
         normalized["data"] = data
-
         if not normalized.get("description"):
-            normalized["description"] = str(
-                data.get("content", "")
-            )
+            normalized["description"] = str(data.get("content", ""))
 
         return normalized
 
     @staticmethod
-    def _generate_evidence_id(
-        value: dict[str, Any],
-    ) -> str:
+    def _generate_evidence_id(value: dict[str, Any]) -> str:
         canonical = "|".join(
             [
                 str(value.get("source", "")),
-                str(
-                    value.get(
-                        "evidence_type",
-                        value.get("type", ""),
-                    )
-                ),
+                str(value.get("evidence_type", value.get("type", ""))),
                 str(value.get("content", "")),
                 str(value.get("location", "")),
             ]
         )
-
-        return sha256(
-            canonical.encode("utf-8")
-        ).hexdigest()[:16]
+        return sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
 class Finding(BaseModel):
@@ -158,7 +136,7 @@ class Finding(BaseModel):
     owasp: str | None = None
     owasp_mapping: str | None = None
     security_requirement: str | None = None
-    severity: Severity = Severity.INFO
+    severity: Severity | InformationalSeverity = Severity.INFO
     confidence: Confidence = Confidence.MEDIUM
     evidence: list[Evidence] = Field(default_factory=list)
     description: str = ""
@@ -179,32 +157,19 @@ class Finding(BaseModel):
 
     @property
     def correlations(self) -> list[str]:
-        """Legacy alias used by reporting."""
         return list(self.correlation_ids)
 
-    def add_evidence(
-        self,
-        evidence: Evidence | dict[str, Any],
-    ) -> None:
+    def add_evidence(self, evidence: Evidence | dict[str, Any]) -> None:
         if isinstance(evidence, dict):
-            evidence = Evidence.model_validate(
-                evidence
-            )
-
+            evidence = Evidence.model_validate(evidence)
         self.evidence.append(evidence)
         self.last_seen = utc_now()
 
-    def add_correlation(
-        self,
-        correlation_id: str,
-    ) -> None:
+    def add_correlation(self, correlation_id: str) -> None:
         if correlation_id not in self.correlation_ids:
-            self.correlation_ids.append(
-                correlation_id
-            )
+            self.correlation_ids.append(correlation_id)
 
     def mark_validated(self) -> None:
-        """Mark a finding as confirmed by validation."""
         self.validation_status = ValidationStatus.CONFIRMED
         self.confidence = Confidence.CONFIRMED
         self.status = FindingStatus.OPEN
@@ -234,6 +199,7 @@ __all__ = [
     "Evidence",
     "Finding",
     "FindingStatus",
+    "InformationalSeverity",
     "Severity",
     "ValidationStatus",
 ]
