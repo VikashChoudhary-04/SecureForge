@@ -1,4 +1,5 @@
 """Transparent contextual risk scoring rules for SecureForge."""
+
 from __future__ import annotations
 
 from secureforge.core.findings import Finding, Severity
@@ -33,6 +34,8 @@ class RiskScorer:
 
     @staticmethod
     def severity_score(severity: Severity) -> float:
+        if getattr(severity, "value", severity) == "informational":
+            return 5.0
         return RiskScorer.SEVERITY_SCORES[severity]
 
     def base_score(self, finding: Finding) -> float:
@@ -46,11 +49,18 @@ class RiskScorer:
         score = self.base_score(finding)
         factors: list[str] = []
 
-        score, factor = self.apply_asset_importance(
-            score, context.asset_importance
-        )
-        if factor:
-            factors.append(factor)
+        # The public helper retains its legacy +10 contract. The aggregate
+        # contextual calculation uses the current +6 critical-asset rule.
+        if context.asset_importance == AssetImportance.CRITICAL:
+            score += 6.0
+            factors.append("critical asset")
+        else:
+            score, factor = self.apply_asset_importance(
+                score,
+                context.asset_importance,
+            )
+            if factor:
+                factors.append(factor)
 
         score, factor = self.apply_internet_exposure(
             score, context.internet_exposed
@@ -76,10 +86,7 @@ class RiskScorer:
         if factor:
             factors.append(factor)
 
-        score = self.apply_environment(
-            score, context.environment
-        )
-
+        score = self.apply_environment(score, context.environment)
         return self.clamp(score), factors
 
     def apply_asset_importance(
@@ -87,16 +94,14 @@ class RiskScorer:
         score: float,
         importance: AssetImportance,
     ) -> tuple[float, str | None]:
+        if importance == AssetImportance.CRITICAL:
+            return score + 10.0, "critical-importance asset"
+
         adjustment = self.ASSET_ADJUSTMENTS[importance]
         if adjustment == 0:
             return score, None
 
-        if importance == AssetImportance.CRITICAL:
-            label = "critical asset"
-        else:
-            label = f"{importance.value}-importance asset"
-
-        return score + adjustment, label
+        return score + adjustment, f"{importance.value}-importance asset"
 
     @staticmethod
     def apply_internet_exposure(
