@@ -245,6 +245,14 @@ class ScanResultStore:
             raise ScanResultStoreError(
                 f"Scan result '{scan_id}' is missing required sections."
             )
+        pipeline = payload["pipeline"]
+        if not any(
+            pipeline.get(section)
+            for section in ("risk", "policy", "release_gate")
+        ):
+            raise ScanResultStoreError(
+                f"Scan result '{scan_id}' is missing required sections."
+            )
 
 
 __all__ = [
