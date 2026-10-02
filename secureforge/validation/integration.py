@@ -55,7 +55,8 @@ def apply_validation_result(
 
     elif assessment.remediation_verified:
         finding.mark_remediated()
-        finding.mark_verified()
+        finding.validation_status = ValidationStatus.VERIFIED
+        finding.status = FindingStatus.VERIFIED
 
     elif result.outcome == ValidationOutcome.REJECTED:
         finding.validation_status = ValidationStatus.VALIDATED
