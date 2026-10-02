@@ -8,10 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReleaseMetadata(BaseModel):
-    """Release information represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     scan_id: str = ""
     release_id: str = ""
     application: str
@@ -23,10 +20,7 @@ class ReleaseMetadata(BaseModel):
 
 
 class ScanMetadata(BaseModel):
-    """Metadata describing a SecureForge scan."""
-
     model_config = ConfigDict(extra="allow")
-
     scan_id: str
     profile: str
     application: str = "securecommerce"
@@ -43,10 +37,7 @@ class ScanMetadata(BaseModel):
 
 
 class ReportFinding(BaseModel):
-    """Finding representation used by security reports."""
-
     model_config = ConfigDict(extra="allow")
-
     finding_id: str
     title: str
     source: str
@@ -73,10 +64,7 @@ class ReportFinding(BaseModel):
 
 
 class RiskReport(BaseModel):
-    """Risk information represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     score: float
     highest_severity: str
     finding_count: int = 0
@@ -93,12 +81,13 @@ class RiskReport(BaseModel):
     def overall_severity(self) -> str:
         return self.highest_severity
 
+    @property
+    def blocked(self) -> bool:
+        return self.score >= 90.0
+
 
 class PolicyReport(BaseModel):
-    """Policy evaluation represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     policy_name: str = "default"
     action: str = ""
     allowed: bool = False
@@ -115,10 +104,7 @@ class PolicyReport(BaseModel):
 
 
 class RemediationItem(BaseModel):
-    """Remediation information for a finding."""
-
     model_config = ConfigDict(extra="allow")
-
     finding_id: str
     title: str
     status: str
@@ -126,10 +112,7 @@ class RemediationItem(BaseModel):
 
 
 class RemediationReport(BaseModel):
-    """Remediation summary represented in a report."""
-
     model_config = ConfigDict(extra="allow")
-
     total: int
     open: int = 0
     remediated: int = 0
@@ -148,20 +131,14 @@ class RemediationReport(BaseModel):
 
 
 class RegressionTestReport(BaseModel):
-    """Individual regression-test result."""
-
     model_config = ConfigDict(extra="allow")
-
     test_id: str
     status: str
     message: str = ""
 
 
 class RegressionReport(BaseModel):
-    """Regression suite results represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     suite_id: str
     suite_name: str = ""
     status: str = ""
@@ -180,10 +157,7 @@ class RegressionReport(BaseModel):
 
 
 class RegressionGateReport(BaseModel):
-    """Regression-gate decision represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     allowed: bool
     blocked: bool
     status: str
@@ -195,10 +169,7 @@ class RegressionGateReport(BaseModel):
 
 
 class ValidationResultReport(BaseModel):
-    """Individual validation result represented in a report."""
-
     model_config = ConfigDict(extra="allow")
-
     finding_id: str
     outcome: str
     message: str
@@ -213,10 +184,7 @@ class ValidationResultReport(BaseModel):
 
 
 class ValidationReport(BaseModel):
-    """Validation summary represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     total: int
     confirmed: int
     rejected: int
@@ -228,10 +196,7 @@ class ValidationReport(BaseModel):
 
 
 class ValidationGateReport(BaseModel):
-    """Validation-gate decision represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     allowed: bool
     blocked: bool
     status: str
@@ -245,10 +210,7 @@ class ValidationGateReport(BaseModel):
 
 
 class DecisionReport(BaseModel):
-    """Final release decision represented in a security report."""
-
     model_config = ConfigDict(extra="allow")
-
     status: str
     reason: str
     release_allowed: bool = False
@@ -259,10 +221,7 @@ class DecisionReport(BaseModel):
 
 
 class SecurityReport(BaseModel):
-    """Complete SecureForge security report."""
-
     model_config = ConfigDict(extra="allow")
-
     release: ReleaseMetadata
     scan: ScanMetadata
     findings: list[ReportFinding] = Field(default_factory=list)
