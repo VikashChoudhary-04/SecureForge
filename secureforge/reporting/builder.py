@@ -9,10 +9,8 @@ from secureforge.core.findings.models import Finding
 from secureforge.core.policy.models import PolicyDecision
 from secureforge.core.release_gate.models import ReleaseGateDecision
 from secureforge.core.risk.models import RiskAssessment
-from secureforge.regression import (
-    RegressionGateDecision,
-    RegressionSuiteResult,
-)
+
+from secureforge.regression import RegressionGateDecision, RegressionSuiteResult
 
 from .models import (
     DecisionReport,
@@ -25,15 +23,27 @@ from .models import (
     RiskReport,
     ScanMetadata,
     SecurityReport,
-    ValidationGateReport,
-    ValidationReport,
-    ValidationResultReport,
 )
 
 
-class SecurityReportBuilder:
-    """Convert SecureForge domain results into a security report."""
+def _stringify(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
 
+
+def _duration(value: Any) -> float:
+    if value is None:
+        return 0.0
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+class SecurityReportBuilder:
     def build(
         self,
         *,
@@ -58,9 +68,7 @@ class SecurityReportBuilder:
         release_gate: ReleaseGateDecision | None = None,
         **_: Any,
     ) -> SecurityReport:
-        """Build a report using either modern or legacy arguments."""
         findings = list(findings or [])
-
         decision = decision or release_gate
 
         if release is None:
@@ -72,13 +80,11 @@ class SecurityReportBuilder:
                 environment=environment or "lab",
                 release_allowed=(
                     bool(decision.release_allowed)
-                    if decision is not None
-                    else False
+                    if decision is not None else False
                 ),
                 release_blocked=(
                     not bool(decision.release_allowed)
-                    if decision is not None
-                    else True
+                    if decision is not None else True
                 ),
             )
 
@@ -96,10 +102,7 @@ class SecurityReportBuilder:
                 integrations=integrations or [],
             )
 
-        report_findings = [
-            self._build_finding(finding)
-            for finding in findings
-        ]
+        report_findings = [self._build_finding(f) for f in findings]
 
         regression_report = (
             self._build_regression(regression)
@@ -113,8 +116,7 @@ class SecurityReportBuilder:
 
         regression_gate_report = (
             self._build_regression_gate(regression_gate)
-            if regression_gate is not None
-            else None
+            if regression_gate is not None else None
         )
 
         decision = decision or ReleaseGateDecision(
@@ -132,17 +134,13 @@ class SecurityReportBuilder:
             remediation=(
                 remediation
                 if remediation is not None
-                else RemediationReport(
-                    total=0,
-                    items=[],
-                )
+                else RemediationReport(total=0, items=[])
             ),
             regression=regression_report,
             regression_gate=regression_gate_report,
             decision=self._build_decision(decision),
             generated_at=(
-                generated_at
-                or datetime.now(timezone.utc).isoformat()
+                generated_at or datetime.now(timezone.utc).isoformat()
             ),
         )
 
@@ -166,10 +164,7 @@ class SecurityReportBuilder:
             description=finding.description,
             impact=finding.impact,
             remediation=finding.remediation,
-            evidence=[
-                evidence.model_dump()
-                for evidence in finding.evidence
-            ],
+            evidence=[e.model_dump() for e in finding.evidence],
             correlations=list(finding.correlations),
             regression_test=finding.regression_test,
         )
@@ -177,33 +172,26 @@ class SecurityReportBuilder:
     @staticmethod
     def _build_risk(risk: RiskAssessment) -> RiskReport:
         factors = risk.factors
-        if isinstance(factors, dict):
-            factor_data: Any = dict(factors)
-        else:
-            factor_data = [
-                (
-                    factor.model_dump()
-                    if hasattr(factor, "model_dump")
-                    else factor
-                )
-                for factor in factors
+        factor_data = (
+            dict(factors)
+            if isinstance(factors, dict)
+            else [
+                f.model_dump() if hasattr(f, "model_dump") else f
+                for f in factors
             ]
+        )
 
         highest = risk.highest_severity or risk.contextual_risk
         highest_value = getattr(highest, "value", str(highest))
 
         return RiskReport(
-            score=(
-                risk.score
-                if risk.score is not None
-                else risk.risk_score
-            ),
+            score=risk.score if risk.score is not None else risk.risk_score,
             highest_severity=highest_value,
             finding_count=risk.finding_count or 0,
             confirmed_critical=risk.confirmed_critical,
             confirmed_high=risk.confirmed_high,
             factors=factor_data,
-            evaluated_at=risk.evaluated_at,
+            evaluated_at=_stringify(risk.evaluated_at),
         )
 
     @staticmethod
@@ -217,8 +205,7 @@ class SecurityReportBuilder:
             violations=list(getattr(policy, "violations", [])),
             actions=(
                 actions.model_dump()
-                if hasattr(actions, "model_dump")
-                else actions
+                if hasattr(actions, "model_dump") else actions
             ),
             tool_errors=list(getattr(policy, "tool_errors", [])),
             regression_failures=list(
@@ -228,9 +215,7 @@ class SecurityReportBuilder:
         )
 
     @staticmethod
-    def _build_decision(
-        decision: ReleaseGateDecision,
-    ) -> DecisionReport:
+    def _build_decision(decision: ReleaseGateDecision) -> DecisionReport:
         status = getattr(decision, "status", "review")
         status = getattr(status, "value", status)
         return DecisionReport(
@@ -250,7 +235,7 @@ class SecurityReportBuilder:
             {
                 "test_id": item.test_id,
                 "status": getattr(item.status, "value", item.status),
-                "message": item.message,
+                "message": item.message or "",
             }
             for item in results
         ]
@@ -258,20 +243,16 @@ class SecurityReportBuilder:
         return RegressionReport(
             suite_id=regression.suite_id,
             suite_name=getattr(regression, "suite_name", ""),
-            status=getattr(
-                regression.status,
-                "value",
-                regression.status,
-            ),
+            status=getattr(regression.status, "value", regression.status),
             total=regression.total,
             passed=regression.passed,
             failed=regression.failed,
             errors=regression.errors,
             skipped=regression.skipped,
             tests=tests,
-            started_at=regression.started_at,
-            completed_at=regression.completed_at,
-            duration_seconds=regression.duration_seconds,
+            started_at=_stringify(regression.started_at),
+            completed_at=_stringify(regression.completed_at),
+            duration_seconds=_duration(regression.duration_seconds),
             tests_total=regression.total,
             tests_failed=regression.failed,
         )
