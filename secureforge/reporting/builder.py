@@ -9,8 +9,8 @@ from secureforge.core.findings.models import Finding
 from secureforge.core.policy.models import PolicyDecision
 from secureforge.core.release_gate.models import ReleaseGateDecision
 from secureforge.core.risk.models import RiskAssessment
-
 from secureforge.regression import RegressionGateDecision, RegressionSuiteResult
+from secureforge.validation.models import ValidationResult, ValidationSummary
 
 from .models import (
     DecisionReport,
@@ -23,6 +23,8 @@ from .models import (
     RiskReport,
     ScanMetadata,
     SecurityReport,
+    ValidationGateReport,
+    ValidationReport,
 )
 
 
@@ -56,6 +58,9 @@ class SecurityReportBuilder:
         remediation: RemediationReport | None = None,
         regression: RegressionSuiteResult | None = None,
         regression_gate: RegressionGateDecision | None = None,
+        validation: ValidationSummary | None = None,
+        validation_results: list[ValidationResult] | None = None,
+        validation_gate: Any | None = None,
         generated_at: str | None = None,
         release_id: str | None = None,
         application: str | None = None,
@@ -80,11 +85,13 @@ class SecurityReportBuilder:
                 environment=environment or "lab",
                 release_allowed=(
                     bool(decision.release_allowed)
-                    if decision is not None else False
+                    if decision is not None
+                    else False
                 ),
                 release_blocked=(
                     not bool(decision.release_allowed)
-                    if decision is not None else True
+                    if decision is not None
+                    else True
                 ),
             )
 
@@ -116,13 +123,22 @@ class SecurityReportBuilder:
 
         regression_gate_report = (
             self._build_regression_gate(regression_gate)
-            if regression_gate is not None else None
+            if regression_gate is not None
+            else None
         )
 
         decision = decision or ReleaseGateDecision(
             status="review",
             reason="No release-gate decision supplied.",
             release_allowed=False,
+        )
+
+        validation_report = self._build_validation(
+            validation,
+            validation_results,
+        )
+        validation_gate_report = self._build_validation_gate(
+            validation_gate,
         )
 
         return SecurityReport(
@@ -138,6 +154,13 @@ class SecurityReportBuilder:
             ),
             regression=regression_report,
             regression_gate=regression_gate_report,
+            validation=validation_report,
+            validation_results=(
+                validation_report.results
+                if validation_report is not None
+                else []
+            ),
+            validation_gate=validation_gate_report,
             decision=self._build_decision(decision),
             generated_at=(
                 generated_at or datetime.now(timezone.utc).isoformat()
@@ -196,16 +219,19 @@ class SecurityReportBuilder:
 
     @staticmethod
     def _build_policy(policy: PolicyDecision) -> PolicyReport:
+        action = getattr(policy, "action", "")
+        action = getattr(action, "value", action)
         actions = getattr(policy, "actions", [])
         return PolicyReport(
             policy_name=getattr(policy, "policy_name", "default"),
-            action=getattr(policy, "action", ""),
+            action=action,
             allowed=bool(getattr(policy, "allowed", False)),
             reason=getattr(policy, "reason", ""),
             violations=list(getattr(policy, "violations", [])),
             actions=(
                 actions.model_dump()
-                if hasattr(actions, "model_dump") else actions
+                if hasattr(actions, "model_dump")
+                else actions
             ),
             tool_errors=list(getattr(policy, "tool_errors", [])),
             regression_failures=list(
@@ -273,6 +299,92 @@ class SecurityReportBuilder:
             errored_tests=errored,
             skipped_tests=skipped,
             failures=failed + errored,
+        )
+
+
+    @staticmethod
+    def _build_validation(
+        validation: ValidationSummary | None,
+        validation_results: list[ValidationResult] | None,
+    ):
+        if validation is None and validation_results is None:
+            return None
+
+        if validation is None:
+            results = list(validation_results or [])
+            validation = ValidationSummary(
+                total=len(results),
+                confirmed=sum(result.confirmed for result in results),
+                rejected=sum(result.rejected for result in results),
+                inconclusive=sum(
+                    result.inconclusive for result in results
+                ),
+                errors=sum(result.failed for result in results),
+                remediated=sum(
+                    result.remediation_verified for result in results
+                ),
+                results=results,
+            )
+
+        report_results = [
+            {
+                "finding_id": result.finding_id,
+                "outcome": getattr(result.outcome, "value", result.outcome),
+                "message": result.message,
+                "validator": result.validator,
+                "validated_at": result.validated_at,
+                "remediation_verified": result.remediation_verified,
+                "confirmed": result.confirmed,
+                "rejected": result.rejected,
+                "inconclusive": result.inconclusive,
+                "failed": result.failed,
+                "evidence": [
+                    evidence.model_dump(mode="json")
+                    for evidence in result.evidence
+                ],
+            }
+            for result in validation.results
+        ]
+
+        return ValidationReport(
+            total=validation.total,
+            confirmed=validation.confirmed,
+            rejected=validation.rejected,
+            inconclusive=validation.inconclusive,
+            errors=validation.errors,
+            remediated=validation.remediated,
+            all_validated=validation.all_validated,
+            results=report_results,
+        )
+
+    @staticmethod
+    def _build_validation_gate(gate: Any | None):
+        if gate is None:
+            return None
+
+        return ValidationGateReport(
+            allowed=bool(getattr(gate, "allowed", False)),
+            blocked=bool(getattr(gate, "blocked", False)),
+            status=str(getattr(gate, "status", "")),
+            reason=str(getattr(gate, "reason", "")),
+            confirmed_findings=list(
+                getattr(gate, "confirmed_findings", ())
+            ),
+            unresolved_findings=list(
+                getattr(gate, "unresolved_findings", ())
+            ),
+            remediation_verified=list(
+                getattr(gate, "remediation_verified", ())
+            ),
+            inconclusive_findings=list(
+                getattr(gate, "inconclusive_findings", ())
+            ),
+            errored_findings=list(
+                getattr(gate, "errored_findings", ())
+            ),
+            requires_attention=bool(
+                getattr(gate, "requires_attention", False)
+            ),
         )
 
 
