@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from secureforge.core.findings import Finding, Severity
-
 from .models import AssetImportance, Environment, RiskContext
 
 
@@ -49,15 +48,12 @@ class RiskScorer:
         score = self.base_score(finding)
         factors: list[str] = []
 
-        # The public helper retains its legacy +10 contract. The aggregate
-        # contextual calculation uses the current +6 critical-asset rule.
         if context.asset_importance == AssetImportance.CRITICAL:
             score += 6.0
-            factors.append("critical asset")
+            factors.append("critical-importance asset")
         else:
             score, factor = self.apply_asset_importance(
-                score,
-                context.asset_importance,
+                score, context.asset_importance
             )
             if factor:
                 factors.append(factor)
@@ -86,8 +82,9 @@ class RiskScorer:
         if factor:
             factors.append(factor)
 
-        score = self.apply_environment(score, context.environment)
-        return self.clamp(score), factors
+        return self.clamp(
+            self.apply_environment(score, context.environment)
+        ), factors
 
     def apply_asset_importance(
         self,
@@ -104,46 +101,30 @@ class RiskScorer:
         return score + adjustment, f"{importance.value}-importance asset"
 
     @staticmethod
-    def apply_internet_exposure(
-        score: float,
-        internet_exposed: bool,
-    ) -> tuple[float, str | None]:
+    def apply_internet_exposure(score: float, internet_exposed: bool):
         if internet_exposed:
             return score + 10.0, "internet-exposed asset"
         return score, None
 
     @staticmethod
-    def apply_authentication(
-        score: float,
-        authentication_required: bool,
-    ) -> tuple[float, str | None]:
+    def apply_authentication(score: float, authentication_required: bool):
         if not authentication_required:
             return score + 10.0, "no authentication required"
         return score, None
 
     @staticmethod
-    def apply_sensitive_data(
-        score: float,
-        sensitive_data: bool,
-    ) -> tuple[float, str | None]:
+    def apply_sensitive_data(score: float, sensitive_data: bool):
         if sensitive_data:
             return score + 10.0, "sensitive data affected"
         return score, None
 
     @staticmethod
-    def apply_exploit_evidence(
-        score: float,
-        exploit_evidence: bool,
-    ) -> tuple[float, str | None]:
+    def apply_exploit_evidence(score: float, exploit_evidence: bool):
         if exploit_evidence:
             return score + 10.0, "exploit evidence available"
         return score, None
 
-    def apply_environment(
-        self,
-        score: float,
-        environment: Environment,
-    ) -> float:
+    def apply_environment(self, score: float, environment: Environment) -> float:
         return score + self.ENVIRONMENT_ADJUSTMENTS[environment]
 
     @staticmethod
