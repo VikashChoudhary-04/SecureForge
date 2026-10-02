@@ -31,11 +31,11 @@ class ScanMetadata(BaseModel):
     profile: str
     application: str = "securecommerce"
     version: str = "1.0.0"
-    target: str
+    target: str = ""
     commit_sha: str | None = None
     environment: str = "test"
-    started_at: str
-    completed_at: str
+    started_at: str = ""
+    completed_at: str = ""
     status: str = "completed"
     tools: list[str] = Field(default_factory=list)
     tool_errors: list[str] = Field(default_factory=list)
@@ -257,10 +257,6 @@ class DecisionReport(BaseModel):
     def allowed(self) -> bool:
         return self.release_allowed
 
-    @property
-    def blocked(self) -> bool:
-        return not self.release_allowed
-
 
 class SecurityReport(BaseModel):
     """Complete SecureForge security report."""
@@ -272,8 +268,8 @@ class SecurityReport(BaseModel):
     findings: list[ReportFinding] = Field(default_factory=list)
     risk: RiskReport
     policy: PolicyReport
-    decision: DecisionReport
     remediation: RemediationReport
+    decision: DecisionReport
     regression: RegressionReport | None = None
     regression_gate: RegressionGateReport | None = None
     validation: ValidationReport | None = None
@@ -282,21 +278,4 @@ class SecurityReport(BaseModel):
     )
     validation_gate: ValidationGateReport | None = None
     generated_at: str = ""
-
-
-__all__ = [
-    "DecisionReport",
-    "RegressionGateReport",
-    "RegressionReport",
-    "RegressionTestReport",
-    "ReleaseMetadata",
-    "RemediationItem",
-    "RemediationReport",
-    "ReportFinding",
-    "RiskReport",
-    "ScanMetadata",
-    "SecurityReport",
-    "ValidationGateReport",
-    "ValidationReport",
-    "ValidationResultReport",
-]
+    metadata: dict[str, Any] = Field(default_factory=dict)
