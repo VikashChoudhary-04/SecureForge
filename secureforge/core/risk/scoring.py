@@ -16,7 +16,7 @@ class RiskScorer:
     }
 
     ASSET_ADJUSTMENTS = {
-        AssetImportance.CRITICAL: 10.0,
+        AssetImportance.CRITICAL: 6.0,
         AssetImportance.HIGH: 6.0,
         AssetImportance.MEDIUM: 0.0,
         AssetImportance.LOW: -5.0,
@@ -47,43 +47,37 @@ class RiskScorer:
         factors: list[str] = []
 
         score, factor = self.apply_asset_importance(
-            score,
-            context.asset_importance,
+            score, context.asset_importance
         )
         if factor:
             factors.append(factor)
 
         score, factor = self.apply_internet_exposure(
-            score,
-            context.internet_exposed,
+            score, context.internet_exposed
         )
         if factor:
             factors.append(factor)
 
         score, factor = self.apply_authentication(
-            score,
-            context.authentication_required,
+            score, context.authentication_required
         )
         if factor:
             factors.append(factor)
 
         score, factor = self.apply_sensitive_data(
-            score,
-            context.sensitive_data,
+            score, context.sensitive_data
         )
         if factor:
             factors.append(factor)
 
         score, factor = self.apply_exploit_evidence(
-            score,
-            context.exploit_evidence,
+            score, context.exploit_evidence
         )
         if factor:
             factors.append(factor)
 
         score = self.apply_environment(
-            score,
-            context.environment,
+            score, context.environment
         )
 
         return self.clamp(score), factors
@@ -97,7 +91,11 @@ class RiskScorer:
         if adjustment == 0:
             return score, None
 
-        label = f"{importance.value}-importance asset"
+        if importance == AssetImportance.CRITICAL:
+            label = "critical asset"
+        else:
+            label = f"{importance.value}-importance asset"
+
         return score + adjustment, label
 
     @staticmethod
