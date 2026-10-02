@@ -6,18 +6,11 @@ from pathlib import Path
 
 import typer
 
-from .runner import (
-    RegressionRunConfiguration,
-    RegressionRunner,
-)
-
+from .runner import RegressionRunConfiguration, RegressionRunner
 
 app = typer.Typer(
     name="regression",
-    help=(
-        "Run SecureForge security regression tests "
-        "against the SecureCommerce laboratory."
-    ),
+    help="Run SecureForge security regression tests against the SecureCommerce laboratory.",
     no_args_is_help=True,
 )
 
@@ -60,7 +53,6 @@ def run_regression(
         help="HTTP request timeout in seconds.",
     ),
 ) -> None:
-    """Run the configured SecureCommerce regression suite."""
     configuration = RegressionRunConfiguration(
         suite_path=suite,
         base_url=base_url,
@@ -68,62 +60,26 @@ def run_regression(
         source_root=source_root,
         infrastructure_root=infrastructure_root,
     )
-
-    runner = RegressionRunner()
-
     try:
-        result = runner.run(
-            configuration
-        )
+        result = RegressionRunner().run(configuration)
     except Exception as exc:
-        typer.echo(
-            f"Regression execution error: {exc}",
-            err=True,
-        )
-        raise typer.Exit(
-            code=2
-        ) from exc
+        typer.echo(f"Regression execution error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
-    typer.echo(
-        f"Suite: {result.name}"
-    )
-    typer.echo(
-        f"Status: {result.status.value.upper()}"
-    )
-    typer.echo(
-        f"Total: {result.total}"
-    )
-    typer.echo(
-        f"Passed: {result.passed}"
-    )
-    typer.echo(
-        f"Failed: {result.failed}"
-    )
-    typer.echo(
-        f"Errors: {result.errors}"
-    )
-    typer.echo(
-        f"Skipped: {result.skipped}"
-    )
-
+    typer.echo(f"Suite: {result.name}")
+    typer.echo(f"Status: {result.status.value.upper()}")
+    typer.echo(f"Total: {result.total}")
+    typer.echo(f"Passed: {result.passed}")
+    typer.echo(f"Failed: {result.failed}")
+    typer.echo(f"Errors: {result.errors}")
+    typer.echo(f"Skipped: {result.skipped}")
     for regression_result in result.results:
         typer.echo(
-            " - "
-            f"{regression_result.test_id}: "
+            f" - {regression_result.test_id}: "
             f"{regression_result.status.value.upper()}"
         )
 
-    if result.status.value == "passed":
-        raise typer.Exit(
-            code=0
-        )
-
-    raise typer.Exit(
-        code=1
-    )
+    raise typer.Exit(code=0 if result.status.value == "passed" else 1)
 
 
-__all__ = [
-    "app",
-    "run_regression",
-]
+__all__ = ["app", "run_regression"]
