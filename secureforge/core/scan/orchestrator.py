@@ -27,9 +27,7 @@ class ScanOrchestrator:
     ) -> None:
         self.runner = runner
         self.pipeline = pipeline or SecurityPipeline()
-        self.validation_planner = (
-            validation_planner or ValidationPlanner()
-        )
+        self.validation_planner = validation_planner or ValidationPlanner()
 
     def run(
         self,
@@ -49,7 +47,6 @@ class ScanOrchestrator:
         regression_result: Any | None = None,
         regression_gate: Any | None = None,
     ) -> SecurityScanResult:
-        """Execute a scan and process its findings."""
         started_at = datetime.now(timezone.utc)
 
         execution = self._run_runner(
@@ -82,9 +79,7 @@ class ScanOrchestrator:
         pipeline_result = self.pipeline.run(
             execution.findings,
             validation_requests=(
-                effective_requests
-                if effective_requests
-                else None
+                effective_requests if effective_requests else None
             ),
             run_regression=run_regression,
             regression=regression_result,
@@ -100,16 +95,12 @@ class ScanOrchestrator:
             version=version,
             commit_sha=commit_sha,
             environment=environment,
-            target=target,
+            target=target or "secureforge-ci" if str(profile).lower() == "ci" else target,
             started_at=started_at.isoformat(),
             completed_at=completed_at.isoformat(),
             status=execution.status,
             tools=getattr(execution, "tools", []),
-            tool_errors=getattr(
-                execution,
-                "tool_errors",
-                [],
-            ),
+            tool_errors=getattr(execution, "tool_errors", []),
         )
 
         return SecurityScanResult(
@@ -126,11 +117,19 @@ class ScanOrchestrator:
         )
 
     def _run_runner(self, **kwargs: Any):
-        """Call either the legacy fake runner or current ScanRunner API."""
         signature = inspect.signature(self.runner.run)
         parameters = signature.parameters
 
         if "configuration" in parameters:
+            integrations = {}
+            if str(kwargs["profile"]).lower() == "ci":
+                integrations = {
+                    "ci": {
+                        "name": "ci",
+                        "enabled": True,
+                    }
+                }
+
             configuration = ScanConfiguration(
                 application=kwargs["application"],
                 version=kwargs["version"],
@@ -138,6 +137,7 @@ class ScanOrchestrator:
                 environment=kwargs["environment"],
                 commit_sha=kwargs["commit_sha"],
                 target=kwargs["target"],
+                integrations=integrations,
                 metadata={
                     "source_path": (
                         str(kwargs["source_path"])
@@ -187,7 +187,6 @@ class ScanOrchestrator:
     ) -> list[ValidationRequest]:
         if not findings or target is None:
             return []
-
         try:
             return self.validation_planner.plan(
                 findings,
@@ -195,7 +194,4 @@ class ScanOrchestrator:
                 method=method,
             )
         except TypeError:
-            return self.validation_planner.plan(
-                findings,
-                target,
-            )
+            return self.validation_planner.plan(findings, target)
