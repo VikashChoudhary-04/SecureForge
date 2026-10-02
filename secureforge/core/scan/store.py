@@ -50,12 +50,10 @@ class ScanResultStore:
                 ),
                 encoding="utf-8",
             )
-
         return path
 
     def load(self, scan_id: str) -> dict[str, Any]:
         path = self.path_for(scan_id)
-
         if not path.is_file():
             raise ScanResultStoreError(
                 f"Scan result not found: '{scan_id}'."
@@ -89,22 +87,7 @@ class ScanResultStore:
             return result.scan_id
         if result.execution.scan_id:
             return result.execution.scan_id
-        raise ScanResultStoreError(
-            "SecurityScanResult must contain a scan ID."
-        )
-
-    @staticmethod
-    def _validate_scan_id(scan_id: str) -> None:
-        if not scan_id:
-            raise ScanResultStoreError("Scan ID must not be empty.")
-        if "/" in scan_id or "\\" in scan_id:
-            raise ScanResultStoreError(
-                "Scan ID contains an invalid path component."
-            )
-        if scan_id in {".", ".."}:
-            raise ScanResultStoreError(
-                "Scan ID contains an invalid path component."
-            )
+        raise ScanResultStoreError("SecurityScanResult must contain a scan ID.")
 
     @classmethod
     def _serialize_result(
@@ -112,7 +95,13 @@ class ScanResultStore:
         result: SecurityScanResult,
         scan_id: str,
     ) -> dict[str, Any]:
-        payload = cls._to_jsonable(result)
+        # SecurityScanResult is a Pydantic model containing the pipeline
+        # dataclass. model_dump() cannot expose the pipeline's compatibility
+        # properties, so serialize that section explicitly.
+        if hasattr(result, "model_dump"):
+            payload = result.model_dump(mode="json")
+        else:
+            payload = cls._to_jsonable(result)
 
         if not isinstance(payload, dict):
             raise ScanResultStoreError(
@@ -125,7 +114,12 @@ class ScanResultStore:
 
         execution.setdefault("scan_id", scan_id)
 
-        pipeline = payload.get("pipeline")
+        pipeline_obj = getattr(result, "pipeline", None)
+        if pipeline_obj is not None and hasattr(pipeline_obj, "to_dict"):
+            pipeline = cls._to_jsonable(pipeline_obj.to_dict())
+        else:
+            pipeline = payload.get("pipeline", {})
+
         if not isinstance(pipeline, dict):
             pipeline = {}
 
@@ -141,6 +135,9 @@ class ScanResultStore:
             return value.model_dump(mode="json")
         if hasattr(value, "to_dict"):
             return value.to_dict()
+        if hasattr(value, "__dataclass_fields__"):
+            from dataclasses import asdict
+            return asdict(value)
         if isinstance(value, dict):
             return {
                 str(key): ScanResultStore._to_jsonable(item)
@@ -182,7 +179,7 @@ class ScanResultStore:
             )
 
         if not all(
-            isinstance(pipeline[key], dict)
+            isinstance(pipeline[key], dict) and bool(pipeline[key])
             for key in required_pipeline
         ):
             raise ScanResultStoreError(
