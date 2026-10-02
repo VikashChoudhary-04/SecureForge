@@ -16,23 +16,12 @@ class ScanResultStoreError(Exception):
 
 
 class ScanResultStore:
-    """Persist SecureForge scan results as JSON artifacts."""
-
-    def __init__(
-        self,
-        directory: str | Path = ".secureforge/scans",
-    ) -> None:
+    def __init__(self, directory: str | Path = ".secureforge/scans") -> None:
         self.directory = Path(directory)
-        self.directory.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+        self.directory.mkdir(parents=True, exist_ok=True)
         self._lock = RLock()
 
-    def path_for(
-        self,
-        scan_id: str,
-    ) -> Path:
+    def path_for(self, scan_id: str) -> Path:
         self._validate_scan_id(scan_id)
         return self.directory / f"{scan_id}.json"
 
@@ -41,17 +30,15 @@ class ScanResultStore:
         result: SecurityScanResult,
         scan_id: str | None = None,
     ) -> Path:
-        resolved_scan_id = scan_id or self._scan_id(result)
-        self._validate_scan_id(resolved_scan_id)
+        if scan_id is not None:
+            self._validate_scan_id(scan_id)
+            resolved_scan_id = scan_id
+        else:
+            resolved_scan_id = self._scan_id(result)
+            self._validate_scan_id(resolved_scan_id)
 
-        payload = self._serialize_result(
-            result,
-            resolved_scan_id,
-        )
-
-        path = self.path_for(
-            resolved_scan_id
-        )
+        payload = self._serialize_result(result, resolved_scan_id)
+        path = self.path_for(resolved_scan_id)
 
         with self._lock:
             path.write_text(
@@ -66,10 +53,7 @@ class ScanResultStore:
 
         return path
 
-    def load(
-        self,
-        scan_id: str,
-    ) -> dict[str, Any]:
+    def load(self, scan_id: str) -> dict[str, Any]:
         path = self.path_for(scan_id)
 
         if not path.is_file():
@@ -78,11 +62,7 @@ class ScanResultStore:
             )
 
         try:
-            payload = json.loads(
-                path.read_text(
-                    encoding="utf-8"
-                )
-            )
+            payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             raise ScanResultStoreError(
                 f"Scan result '{scan_id}' contains invalid JSON."
@@ -97,47 +77,30 @@ class ScanResultStore:
                 f"Scan result '{scan_id}' must contain a JSON object."
             )
 
-        self._validate_payload(
-            payload,
-            scan_id,
-        )
-
+        self._validate_payload(payload, scan_id)
         return deepcopy(payload)
 
-    def exists(
-        self,
-        scan_id: str,
-    ) -> bool:
+    def exists(self, scan_id: str) -> bool:
         return self.path_for(scan_id).is_file()
 
     @staticmethod
-    def _scan_id(
-        result: SecurityScanResult,
-    ) -> str:
+    def _scan_id(result: SecurityScanResult) -> str:
         if getattr(result, "scan_id", None):
             return result.scan_id
-
         if result.execution.scan_id:
             return result.execution.scan_id
-
         raise ScanResultStoreError(
             "SecurityScanResult must contain a scan ID."
         )
 
     @staticmethod
-    def _validate_scan_id(
-        scan_id: str,
-    ) -> None:
+    def _validate_scan_id(scan_id: str) -> None:
         if not scan_id:
-            raise ScanResultStoreError(
-                "Scan ID must not be empty."
-            )
-
+            raise ScanResultStoreError("Scan ID must not be empty.")
         if "/" in scan_id or "\\" in scan_id:
             raise ScanResultStoreError(
                 "Scan ID contains an invalid path component."
             )
-
         if scan_id in {".", ".."}:
             raise ScanResultStoreError(
                 "Scan ID contains an invalid path component."
@@ -160,59 +123,31 @@ class ScanResultStore:
         if not isinstance(execution, dict):
             execution = {}
 
-        execution.setdefault(
-            "scan_id",
-            scan_id,
-        )
+        execution.setdefault("scan_id", scan_id)
 
         pipeline = payload.get("pipeline")
         if not isinstance(pipeline, dict):
             pipeline = {}
 
-        for section in (
-            "risk",
-            "policy",
-            "release_gate",
-        ):
-            pipeline.setdefault(
-                section,
-                {},
-            )
-
         payload["execution"] = execution
         payload["scan"] = execution
-        payload["findings"] = payload.get(
-            "findings",
-            [],
-        )
+        payload["findings"] = payload.get("findings", [])
         payload["pipeline"] = pipeline
-
         return payload
 
     @staticmethod
-    def _to_jsonable(
-        value: Any,
-    ) -> Any:
+    def _to_jsonable(value: Any) -> Any:
         if hasattr(value, "model_dump"):
-            return value.model_dump(
-                mode="json"
-            )
-
+            return value.model_dump(mode="json")
         if hasattr(value, "to_dict"):
             return value.to_dict()
-
         if isinstance(value, dict):
             return {
                 str(key): ScanResultStore._to_jsonable(item)
                 for key, item in value.items()
             }
-
         if isinstance(value, (list, tuple, set)):
-            return [
-                ScanResultStore._to_jsonable(item)
-                for item in value
-            ]
-
+            return [ScanResultStore._to_jsonable(item) for item in value]
         return value
 
     @staticmethod
@@ -220,12 +155,7 @@ class ScanResultStore:
         payload: dict[str, Any],
         scan_id: str,
     ) -> None:
-        required_sections = {
-            "scan",
-            "findings",
-            "pipeline",
-        }
-
+        required_sections = {"scan", "findings", "pipeline"}
         if not required_sections.issubset(payload):
             raise ScanResultStoreError(
                 f"Scan result '{scan_id}' is missing required sections."
@@ -235,27 +165,29 @@ class ScanResultStore:
             raise ScanResultStoreError(
                 f"Scan result '{scan_id}' is missing required sections."
             )
-
         if not isinstance(payload["findings"], list):
             raise ScanResultStoreError(
                 f"Scan result '{scan_id}' is missing required sections."
             )
-
         if not isinstance(payload["pipeline"], dict):
             raise ScanResultStoreError(
                 f"Scan result '{scan_id}' is missing required sections."
             )
+
         pipeline = payload["pipeline"]
-        if not any(
-            pipeline.get(section)
-            for section in ("risk", "policy", "release_gate")
+        required_pipeline = {"risk", "policy", "release_gate"}
+        if not required_pipeline.issubset(pipeline):
+            raise ScanResultStoreError(
+                f"Scan result '{scan_id}' is missing required sections."
+            )
+
+        if not all(
+            isinstance(pipeline[key], dict)
+            for key in required_pipeline
         ):
             raise ScanResultStoreError(
                 f"Scan result '{scan_id}' is missing required sections."
             )
 
 
-__all__ = [
-    "ScanResultStore",
-    "ScanResultStoreError",
-]
+__all__ = ["ScanResultStore", "ScanResultStoreError"]
