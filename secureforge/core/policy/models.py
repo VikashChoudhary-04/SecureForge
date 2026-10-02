@@ -22,8 +22,8 @@ class PolicyDecision(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     policy_name: str = "default"
-    action: PolicyAction
-    allowed: bool
+    action: PolicyAction = PolicyAction.REVIEW
+    allowed: bool = False
     reason: str = ""
     violations: list[str] = Field(default_factory=list)
 
@@ -31,18 +31,21 @@ class PolicyDecision(BaseModel):
     REVIEW: ClassVar["PolicyDecision"]
     BLOCK: ClassVar["PolicyDecision"]
 
-    def __init__(
-        self,
-        value: str | PolicyAction | None = None,
-        **data: Any,
-    ) -> None:
+    def __init__(self, value: str | PolicyAction | None = None, **data: Any):
+        legacy_actions = data.get("actions")
+        if "action" not in data and isinstance(legacy_actions, dict):
+            high = str(legacy_actions.get("high", "")).lower()
+            critical = str(legacy_actions.get("critical", "")).lower()
+            if "block" in {high, critical}:
+                data["action"] = PolicyAction.BLOCK
+                data["allowed"] = False
+
         if value is not None:
             if data:
                 raise TypeError(
                     "Positional decision value cannot be combined "
                     "with keyword fields."
                 )
-
             action = PolicyAction(value)
             data = {
                 "action": action,
@@ -54,7 +57,6 @@ class PolicyDecision(BaseModel):
 
     @property
     def value(self) -> str:
-        """Expose enum-compatible decision value."""
         return self.action.value
 
     def __eq__(self, other: object) -> bool:
@@ -69,8 +71,6 @@ class PolicyDecision(BaseModel):
 
 
 class PolicyRule(BaseModel):
-    """A single configurable security policy rule."""
-
     model_config = ConfigDict(extra="allow")
 
     rule_id: str
@@ -84,8 +84,6 @@ class PolicyRule(BaseModel):
 
 
 class PolicyException(BaseModel):
-    """Explicit exception to a security policy decision."""
-
     model_config = ConfigDict(extra="allow")
 
     exception_id: str
@@ -100,8 +98,6 @@ class PolicyException(BaseModel):
 
 
 class PolicyConfig(BaseModel):
-    """Complete SecureForge policy configuration."""
-
     model_config = ConfigDict(extra="allow")
 
     policy_id: str
@@ -114,8 +110,6 @@ class PolicyConfig(BaseModel):
 
 
 class PolicyEvaluation(BaseModel):
-    """Result produced after evaluating findings against policy."""
-
     model_config = ConfigDict(extra="allow")
 
     decision: PolicyDecision
@@ -129,15 +123,6 @@ class PolicyEvaluation(BaseModel):
     policy_version: str
 
 
-PolicyDecision.PASS = PolicyDecision(
-    action=PolicyAction.PASS,
-    allowed=True,
-)
-PolicyDecision.REVIEW = PolicyDecision(
-    action=PolicyAction.REVIEW,
-    allowed=False,
-)
-PolicyDecision.BLOCK = PolicyDecision(
-    action=PolicyAction.BLOCK,
-    allowed=False,
-)
+PolicyDecision.PASS = PolicyDecision(action=PolicyAction.PASS, allowed=True)
+PolicyDecision.REVIEW = PolicyDecision(action=PolicyAction.REVIEW, allowed=False)
+PolicyDecision.BLOCK = PolicyDecision(action=PolicyAction.BLOCK, allowed=False)
