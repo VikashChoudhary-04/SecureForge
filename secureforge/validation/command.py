@@ -95,6 +95,15 @@ class CommandValidator(BaseValidator):
             )
 
         executable = argv[0]
+        if executable in {"python", "python3"} and "-c" in argv:
+            index = argv.index("-c")
+            if index + 1 < len(argv):
+                try:
+                    compile(argv[index + 1], "<secureforge-command>", "exec")
+                except SyntaxError as exc:
+                    raise ValidationError(
+                        "Invalid command syntax: " + str(exc)
+                    ) from exc
         if executable not in self.allowed_commands:
             raise ValidationError(
                 f"Command is not allowed: {executable}"
@@ -142,7 +151,7 @@ class CommandValidator(BaseValidator):
             request=request,
             outcome=ValidationOutcome.REJECTED,
             message=(
-                f"Command exited with code {completed.returncode}."
+                f"Command exited with exit code {completed.returncode}."
             ),
             evidence=ValidationEvidence(
                 method=ValidationMethod.COMMAND,
