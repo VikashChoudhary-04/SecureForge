@@ -198,6 +198,9 @@ class SecurityPipelineResult:
                 return value.model_dump(mode="json")
             if hasattr(value, "to_dict"):
                 return value.to_dict()
+            if hasattr(value, "__dataclass_fields__"):
+                from dataclasses import asdict
+                return asdict(value)
             if isinstance(value, list):
                 return [dump(item) for item in value]
             if isinstance(value, tuple):
