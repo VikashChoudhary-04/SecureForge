@@ -100,11 +100,16 @@ class ScanOrchestrator:
             version=version,
             commit_sha=commit_sha,
             environment=environment,
+            target=target,
             started_at=started_at.isoformat(),
             completed_at=completed_at.isoformat(),
             status=execution.status,
             tools=getattr(execution, "tools", []),
-            tool_errors=getattr(execution, "tool_errors", []),
+            tool_errors=getattr(
+                execution,
+                "tool_errors",
+                [],
+            ),
         )
 
         return SecurityScanResult(
@@ -121,10 +126,8 @@ class ScanOrchestrator:
         )
 
     def _run_runner(self, **kwargs: Any):
-        """Call either the legacy fake runner or the current ScanRunner API."""
-        signature = inspect.signature(
-            self.runner.run
-        )
+        """Call either the legacy fake runner or current ScanRunner API."""
+        signature = inspect.signature(self.runner.run)
         parameters = signature.parameters
 
         if "configuration" in parameters:
@@ -136,45 +139,63 @@ class ScanOrchestrator:
                 commit_sha=kwargs["commit_sha"],
                 target=kwargs["target"],
                 metadata={
-                    "source_path": str(kwargs["source_path"])
-                    if kwargs["source_path"] is not None
-                    else None,
-            },
+                    "source_path": (
+                        str(kwargs["source_path"])
+                        if kwargs["source_path"] is not None
+                        else None
+                    ),
+                },
             )
-            return self.runner.run(
+            result = self.runner.run(
                 configuration,
                 commit_sha=kwargs["commit_sha"],
             )
+        else:
+            accepted = {
+                key: value
+                for key, value in kwargs.items()
+                if key in parameters
+            }
+            result = self.runner.run(**accepted)
 
-        accepted = {
-            key: value
-            for key, value in kwargs.items()
-            if key in parameters
-        }
+        if kwargs.get("target") is not None:
+            self._propagate_target(result, kwargs["target"])
 
-        return self.runner.run(
-            **accepted
-        )
+        return result
+
+    @staticmethod
+    def _propagate_target(result: Any, target: str) -> None:
+        if hasattr(result, "target"):
+            try:
+                result.target = target
+            except Exception:
+                pass
+
+        execution = getattr(result, "execution", None)
+        if execution is not None and hasattr(execution, "target"):
+            try:
+                execution.target = target
+            except Exception:
+                pass
 
     def _plan_validation_requests(
         self,
         *,
-        findings,
+        findings: list[Any],
         target: str | None,
         method: ValidationMethod,
     ) -> list[ValidationRequest]:
-        if not target:
+        if not findings or target is None:
             return []
 
-        plan = self.validation_planner.plan(
-            findings,
-            target=target,
-            method=method,
-        )
-
-        return list(plan.requests)
-
-
-__all__ = [
-    "ScanOrchestrator",
-]
+        try:
+            return self.validation_planner.plan(
+                findings,
+                target=target,
+                method=method,
+            )
+        except TypeError:
+            return self.validation_planner.plan(
+                findings,
+                target,
+            )
