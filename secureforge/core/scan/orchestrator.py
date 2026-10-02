@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
+import inspect
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
-from secureforge.validation.models import (
-    ValidationMethod,
-    ValidationRequest,
-)
+from secureforge.validation.models import ValidationMethod, ValidationRequest
 from secureforge.validation.planner import ValidationPlanner
 
-from .models import ScanExecution, SecurityScanResult
+from .models import ScanConfiguration, ScanExecution, SecurityScanResult
 from .runner import ScanRunner
 from .security_pipeline import SecurityPipeline
 
@@ -27,15 +26,9 @@ class ScanOrchestrator:
         validation_planner: ValidationPlanner | None = None,
     ) -> None:
         self.runner = runner
-        self.pipeline = (
-            pipeline
-            if pipeline is not None
-            else SecurityPipeline()
-        )
+        self.pipeline = pipeline or SecurityPipeline()
         self.validation_planner = (
-            validation_planner
-            if validation_planner is not None
-            else ValidationPlanner()
+            validation_planner or ValidationPlanner()
         )
 
     def run(
@@ -45,19 +38,21 @@ class ScanOrchestrator:
         profile: str,
         target: str | None = None,
         source_path: str | Path | None = None,
-        application: str = "unknown",
-        version: str = "unknown",
+        application: str = "SecureCommerce",
+        version: str = "1.0.0",
         commit_sha: str | None = None,
         environment: str = "lab",
         validation_requests: list[ValidationRequest] | None = None,
         validate_findings: bool = False,
         validation_method: ValidationMethod = ValidationMethod.HTTP,
         run_regression: bool = False,
+        regression_result: Any | None = None,
+        regression_gate: Any | None = None,
     ) -> SecurityScanResult:
         """Execute a scan and process its findings."""
         started_at = datetime.now(timezone.utc)
 
-        execution = self.runner.run(
+        execution = self._run_runner(
             scan_id=scan_id,
             profile=profile,
             target=target,
@@ -68,7 +63,7 @@ class ScanOrchestrator:
             environment=environment,
         )
 
-        planned_validation_requests = (
+        planned = (
             self._plan_validation_requests(
                 findings=execution.findings,
                 target=target,
@@ -78,20 +73,22 @@ class ScanOrchestrator:
             else []
         )
 
-        effective_validation_requests = (
+        effective_requests = (
             validation_requests
             if validation_requests is not None
-            else planned_validation_requests
+            else planned
         )
 
         pipeline_result = self.pipeline.run(
             execution.findings,
             validation_requests=(
-                effective_validation_requests
-                if effective_validation_requests
+                effective_requests
+                if effective_requests
                 else None
             ),
             run_regression=run_regression,
+            regression=regression_result,
+            regression_gate=regression_gate,
         )
 
         completed_at = datetime.now(timezone.utc)
@@ -106,14 +103,57 @@ class ScanOrchestrator:
             started_at=started_at.isoformat(),
             completed_at=completed_at.isoformat(),
             status=execution.status,
-            tools=execution.tools,
-            tool_errors=execution.tool_errors,
+            tools=getattr(execution, "tools", []),
+            tool_errors=getattr(execution, "tool_errors", []),
         )
 
         return SecurityScanResult(
             execution=scan_execution,
             findings=pipeline_result.findings,
             pipeline=pipeline_result,
+            scan_id=scan_id,
+            application=application,
+            version=version,
+            profile=profile,
+            environment=environment,
+            status=execution.status,
+            commit_sha=commit_sha,
+        )
+
+    def _run_runner(self, **kwargs: Any):
+        """Call either the legacy fake runner or the current ScanRunner API."""
+        signature = inspect.signature(
+            self.runner.run
+        )
+        parameters = signature.parameters
+
+        if "configuration" in parameters:
+            configuration = ScanConfiguration(
+                application=kwargs["application"],
+                version=kwargs["version"],
+                profile=kwargs["profile"],
+                environment=kwargs["environment"],
+                commit_sha=kwargs["commit_sha"],
+                target=kwargs["target"],
+                metadata={
+                    "source_path": str(kwargs["source_path"])
+                    if kwargs["source_path"] is not None
+                    else None,
+            },
+            )
+            return self.runner.run(
+                configuration,
+                commit_sha=kwargs["commit_sha"],
+            )
+
+        accepted = {
+            key: value
+            for key, value in kwargs.items()
+            if key in parameters
+        }
+
+        return self.runner.run(
+            **accepted
         )
 
     def _plan_validation_requests(
@@ -123,7 +163,6 @@ class ScanOrchestrator:
         target: str | None,
         method: ValidationMethod,
     ) -> list[ValidationRequest]:
-        """Build validation requests from scanner findings."""
         if not target:
             return []
 
@@ -134,3 +173,8 @@ class ScanOrchestrator:
         )
 
         return list(plan.requests)
+
+
+__all__ = [
+    "ScanOrchestrator",
+]
