@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -21,7 +22,6 @@ class ReleaseMetadata(BaseModel):
 
 class ScanMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
-
     scan_id: str
     profile: str
     application: str = "securecommerce"
@@ -102,7 +102,7 @@ class PolicyReport(BaseModel):
     allowed: bool = False
     reason: str = ""
     violations: list[str] = Field(default_factory=list)
-    actions: Any = Field(default_factory=list)
+    actions: Any = Field(default_factory=dict)
     tool_errors: list[str] = Field(default_factory=list)
     regression_failures: list[str] = Field(default_factory=list)
     exceptions: Any = Field(default_factory=list)
@@ -132,7 +132,6 @@ class RemediationReport(BaseModel):
 
     @property
     def findings(self) -> list[RemediationItem]:
-        """Legacy alias for remediation items."""
         return self.items
 
     @property
@@ -148,7 +147,10 @@ class RegressionTestReport(BaseModel):
     model_config = ConfigDict(extra="allow")
     test_id: str
     status: str
+    expected: str = ""
+    actual: str = ""
     message: str = ""
+    evidence: dict[str, Any] = Field(default_factory=dict)
 
 
 class RegressionReport(BaseModel):
@@ -168,6 +170,18 @@ class RegressionReport(BaseModel):
     duration_seconds: float = 0.0
     tests_total: int = 0
     tests_failed: int = 0
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_timestamps(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        normalized = dict(value)
+        for name in ("started_at", "completed_at"):
+            item = normalized.get(name)
+            if isinstance(item, datetime):
+                normalized[name] = item.isoformat()
+        return normalized
 
 
 class RegressionGateReport(BaseModel):
