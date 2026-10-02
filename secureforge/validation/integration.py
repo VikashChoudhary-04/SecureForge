@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from secureforge.core.findings.models import Finding
+from secureforge.core.findings.models import (
+    Finding,
+    FindingStatus,
+    ValidationStatus,
+)
 
 from .assessment import ValidationAssessment, assess_validation
-from .models import ValidationResult
+from .models import ValidationOutcome, ValidationResult
 
 
 @dataclass(frozen=True)
@@ -20,17 +24,14 @@ class FindingValidationUpdate:
 
     @property
     def confirmed(self) -> bool:
-        """Return whether the finding is confirmed."""
         return self.assessment.confirmed
 
     @property
     def remediated(self) -> bool:
-        """Return whether remediation was verified."""
         return self.assessment.remediation_verified
 
     @property
     def reopened(self) -> bool:
-        """Return whether the finding remains open after retesting."""
         return self.assessment.confirmed
 
 
@@ -38,7 +39,7 @@ def apply_validation_result(
     finding: Finding,
     result: ValidationResult,
 ) -> FindingValidationUpdate:
-    """Apply a validation result to a SecureForge finding."""
+    """Apply validation without changing an open finding to a closed state."""
     if finding.finding_id != result.finding_id:
         raise ValueError(
             "Finding ID does not match validation result: "
@@ -48,14 +49,17 @@ def apply_validation_result(
     assessment = assess_validation(result)
 
     if assessment.confirmed:
-        finding.mark_validated()
+        finding.validation_status = ValidationStatus.VALIDATED
+        finding.status = FindingStatus.OPEN
+        finding.last_seen = finding.last_seen
 
     elif assessment.remediation_verified:
         finding.mark_remediated()
         finding.mark_verified()
 
-    elif assessment.rejected:
-        finding.mark_validated()
+    elif result.outcome == ValidationOutcome.REJECTED:
+        finding.validation_status = ValidationStatus.VALIDATED
+        finding.status = FindingStatus.OPEN
 
     return FindingValidationUpdate(
         finding_id=finding.finding_id,
@@ -77,7 +81,9 @@ def apply_validation_results(
     updates: list[FindingValidationUpdate] = []
 
     for result in results:
-        finding = findings_by_id.get(result.finding_id)
+        finding = findings_by_id.get(
+            result.finding_id
+        )
 
         if finding is None:
             raise ValueError(
@@ -93,3 +99,10 @@ def apply_validation_results(
         )
 
     return updates
+
+
+__all__ = [
+    "FindingValidationUpdate",
+    "apply_validation_result",
+    "apply_validation_results",
+]
