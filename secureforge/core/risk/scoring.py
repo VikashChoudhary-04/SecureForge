@@ -45,9 +45,17 @@ class RiskScorer:
     ) -> tuple[float, list[str]]:
         score = self.base_score(finding)
         factors: list[str] = []
-        score, factor = self.apply_asset_importance(
-            score, context.asset_importance
-        )
+        if context.asset_importance == AssetImportance.CRITICAL:
+            score += self.ASSET_ADJUSTMENTS[
+                AssetImportance.CRITICAL
+            ]
+            factor = "critical-importance asset"
+        else:
+            score, factor = self.apply_asset_importance(
+                score,
+                context.asset_importance,
+            )
+
         if factor:
             factors.append(factor)
         score, factor = self.apply_internet_exposure(

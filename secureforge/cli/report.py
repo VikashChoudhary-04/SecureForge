@@ -7,7 +7,10 @@ from pathlib import Path
 
 from secureforge.core.scan.models import SecurityScanResult
 from secureforge.reporting import (
+    ReleaseMetadata,
+    ReportPaths,
     ReportingService,
+    ScanMetadata,
     SecurityReport,
 )
 
@@ -47,6 +50,55 @@ class ReportCommandService:
             else ReportingService()
         )
 
+    @staticmethod
+    def _build_release_metadata(
+        configuration: ReportCommandConfiguration,
+        result: SecurityScanResult,
+    ) -> ReleaseMetadata:
+        """Build release metadata from command configuration and scan decision."""
+        decision = result.pipeline.release_gate
+
+        return ReleaseMetadata(
+            scan_id=configuration.scan_id,
+            release_id=configuration.release_id,
+            application=configuration.application,
+            version=configuration.version,
+            commit_sha=configuration.commit_sha,
+            environment=configuration.environment,
+            release_allowed=decision.release_allowed,
+            release_blocked=not decision.release_allowed,
+        )
+
+    @staticmethod
+    def _build_scan_metadata(
+        configuration: ReportCommandConfiguration,
+    ) -> ScanMetadata:
+        """Build scan metadata for the reporting layer."""
+        return ScanMetadata(
+            scan_id=configuration.scan_id,
+            profile=configuration.profile,
+            application=configuration.application,
+            version=configuration.version,
+            commit_sha=configuration.commit_sha,
+            environment=configuration.environment,
+            started_at=configuration.started_at,
+            completed_at=configuration.completed_at,
+            status=configuration.scan_status,
+        )
+
+    @staticmethod
+    def _build_report_paths(
+        configuration: ReportCommandConfiguration,
+    ) -> ReportPaths:
+        """Build JSON and HTML output paths."""
+        output_directory = configuration.output_directory
+        scan_id = configuration.scan_id or "scan"
+
+        return ReportPaths(
+            json_path=output_directory / f"{scan_id}.json",
+            html_path=output_directory / f"{scan_id}.html",
+        )
+
     def build_report(
         self,
         *,
@@ -54,7 +106,17 @@ class ReportCommandService:
         configuration: ReportCommandConfiguration,
     ) -> SecurityReport:
         """Build a report from a completed security scan."""
-        return self.reporting_service.build(result)
+        release = self._build_release_metadata(
+            configuration,
+            result,
+        )
+        scan = self._build_scan_metadata(configuration)
+
+        return self.reporting_service.build_from_scan_result(
+            result=result,
+            release=release,
+            scan=scan,
+        )
 
     def generate(
         self,
@@ -63,13 +125,28 @@ class ReportCommandService:
         configuration: ReportCommandConfiguration,
     ) -> Path:
         """Generate JSON and HTML reports from a scan result."""
-        output_directory = (
-            configuration.output_directory
+        output_directory = configuration.output_directory
+        output_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        release = self._build_release_metadata(
+            configuration,
+            result,
+        )
+        scan = self._build_scan_metadata(configuration)
+        paths = self._build_report_paths(configuration)
+
+        report = self.reporting_service.build_from_scan_result(
+            result=result,
+            release=release,
+            scan=scan,
         )
 
         self.reporting_service.generate(
-            result,
-            output_directory,
+            report,
+            paths,
         )
 
         return output_directory

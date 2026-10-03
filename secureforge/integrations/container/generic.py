@@ -1,5 +1,3 @@
-"""Generic container security integration for SecureForge."""
-
 from __future__ import annotations
 
 import json
@@ -11,12 +9,11 @@ from secureforge.core.normalization import (
     RawEvidence,
 )
 from secureforge.integrations.base import (
+    IntegrationConfigurationError,
     SecurityIntegration,
 )
 
 
-class IntegrationConfigurationError(ValueError):
-    """Raised when an integration configuration is invalid."""
 
 
 class GenericContainerIntegration(SecurityIntegration):
@@ -746,3 +743,4 @@ class GenericContainerIntegration(SecurityIntegration):
             )
             for token in command
         ]
+

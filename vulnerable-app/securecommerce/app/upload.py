@@ -1,4 +1,3 @@
-```python
 # SecureCommerce vulnerable file-upload functionality
 
 from __future__ import annotations
@@ -154,4 +153,3 @@ __all__ = [
     "UPLOAD_DIRECTORY",
     "upload_bp",
 ]
-```

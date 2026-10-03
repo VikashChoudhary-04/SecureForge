@@ -15,6 +15,9 @@ from secureforge.core.config.models import ScanProfile
 from secureforge.core.scan import (
     ScanResultStore,
 )
+from secureforge.regression.runner import (
+    RegressionRunConfiguration,
+)
 
 
 class FakeScanOrchestrator:
@@ -34,6 +37,7 @@ class FakeScanOrchestrator:
         profile: str,
         target: str,
         source_path: str | None = None,
+        regression_result=None,
     ):
         self.calls.append(
             {
@@ -44,6 +48,26 @@ class FakeScanOrchestrator:
             }
         )
 
+        self.regression_result = regression_result
+
+        return self.result
+
+
+class FakeRegressionRunner:
+    """Minimal regression runner used by scan-command tests."""
+
+    def __init__(
+        self,
+        result,
+    ) -> None:
+        self.result = result
+        self.calls: list[RegressionRunConfiguration] = []
+
+    def run(
+        self,
+        configuration: RegressionRunConfiguration,
+    ):
+        self.calls.append(configuration)
         return self.result
 
 
@@ -132,6 +156,8 @@ def test_scan_command_service_runs_scan(
             "source_path": str(tmp_path),
         }
     ]
+
+    assert orchestrator.regression_result is None
 
     assert len(
         reporting_service.calls
@@ -346,3 +372,272 @@ def test_scan_command_service_uses_custom_metadata(
 
     assert scan.scan_id == "scan-005"
     assert scan.profile == "full"
+
+
+def test_scan_command_service_runs_regression_and_passes_result_to_orchestrator(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Execute regression tests and pass their result into orchestration."""
+    suite_path = (
+        tmp_path
+        / "regression-tests.yaml"
+    )
+    suite_path.write_text(
+        "suite:\n"
+        "  id: test-suite\n",
+        encoding="utf-8",
+    )
+
+    regression_result = object()
+
+    orchestrator = FakeScanOrchestrator(
+        sample_scan_result
+    )
+
+    regression_runner = FakeRegressionRunner(
+        regression_result
+    )
+
+    service = ScanCommandService(
+        orchestrator=orchestrator,
+        reporting_service=FakeReportingService(),
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
+        regression_runner=regression_runner,
+    )
+
+    configuration = ScanCommandConfiguration(
+        scan_id="scan-regression-001",
+        profile=ScanProfile.STANDARD,
+        target="http://127.0.0.1:5000",
+        source_path=tmp_path,
+        scan_storage_directory=tmp_path,
+        run_regression=True,
+        regression_suite_path=suite_path,
+    )
+
+    result = service.run(configuration)
+
+    assert result is sample_scan_result
+
+    assert len(
+        regression_runner.calls
+    ) == 1
+
+    regression_configuration = (
+        regression_runner.calls[0]
+    )
+
+    assert (
+        regression_configuration.suite_path
+        == suite_path
+    )
+
+    assert (
+        regression_configuration.base_url
+        == "http://127.0.0.1:5000"
+    )
+
+    assert (
+        regression_configuration.timeout
+        == 5.0
+    )
+
+    assert (
+        regression_configuration.source_root
+        == tmp_path
+    )
+
+    assert (
+        regression_configuration.infrastructure_root
+        is None
+    )
+
+    assert (
+        orchestrator.regression_result
+        is regression_result
+    )
+
+
+def test_scan_command_service_uses_explicit_regression_configuration(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Use explicit regression settings when supplied."""
+    suite_path = (
+        tmp_path
+        / "custom-suite.yaml"
+    )
+    suite_path.write_text(
+        "suite:\n"
+        "  id: custom-suite\n",
+        encoding="utf-8",
+    )
+
+    source_root = (
+        tmp_path
+        / "source"
+    )
+    source_root.mkdir()
+
+    infrastructure_root = (
+        tmp_path
+        / "infra"
+    )
+    infrastructure_root.mkdir()
+
+    regression_result = object()
+
+    orchestrator = FakeScanOrchestrator(
+        sample_scan_result
+    )
+
+    regression_runner = FakeRegressionRunner(
+        regression_result
+    )
+
+    service = ScanCommandService(
+        orchestrator=orchestrator,
+        reporting_service=FakeReportingService(),
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
+        regression_runner=regression_runner,
+    )
+
+    configuration = ScanCommandConfiguration(
+        scan_id="scan-regression-002",
+        profile=ScanProfile.FULL,
+        target="http://127.0.0.1:5000",
+        scan_storage_directory=tmp_path,
+        run_regression=True,
+        regression_suite_path=suite_path,
+        regression_base_url="http://127.0.0.1:6000",
+        regression_timeout=10.0,
+        regression_source_root=source_root,
+        regression_infrastructure_root=(
+            infrastructure_root
+        ),
+    )
+
+    service.run(configuration)
+
+    regression_configuration = (
+        regression_runner.calls[0]
+    )
+
+    assert (
+        regression_configuration.suite_path
+        == suite_path
+    )
+
+    assert (
+        regression_configuration.base_url
+        == "http://127.0.0.1:6000"
+    )
+
+    assert (
+        regression_configuration.timeout
+        == 10.0
+    )
+
+    assert (
+        regression_configuration.source_root
+        == source_root
+    )
+
+    assert (
+        regression_configuration.infrastructure_root
+        == infrastructure_root
+    )
+
+    assert (
+        orchestrator.regression_result
+        is regression_result
+    )
+
+
+def test_scan_command_service_rejects_missing_regression_suite(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Reject an enabled regression run when its suite is missing."""
+    missing_suite = (
+        tmp_path
+        / "missing-regression.yaml"
+    )
+
+    service = ScanCommandService(
+        orchestrator=FakeScanOrchestrator(
+            sample_scan_result
+        ),
+        reporting_service=FakeReportingService(),
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
+        regression_runner=FakeRegressionRunner(
+            object()
+        ),
+    )
+
+    configuration = ScanCommandConfiguration(
+        scan_id="scan-regression-003",
+        profile=ScanProfile.STANDARD,
+        target="http://127.0.0.1:5000",
+        scan_storage_directory=tmp_path,
+        run_regression=True,
+        regression_suite_path=missing_suite,
+    )
+
+    with pytest.raises(
+        RuntimeConfigurationError,
+        match="Regression configuration not found",
+    ):
+        service.run(configuration)
+
+
+def test_scan_command_service_rejects_invalid_regression_timeout(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Reject a non-positive regression timeout."""
+    suite_path = (
+        tmp_path
+        / "regression-tests.yaml"
+    )
+    suite_path.write_text(
+        "suite:\n"
+        "  id: test-suite\n",
+        encoding="utf-8",
+    )
+
+    service = ScanCommandService(
+        orchestrator=FakeScanOrchestrator(
+            sample_scan_result
+        ),
+        reporting_service=FakeReportingService(),
+        scan_store=ScanResultStore(
+            directory=tmp_path
+        ),
+        regression_runner=FakeRegressionRunner(
+            object()
+        ),
+    )
+
+    configuration = ScanCommandConfiguration(
+        scan_id="scan-regression-004",
+        profile=ScanProfile.STANDARD,
+        target="http://127.0.0.1:5000",
+        scan_storage_directory=tmp_path,
+        run_regression=True,
+        regression_suite_path=suite_path,
+        regression_timeout=0,
+    )
+
+    with pytest.raises(
+        RuntimeConfigurationError,
+        match="Regression timeout must be greater than zero",
+    ):
+        service.run(configuration)

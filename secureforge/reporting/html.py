@@ -97,7 +97,8 @@ class SecurityHTMLReportRenderer:
             failed = "".join(f"<li>{escape(str(x))}</li>" for x in gate.failed_tests) or "<li>None</li>"
             errored = "".join(f"<li>{escape(str(x))}</li>" for x in gate.errored_tests) or "<li>None</li>"
             skipped = "".join(f"<li>{escape(str(x))}</li>" for x in gate.skipped_tests) or "<li>None</li>"
-            gate_html = f"<h3>Regression Gate</h3><p><strong>Allowed:</strong> {gate.allowed}</p><p><strong>Blocked:</strong> {gate.blocked}</p><p><strong>Status:</strong> {escape(str(gate.status))}</p><p><strong>Reason:</strong> {escape(gate.reason)}</p><p><strong>Failed tests:</strong></p><ul>{failed}</ul><p><strong>Errored tests:</strong></p><ul>{errored}</ul><p><strong>Skipped tests:</strong></p><ul>{skipped}</ul>"
+            failures = "".join(f"<li>{escape(str(x))}</li>" for x in gate.failures) or "<li>None</li>"
+            gate_html = f"<h3>Regression Gate</h3><p><strong>Allowed:</strong> {gate.allowed}</p><p><strong>Blocked:</strong> {gate.blocked}</p><p><strong>Status:</strong> {escape(str(gate.status))}</p><p><strong>Reason:</strong> {escape(str(gate.reason))}</p><p><strong>Failed tests:</strong></p><ul>{failed}</ul><p><strong>Errored tests:</strong></p><ul>{errored}</ul><p><strong>Skipped tests:</strong></p><ul>{skipped}</ul><p><strong>Failures:</strong></p><ul>{failures}</ul>"
         return f"<section><h2>Regression Testing</h2><p>Suite: {escape(report.regression.suite_name or report.regression.suite_id)}</p><p>Suite ID: {escape(report.regression.suite_id)}</p><p>Status: {escape(report.regression.status)}</p><p>Total: {report.regression.total}</p><p>Passed: {report.regression.passed}</p><p>Failed: {report.regression.failed}</p><p>Errors: {report.regression.errors}</p><p>Skipped: {report.regression.skipped}</p>{gate_html}{test_html}</section>"
 
     def _render_metadata(self, report):

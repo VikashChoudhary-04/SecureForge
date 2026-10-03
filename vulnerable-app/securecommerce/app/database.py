@@ -1,7 +1,8 @@
 """Database configuration for SecureCommerce."""
 
-from **future** import annotations
+from __future__ import annotations
 
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+

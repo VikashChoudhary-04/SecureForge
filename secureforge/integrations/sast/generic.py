@@ -1,5 +1,3 @@
-"""Generic JSON SAST integration for SecureForge."""
-
 from __future__ import annotations
 
 import json
@@ -10,15 +8,15 @@ from secureforge.core.normalization import (
     NormalizationResult,
     RawEvidence,
 )
-from secureforge.integrations.base import SecurityIntegration
+from secureforge.integrations.base import (
+    IntegrationConfigurationError,
+    IntegrationParseError,
+    SecurityIntegration,
+)
 
 
-class IntegrationConfigurationError(ValueError):
-    """Raised when an integration configuration is invalid."""
 
 
-class IntegrationParseError(ValueError):
-    """Raised when scanner output cannot be normalized."""
 
 
 class GenericSASTIntegration(SecurityIntegration):
@@ -110,25 +108,13 @@ class GenericSASTIntegration(SecurityIntegration):
         evidence: RawEvidence,
     ) -> NormalizationResult:
         """Normalize generic SAST JSON output."""
-        try:
-            raw_data = self._extract_raw_data(
-                evidence
-            )
+        raw_data = self._extract_raw_data(
+            evidence
+        )
 
-            findings_data = self._extract_findings(
-                raw_data
-            )
-        except IntegrationParseError as exc:
-            return NormalizationResult(
-                source=self.integration_name,
-                evidence=[
-                    evidence
-                ],
-                success=False,
-                errors=[
-                    str(exc)
-                ],
-            )
+        findings_data = self._extract_findings(
+            raw_data
+        )
 
         normalized_findings: list[dict[str, Any]] = []
         warnings: list[str] = []

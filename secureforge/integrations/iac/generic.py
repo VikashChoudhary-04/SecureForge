@@ -1,5 +1,3 @@
-"""Generic Infrastructure-as-Code security integration for SecureForge."""
-
 from __future__ import annotations
 
 import json
@@ -10,11 +8,12 @@ from secureforge.core.normalization import (
     NormalizationResult,
     RawEvidence,
 )
-from secureforge.integrations.base import SecurityIntegration
+from secureforge.integrations.base import (
+    IntegrationConfigurationError,
+    SecurityIntegration,
+)
 
 
-class IntegrationConfigurationError(ValueError):
-    """Raised when an integration configuration is invalid."""
 
 
 class GenericIACIntegration(SecurityIntegration):

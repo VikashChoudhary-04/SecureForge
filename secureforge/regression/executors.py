@@ -383,25 +383,33 @@ class SecureCommerceRegressionExecutor:
         )
 
         checks = {
-            "localhost_binding": (
-                'host        = "127.0.0.1"'
-                in content
+            "localhost_binding": bool(
+                re.search(
+                    r'host\s*=\s*"127\.0\.0\.1"',
+                    content,
+                )
             ),
-            "encryption_enabled": (
-                'encryption = "enabled"'
-                in content
+            "encryption_enabled": bool(
+                re.search(
+                    r'encryption\s*=\s*"enabled"',
+                    content,
+                )
             ),
-            "private_storage": (
-                'access     = "private"'
-                in content
+            "private_storage": bool(
+                re.search(
+                    r'access\s*=\s*"private"',
+                    content,
+                )
             ),
             "least_privilege": (
                 "read-write-required-resources-only"
                 in content
             ),
-            "wildcard_permissions_absent": (
-                'permissions = "*"'
-                not in content
+            "wildcard_permissions_absent": not bool(
+                re.search(
+                    r'permissions\s*=\s*"\*"',
+                    content,
+                )
             ),
         }
 

@@ -1,5 +1,3 @@
-"""Default SecureForge integration definitions."""
-
 from __future__ import annotations
 
 from .registry_factory import build_default_registry
@@ -29,3 +27,4 @@ __all__ = [
     "build_default_registry",
     "default_integration_names",
 ]
+

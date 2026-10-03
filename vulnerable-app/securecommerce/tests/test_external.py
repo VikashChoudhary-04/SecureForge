@@ -1,4 +1,3 @@
-```python
 # SecureCommerce external integration tests
 
 from __future__ import annotations
@@ -159,4 +158,3 @@ def test_external_endpoint_handles_request_failure(
     assert body is not None
     assert body["status"] == "request_failed"
     assert "URLError" in body["error"]
-```

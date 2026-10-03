@@ -10,15 +10,15 @@ from secureforge.core.normalization import (
     NormalizationResult,
     RawEvidence,
 )
-from secureforge.integrations.base import SecurityIntegration
+from secureforge.integrations.base import (
+    IntegrationConfigurationError,
+    IntegrationParseError,
+    SecurityIntegration,
+)
 
 
-class IntegrationConfigurationError(ValueError):
-    """Raised when an integration configuration is invalid."""
 
 
-class IntegrationParseError(ValueError):
-    """Raised when scanner output cannot be normalized."""
 
 
 class GenericSCAIntegration(SecurityIntegration):
@@ -109,25 +109,13 @@ class GenericSCAIntegration(SecurityIntegration):
         evidence: RawEvidence,
     ) -> NormalizationResult:
         """Normalize generic SCA JSON output."""
-        try:
-            raw_data = self._extract_raw_data(
-                evidence
-            )
+        raw_data = self._extract_raw_data(
+            evidence
+        )
 
-            findings_data = self._extract_findings(
-                raw_data
-            )
-        except IntegrationParseError as exc:
-            return NormalizationResult(
-                source=self.integration_name,
-                evidence=[
-                    evidence
-                ],
-                success=False,
-                errors=[
-                    str(exc)
-                ],
-            )
+        findings_data = self._extract_findings(
+            raw_data
+        )
 
         normalized_findings: list[dict[str, Any]] = []
         warnings: list[str] = []
@@ -232,12 +220,9 @@ class GenericSCAIntegration(SecurityIntegration):
         )
 
         raw_cvss = (
-            item.get(
-                "cvss"
-            )
-            or item.get(
-                "cvss_score"
-            )
+            item.get("cvss")
+            if "cvss" in item
+            else item.get("cvss_score")
         )
 
         raw_severity = item.get(
@@ -329,7 +314,7 @@ class GenericSCAIntegration(SecurityIntegration):
                 )
             )
             or evidence.target
-            or "application-dependencies"
+            or "dependency-collection"
         )
 
         return {
@@ -786,3 +771,4 @@ class GenericSCAIntegration(SecurityIntegration):
                 return tool
 
         return None
+

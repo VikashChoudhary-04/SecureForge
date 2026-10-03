@@ -1,4 +1,3 @@
-```python
 # SecureCommerce file-upload tests
 
 from __future__ import annotations
@@ -138,4 +137,3 @@ def test_download_rejects_directory_request():
         400,
         404,
     }
-```

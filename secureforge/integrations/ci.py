@@ -1,5 +1,3 @@
-"""Deterministic CI integration for SecureForge."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -85,3 +83,6 @@ class CIIntegration(SecurityIntegration):
 
     def describe(self) -> dict[str, str]:
         return {"name": self.name, "type": "ci", "mode": "synthetic"}
+"""Default SecureForge integration definitions."""
+
+

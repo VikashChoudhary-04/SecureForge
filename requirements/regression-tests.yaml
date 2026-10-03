@@ -1,132 +1,131 @@
 suite:
-id: securecommerce-regression
-name: SecureCommerce Security Regression Suite
+  id: securecommerce-regression
+  name: SecureCommerce Security Regression Suite
 
 tests:
-- id: BOLA-001
-name: BOLA Authorization Regression
-security_requirement: SF-AUTHZ-001
-description: Verify that one authenticated user cannot access another user's order.
-objective: Prevent broken object-level authorization from exposing customer order data.
-target: /api/orders/2
-method: GET
-expected_result: HTTP 403 or an equivalent authorization denial.
-failure_condition: The authenticated user receives an order belonging to another user.
-enabled: true
-tags:
-- authorization
-- bola
-- api
-- regression
-metadata:
-authenticated_user_id: 2
-resource_owner_id: 3
-expected_status_code: 403
+  - id: BOLA-001
+    name: BOLA Authorization Regression
+    security_requirement: SF-AUTHZ-001
+    description: Verify that one authenticated user cannot access another user's order.
+    objective: Prevent broken object-level authorization from exposing customer order data.
+    target: /api/orders/2
+    method: GET
+    expected_result: HTTP 403 or an equivalent authorization denial.
+    failure_condition: The authenticated user receives an order belonging to another user.
+    enabled: true
+    tags:
+      - authorization
+      - bola
+      - api
+      - regression
+    metadata:
+      authenticated_user_id: 2
+      resource_owner_id: 3
+      expected_status_code: 403
 
-```
-- id: SQLI-001
-  name: SQL Injection Regression
-  security_requirement: SF-INPUT-001
-  description: Verify that user-controlled search input cannot alter a database query.
-  objective: Prevent SQL injection through the vulnerable search-user endpoint.
-  target: /vulnerable/search-user?user_id=2
-  method: GET
-  expected_result: Input is handled without SQL query manipulation or database error.
-  failure_condition: SQL syntax is manipulated, unauthorized rows are returned, or a database error reveals query behavior.
-  enabled: true
-  tags:
-    - injection
-    - sqli
-    - database
-    - regression
-  metadata:
-    parameter: user_id
-    expected_secure_behavior: parameterized-query
+  - id: SQLI-001
+    name: SQL Injection Regression
+    security_requirement: SF-INPUT-001
+    description: Verify that user-controlled search input cannot alter a database query.
+    objective: Prevent SQL injection through the vulnerable search-user endpoint.
+    target: /vulnerable/search-user?user_id=2
+    method: GET
+    expected_result: Input is handled without SQL query manipulation or database error.
+    failure_condition: SQL syntax is manipulated, unauthorized rows are returned, or a database error reveals query behavior.
+    enabled: true
+    tags:
+      - injection
+      - sqli
+      - database
+      - regression
+    metadata:
+      parameter: user_id
+      expected_secure_behavior: parameterized-query
 
-- id: XSS-001
-  name: Reflected XSS Regression
-  security_requirement: SF-INPUT-001
-  description: Verify that user-controlled search input is safely encoded before being rendered.
-  objective: Prevent attacker-controlled JavaScript from executing in the application response.
-  target: /vulnerable/search?query=securityforge-xss-test
-  method: GET
-  expected_result: User-controlled input is contextually encoded in the HTML response.
-  failure_condition: The supplied input is returned as executable HTML or JavaScript.
-  enabled: true
-  tags:
-    - xss
-    - input-validation
-    - output-encoding
-    - regression
-  metadata:
-    parameter: query
-    expected_secure_behavior: context-aware-output-encoding
+  - id: XSS-001
+    name: Reflected XSS Regression
+    security_requirement: SF-INPUT-001
+    description: Verify that user-controlled search input is safely encoded before being rendered.
+    objective: Prevent attacker-controlled JavaScript from executing in the application response.
+    target: /vulnerable/search?query=securityforge-xss-test
+    method: GET
+    expected_result: User-controlled input is contextually encoded in the HTML response.
+    failure_condition: The supplied input is returned as executable HTML or JavaScript.
+    enabled: true
+    tags:
+      - xss
+      - input-validation
+      - output-encoding
+      - regression
+    metadata:
+      parameter: query
+      expected_secure_behavior: context-aware-output-encoding
 
-- id: SECRET-001
-  name: Hardcoded Secret Regression
-  security_requirement: SF-SECRET-001
-  description: Verify that application source code does not contain hardcoded credentials or API keys.
-  objective: Prevent secrets from being committed to source code.
-  target: ./app
-  method: FILE_SCAN
-  expected_result: No active hardcoded secret is detected.
-  failure_condition: A scanner detects a credential, API key, service token, or other active secret in source code.
-  enabled: true
-  tags:
-    - secrets
-    - credentials
-    - source-code
-    - regression
-  metadata:
-    redaction_required: true
-    synthetic_lab_secrets_allowed: true
+  - id: SECRET-001
+    name: Hardcoded Secret Regression
+    security_requirement: SF-SECRET-001
+    description: Verify that application source code does not contain hardcoded credentials or API keys.
+    objective: Prevent secrets from being committed to source code.
+    target: ./app
+    method: FILE_SCAN
+    expected_result: No active hardcoded secret is detected.
+    failure_condition: A scanner detects a credential, API key, service token, or other active secret in source code.
+    enabled: true
+    tags:
+      - secrets
+      - credentials
+      - source-code
+      - regression
+    metadata:
+      redaction_required: true
+      synthetic_lab_secrets_allowed: true
 
-- id: AUTHZ-001
-  name: Function-Level Authorization Regression
-  security_requirement: SF-AUTHZ-002
-  description: Verify that administrative functions require the administrator role.
-  objective: Prevent ordinary users from invoking privileged application functions.
-  target: /vulnerable/admin-action
-  method: POST
-  expected_result: HTTP 403 for a non-administrative user.
-  failure_condition: A non-administrative user successfully executes an administrative action.
-  enabled: true
-  tags:
-    - authorization
-    - bfla
-    - privilege
-    - api
-    - regression
-  metadata:
-    authenticated_user_role: user
-    required_role: admin
-    expected_status_code: 403
+  - id: AUTHZ-001
+    name: Function-Level Authorization Regression
+    security_requirement: SF-AUTHZ-002
+    description: Verify that administrative functions require the administrator role.
+    objective: Prevent ordinary users from invoking privileged application functions.
+    target: /vulnerable/admin-action
+    method: POST
+    expected_result: HTTP 403 for a non-administrative user.
+    failure_condition: A non-administrative user successfully executes an administrative action.
+    enabled: true
+    tags:
+      - authorization
+      - bfla
+      - privilege
+      - api
+      - regression
+    metadata:
+      authenticated_user_role: user
+      required_role: admin
+      expected_status_code: 403
 
-- id: MISCONFIG-001
-  name: Infrastructure Misconfiguration Regression
-  security_requirement: SF-IAC-001
-  description: Verify that remediated infrastructure does not expose the application publicly or use excessive permissions.
-  objective: Prevent insecure infrastructure configuration from returning after remediation.
-  target: ./infra
-  method: IAC_SCAN
-  expected_result: No public application exposure, unencrypted public storage, or wildcard permissions are detected.
-  failure_condition: Infrastructure scanning identifies a public application listener, public unencrypted storage, or unrestricted permissions.
-  enabled: true
-  tags:
-    - iac
-    - misconfiguration
-    - least-privilege
-    - regression
-  metadata:
-    expected_host: 127.0.0.1
-    storage_encryption_required: true
-    public_storage_allowed: false
-    wildcard_permissions_allowed: false
-```
+  - id: MISCONFIG-001
+    name: Infrastructure Misconfiguration Regression
+    security_requirement: SF-IAC-001
+    description: Verify that remediated infrastructure does not expose the application publicly or use excessive permissions.
+    objective: Prevent insecure infrastructure configuration from returning after remediation.
+    target: ./infra
+    method: IAC_SCAN
+    expected_result: No public application exposure, unencrypted public storage, or wildcard permissions are detected.
+    failure_condition: Infrastructure scanning identifies a public application listener, public unencrypted storage, or unrestricted permissions.
+    enabled: true
+    tags:
+      - iac
+      - misconfiguration
+      - least-privilege
+      - regression
+    metadata:
+      expected_host: 127.0.0.1
+      storage_encryption_required: true
+      public_storage_allowed: false
+      wildcard_permissions_allowed: false
 
 metadata:
-application: SecureCommerce
-environment: lab
-purpose: Security regression prevention
-owner: SecureForge
-synthetic: true
+  application: SecureCommerce
+  environment: lab
+  purpose: Security regression prevention
+  owner: SecureForge
+  synthetic: true
+

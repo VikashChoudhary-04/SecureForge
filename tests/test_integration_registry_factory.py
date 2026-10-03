@@ -7,22 +7,12 @@ from secureforge.integrations.registry_factory import (
 )
 
 
-def test_default_registry_contains_ci_integration() -> None:
-    """The default registry includes the CI integration."""
-    registry = build_default_integration_registry()
-
-    integration = registry.get("ci")
-
-    assert integration.name == "ci"
-
-
 def test_default_registry_contains_expected_integrations() -> None:
-    """The default registry contains the built-in integrations."""
+    """The default registry contains the built-in security integrations."""
     registry = build_default_integration_registry()
 
     expected = {
         "api",
-        "ci",
         "container",
         "dast",
         "iac",
@@ -35,13 +25,3 @@ def test_default_registry_contains_expected_integrations() -> None:
     }
 
     assert set(registry.names()) == expected
-
-
-def test_default_registry_can_find_ci_integration() -> None:
-    """The registry can resolve the CI integration by name."""
-    registry = build_default_integration_registry()
-
-    integration = registry.get("ci")
-
-    assert integration.describe()["name"] == "ci"
-    assert integration.describe()["mode"] == "synthetic"

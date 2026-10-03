@@ -40,6 +40,7 @@ class FindingStatus(StrEnum):
     REJECTED = "rejected"
     REMEDIATED = "remediated"
     VERIFIED = "verified"
+    ACCEPTED = "accepted"
     REOPENED = "reopened"
 
 

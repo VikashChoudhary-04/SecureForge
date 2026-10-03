@@ -33,7 +33,15 @@ jobs:
 
       - name: Verify SecureForge CLI
         run: |
-          secureforge version
+          secureforge --version
+
+      - name: Run SecureForge CI security verification
+        run: |
+          secureforge scan \
+            --profile ci \
+            --environment ci \
+            --source-path . \
+            --scan-id ci-security-verification
 
       - name: Run SecureForge tests
         run: |

@@ -59,6 +59,27 @@ class PolicyLoader:
                 "SecureForge policy must contain a YAML mapping."
             )
 
+        if "rules" not in data and "security_gate" in data:
+            actions = {}
+            for severity in ("critical", "high", "medium", "low", "info"):
+                section = data.get(severity)
+                if isinstance(section, dict) and section.get("action"):
+                    actions[severity] = str(section["action"]).lower()
+            data = {
+                "policy_id": "secureforge-default",
+                "version": "1.0",
+                "rules": [
+                    {"rule_id": "BLOCK-CRITICAL", "name": "Block critical findings", "description": "Critical findings block release.", "severity": "critical", "action": actions.get("critical", "block"), "enabled": True},
+                    {"rule_id": "BLOCK-HIGH", "name": "Block high findings", "description": "High findings block release.", "severity": "high", "action": actions.get("high", "block"), "enabled": True},
+                    {"rule_id": "REVIEW-MEDIUM", "name": "Review medium findings", "description": "Medium findings require review.", "severity": "medium", "action": actions.get("medium", "review"), "enabled": True},
+                    {"rule_id": "PASS-LOW", "name": "Pass low findings", "description": "Low findings do not block release.", "severity": "low", "action": actions.get("low", "pass"), "enabled": True},
+                    {"rule_id": "PASS-INFO", "name": "Pass informational findings", "description": "Informational findings do not block release.", "severity": "info", "action": actions.get("info", "pass"), "enabled": True},
+                ],
+                "exceptions": [],
+                "fail_on_tool_error": False,
+                "fail_on_regression_failure": True,
+                "metadata": {"intended_environment": "lab", "policy_owner": "SecureForge", "review_required_for_exceptions": True},
+            }
         try:
             return PolicyConfig.model_validate(
                 data

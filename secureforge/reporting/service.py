@@ -157,35 +157,64 @@ class SecurityReportService:
     def generate(
         self,
         report_or_result,
-        output_directory: Path | None = None,
+        output_directory: Path | ReportPaths | None = None,
         *,
         json_path: Path | None = None,
         html_path: Path | None = None,
-    ):
-        """Generate reports using either legacy or modern calling style."""
+    ) -> ReportPaths:
+        """Generate reports using modern or legacy calling conventions.
+
+        Modern calling convention::
+
+            generate(report, ReportPaths(...))
+
+        Legacy calling convention::
+
+            generate(scan_result, output_directory)
+        """
         if isinstance(report_or_result, SecurityReport):
             report = report_or_result
+
+            if isinstance(output_directory, ReportPaths):
+                paths = output_directory
+            else:
+                if json_path is None or html_path is None:
+                    if output_directory is None:
+                        raise ReportingError(
+                            "ReportPaths or both json_path and html_path "
+                            "are required."
+                        )
+                    json_path = output_directory / "security-report.json"
+                    html_path = output_directory / "security-report.html"
+
+                paths = ReportPaths(
+                    json_path=json_path,
+                    html_path=html_path,
+                )
         else:
-            if output_directory is None:
+            if output_directory is None or isinstance(
+                output_directory,
+                ReportPaths,
+            ):
                 raise ReportingError(
                     "output_directory is required for scan-result generation."
                 )
+
             report = self.build(report_or_result)
 
-        if json_path is None or html_path is None:
-            if output_directory is None:
-                raise ReportingError(
-                    "Both json_path and html_path are required."
-                )
-            json_path = output_directory / "security-report.json"
-            html_path = output_directory / "security-report.html"
+            if json_path is None:
+                json_path = output_directory / "security-report.json"
+            if html_path is None:
+                html_path = output_directory / "security-report.html"
 
-        self.write_json(report, json_path)
-        self.write_html(report, html_path)
-        return ReportPaths(
-            json_path=json_path,
-            html_path=html_path,
-        )
+            paths = ReportPaths(
+                json_path=json_path,
+                html_path=html_path,
+            )
+
+        self.write_json(report, paths.json_path)
+        self.write_html(report, paths.html_path)
+        return paths
 
     def build(self, result: SecurityScanResult) -> SecurityReport:
         execution = result.execution
@@ -247,23 +276,6 @@ class SecurityReportService:
 class ReportingService(SecurityReportService):
     """Backward-compatible reporting service."""
 
-    def generate(
-        self,
-        result: SecurityScanResult,
-        output_directory: Path,
-    ) -> SecurityReport:
-        output_directory.mkdir(parents=True, exist_ok=True)
-        report = self.build(result)
-        self.write_json(
-            report,
-            output_directory / "security-report.json",
-        )
-        self.write_html(
-            report,
-            output_directory / "security-report.html",
-        )
-        return report
-
 
 __all__ = [
     "ReportPaths",
@@ -271,3 +283,4 @@ __all__ = [
     "ReportingService",
     "SecurityReportService",
 ]
+

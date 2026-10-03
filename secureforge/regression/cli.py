@@ -8,78 +8,104 @@ import typer
 
 from .runner import RegressionRunConfiguration, RegressionRunner
 
+
 app = typer.Typer(
     name="regression",
-    help="Run SecureForge security regression tests against the SecureCommerce laboratory.",
-    no_args_is_help=True,
+    help="Run SecureForge security regression tests.",
+    no_args_is_help=False,
 )
+
+
+@app.callback(invoke_without_command=True)
+def regression_callback(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        typer.echo("SecureForge Security Regression")
 
 
 @app.command("run")
 def run_regression(
-    suite: Path = typer.Option(
-        Path("requirements/regression-tests.yaml"),
+    suite: str = typer.Option(
+        "requirements/regression-tests.yaml",
         "--suite",
-        help="Path to the regression suite YAML file.",
-        exists=True,
-        readable=True,
-        dir_okay=False,
     ),
     base_url: str = typer.Option(
         "http://127.0.0.1:5000",
         "--base-url",
-        help="Base URL of the SecureCommerce application.",
     ),
-    source_root: Path | None = typer.Option(
+    source_root: str | None = typer.Option(
         None,
         "--source-root",
-        help="SecureCommerce source directory for source regressions.",
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
     ),
-    infrastructure_root: Path | None = typer.Option(
+    infrastructure_root: str | None = typer.Option(
         None,
         "--infrastructure-root",
-        help="Infrastructure directory for IaC regressions.",
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
     ),
     timeout: float = typer.Option(
         5.0,
         "--timeout",
         min=0.1,
-        help="HTTP request timeout in seconds.",
     ),
 ) -> None:
-    configuration = RegressionRunConfiguration(
-        suite_path=suite,
+    config = RegressionRunConfiguration(
+        suite_path=Path(suite),
         base_url=base_url,
         timeout=timeout,
-        source_root=source_root,
-        infrastructure_root=infrastructure_root,
+        source_root=(
+            Path(source_root)
+            if source_root
+            else None
+        ),
+        infrastructure_root=(
+            Path(infrastructure_root)
+            if infrastructure_root
+            else None
+        ),
     )
+
     try:
-        result = RegressionRunner().run(configuration)
+        result = RegressionRunner().run(config)
     except Exception as exc:
-        typer.echo(f"Regression execution error: {exc}", err=True)
+        typer.echo(
+            f"Regression execution error: {exc}"
+        )
         raise typer.Exit(code=1) from exc
 
     typer.echo(f"Suite: {result.name}")
-    typer.echo(f"Status: {result.status.value.upper()}")
+    typer.echo(
+        f"Status: {result.status.value.upper()}"
+    )
     typer.echo(f"Total: {result.total}")
     typer.echo(f"Passed: {result.passed}")
     typer.echo(f"Failed: {result.failed}")
     typer.echo(f"Errors: {result.errors}")
     typer.echo(f"Skipped: {result.skipped}")
-    for regression_result in result.results:
+
+    for item in result.results:
         typer.echo(
-            f" - {regression_result.test_id}: "
-            f"{regression_result.status.value.upper()}"
+            f" - {item.test_id}: "
+            f"{item.status.value.upper()}"
         )
 
-    raise typer.Exit(code=0 if result.status.value == "passed" else 1)
+    if result.status.value == "error":
+        typer.echo(
+            "Regression execution error: "
+            "one or more regression tests "
+            "could not be executed."
+        )
+
+    raise typer.Exit(
+        code=0
+        if result.status.value == "passed"
+        else 1
+    )
 
 
-__all__ = ["app", "run_regression"]
+__all__ = [
+    "app",
+    "run_regression",
+]
+
+
+if __name__ == "__main__":
+    app()
+

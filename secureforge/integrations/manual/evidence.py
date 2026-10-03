@@ -1,20 +1,18 @@
-"""Manual security evidence adapter for SecureForge."""
-
 from __future__ import annotations
 
 import json
 from typing import Any
 
 from secureforge.core.normalization import RawEvidence
-from secureforge.integrations.base import SecurityIntegration
+from secureforge.integrations.base import (
+    IntegrationConfigurationError,
+    IntegrationParseError,
+    SecurityIntegration,
+)
 
 
-class IntegrationConfigurationError(ValueError):
-    """Raised when an integration configuration is invalid."""
 
 
-class IntegrationParseError(ValueError):
-    """Raised when integration evidence cannot be parsed."""
 
 
 class ManualEvidenceIntegration(SecurityIntegration):
@@ -239,17 +237,20 @@ class ManualEvidenceIntegration(SecurityIntegration):
             payload,
             dict,
         ):
-            raw_findings = (
-                payload.get("findings")
-                or payload.get("validated_findings")
-                or payload.get("evidence")
-                or payload.get("results")
+            collection_keys = (
+                "findings",
+                "validated_findings",
+                "evidence",
+                "results",
             )
+            raw_findings = None
+            for key in collection_keys:
+                if key in payload:
+                    raw_findings = payload[key]
+                    break
 
             if raw_findings is None:
-                raw_findings = [
-                    payload
-                ]
+                raw_findings = [payload]
 
         else:
             raise IntegrationParseError(
@@ -724,3 +725,6 @@ class ManualEvidenceIntegration(SecurityIntegration):
             or target.get("network_target")
             or "unknown"
         )
+
+"""Contextual risk evaluation engine for SecureForge."""
+

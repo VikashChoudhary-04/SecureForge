@@ -1,5 +1,3 @@
-"""Finding storage and lookup operations for SecureForge."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
@@ -145,16 +143,15 @@ class FindingStore:
 
     def open_findings(self) -> list[Finding]:
         """Return findings that remain unresolved."""
-        resolved_statuses = {
-            FindingStatus.REMEDIATED,
-            FindingStatus.VERIFIED,
-            FindingStatus.REJECTED,
+        open_statuses = {
+            FindingStatus.OPEN,
+            FindingStatus.IN_PROGRESS,
         }
 
         return [
             finding
             for finding in self._findings.values()
-            if finding.status not in resolved_statuses
+            if finding.status in open_statuses
         ]
 
     def update_status(
@@ -181,3 +178,4 @@ class FindingStore:
             inserted += 1
 
         return inserted
+

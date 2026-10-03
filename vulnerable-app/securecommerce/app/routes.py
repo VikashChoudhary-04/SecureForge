@@ -1,34 +1,92 @@
-"""Web routes for SecureCommerce."""
+"""Application routes for SecureCommerce."""
 
-from **future** import annotations
+from __future__ import annotations
 
-from flask import Flask, jsonify
+from flask import Blueprint, jsonify, request
 
-from .admin import admin_bp
-from .api import api_bp
-from .auth import auth_bp
-from .openapi import openapi_bp
-from .vulnerable_routes import vulnerable_bp
-from .web import web_bp
+from .database import db
+from .models import Order, Product, User
 
-def register_routes(app: Flask) -> None:
-"""Register all SecureCommerce web and API routes."""
-app.register_blueprint(web_bp)
-app.register_blueprint(api_bp)
-app.register_blueprint(auth_bp)
-app.register_blueprint(admin_bp)
-app.register_blueprint(vulnerable_bp)
-app.register_blueprint(openapi_bp)
+routes_bp = Blueprint(
+    "routes",
+    __name__,
+)
 
-```
-@app.get("/health")
+
+@routes_bp.get("/health")
 def health():
-    """Return application health status."""
+    """Return the SecureCommerce application health status."""
     return jsonify(
         {
             "status": "ok",
             "application": "SecureCommerce",
-            "environment": "lab",
         }
     )
-```
+
+
+@routes_bp.get("/profile")
+def profile():
+    """Return a user profile."""
+    user_id = request.args.get("user_id", type=int)
+
+    if user_id is None:
+        return (
+            jsonify({"error": "user_id is required"}),
+            400,
+        )
+
+    user = db.session.get(User, user_id)
+
+    if user is None:
+        return (
+            jsonify({"error": "user not found"}),
+            404,
+        )
+
+    return jsonify(
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "created_at": (
+                user.created_at.isoformat()
+                if user.created_at
+                else None
+            ),
+        }
+    )
+
+
+@routes_bp.get("/orders")
+def orders():
+    """Return orders belonging to a user."""
+    user_id = request.args.get("user_id", type=int)
+
+    if user_id is None:
+        return (
+            jsonify({"error": "user_id is required"}),
+            400,
+        )
+
+    order_list = (
+        Order.query.filter_by(user_id=user_id)
+        .order_by(Order.id.desc())
+        .all()
+    )
+
+    return jsonify(
+        {
+            "orders": [
+                {
+                    "id": order.id,
+                    "user_id": order.user_id,
+                    "status": order.status,
+                    "total": order.total,
+                    "shipping_address": order.shipping_address,
+                }
+                for order in order_list
+            ]
+        }
+    )
+

@@ -7,10 +7,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from secureforge.core.config import (
+    ScanConfiguration as CoreScanConfiguration,
+    TargetConfiguration,
+)
+from secureforge.integrations.base import IntegrationContext
+from secureforge.integrations.ci import CIIntegration
 from secureforge.validation.models import ValidationMethod, ValidationRequest
 from secureforge.validation.planner import ValidationPlanner
 
-from .models import ScanConfiguration, ScanExecution, SecurityScanResult
+from .factory import ScanRunFactory
+from .models import ScanExecution, SecurityScanResult
 from .runner import ScanRunner
 from .security_pipeline import SecurityPipeline
 
@@ -27,7 +34,9 @@ class ScanOrchestrator:
     ) -> None:
         self.runner = runner
         self.pipeline = pipeline or SecurityPipeline()
-        self.validation_planner = validation_planner or ValidationPlanner()
+        self.validation_planner = (
+            validation_planner or ValidationPlanner()
+        )
 
     def run(
         self,
@@ -88,6 +97,12 @@ class ScanOrchestrator:
 
         completed_at = datetime.now(timezone.utc)
 
+        effective_target = (
+            target or "secureforge-ci"
+            if str(profile).lower() == "ci"
+            else target
+        )
+
         scan_execution = ScanExecution(
             scan_id=scan_id,
             profile=profile,
@@ -95,7 +110,7 @@ class ScanOrchestrator:
             version=version,
             commit_sha=commit_sha,
             environment=environment,
-            target=target or "secureforge-ci" if str(profile).lower() == "ci" else target,
+            target=effective_target,
             started_at=started_at.isoformat(),
             completed_at=completed_at.isoformat(),
             status=execution.status,
@@ -117,35 +132,51 @@ class ScanOrchestrator:
         )
 
     def _run_runner(self, **kwargs: Any):
+        # CI is a deterministic SecureForge integration, not an external
+        # security scanner. Keep it outside the default scanner registry and
+        # execute it directly for the CI profile.
+        if str(kwargs["profile"]).strip().lower() == "ci":
+            return self._run_ci_integration(**kwargs)
+
         signature = inspect.signature(self.runner.run)
         parameters = signature.parameters
 
         if "configuration" in parameters:
             integrations = {}
-            if str(kwargs["profile"]).lower() == "ci":
-                integrations = {
-                    "ci": {
-                        "name": "ci",
-                        "enabled": True,
-                    }
-                }
 
-            configuration = ScanConfiguration(
+            target = kwargs["target"]
+            source_path = kwargs["source_path"]
+
+            target_configuration = None
+            if target is not None:
+                target_configuration = TargetConfiguration(
+                    name=target,
+                    base_url=target,
+                    source_path=(
+                        str(source_path)
+                        if source_path is not None
+                        else None
+                    ),
+                )
+
+            configuration = CoreScanConfiguration(
                 application=kwargs["application"],
                 version=kwargs["version"],
                 profile=kwargs["profile"],
                 environment=kwargs["environment"],
                 commit_sha=kwargs["commit_sha"],
-                target=kwargs["target"],
-                integrations=integrations,
+                target=target_configuration,
+                tools=[],
                 metadata={
                     "source_path": (
-                        str(kwargs["source_path"])
-                        if kwargs["source_path"] is not None
+                        str(source_path)
+                        if source_path is not None
                         else None
                     ),
+                    "integrations": integrations,
                 },
             )
+
             result = self.runner.run(
                 configuration,
                 commit_sha=kwargs["commit_sha"],
@@ -162,6 +193,55 @@ class ScanOrchestrator:
             self._propagate_target(result, kwargs["target"])
 
         return result
+
+    @staticmethod
+    def _run_ci_integration(**kwargs: Any):
+        """Execute the deterministic CI integration without external tools."""
+        configuration = CoreScanConfiguration(
+            application=kwargs["application"],
+            version=kwargs["version"],
+            profile="ci",
+            environment=kwargs["environment"],
+            commit_sha=kwargs["commit_sha"],
+            target=TargetConfiguration(name="secureforge-ci"),
+            tools=[],
+            metadata={
+                "source_path": (
+                    str(kwargs["source_path"])
+                    if kwargs["source_path"] is not None
+                    else None
+                ),
+            },
+        )
+
+        scan = ScanRunFactory().create(
+            configuration,
+            commit_sha=kwargs["commit_sha"],
+        )
+        scan.start()
+
+        context = IntegrationContext(
+            application=kwargs["application"],
+            environment=kwargs["environment"],
+            target=kwargs["target"] or "secureforge-ci",
+            source_path=(
+                str(kwargs["source_path"])
+                if kwargs["source_path"] is not None
+                else None
+            ),
+            configuration={},
+        )
+        result = CIIntegration().execute(context)
+
+        if result.success:
+            scan.add_findings(result.findings)
+        else:
+            scan.add_error(
+                result.error or "CI integration failed."
+            )
+
+        scan.complete()
+        return scan
 
     @staticmethod
     def _propagate_target(result: Any, target: str) -> None:
@@ -187,6 +267,7 @@ class ScanOrchestrator:
     ) -> list[ValidationRequest]:
         if not findings or target is None:
             return []
+
         try:
             return self.validation_planner.plan(
                 findings,

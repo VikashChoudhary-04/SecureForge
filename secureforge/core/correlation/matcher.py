@@ -131,7 +131,7 @@ class FindingMatcher:
             second_words
         )
 
-        return len(overlap) >= 2
+        return bool(overlap)
 
     @staticmethod
     def normalize_endpoint(
@@ -153,12 +153,18 @@ class FindingMatcher:
         title: str,
     ) -> set[str]:
         """Extract meaningful words from a finding title."""
-        punctuation = ".,:;()[]{}"
+        punctuation = ".,:;()[]{}-_/\\\\'\""
+        stop_words = {
+            "the", "this", "that", "with", "from", "into",
+            "for", "and", "security", "vulnerability", "issue",
+            "finding", "detected", "confirmed", "possible",
+        }
 
         return {
             word.strip(punctuation).lower()
             for word in title.split()
             if len(word.strip(punctuation)) >= 4
+            and word.strip(punctuation).lower() not in stop_words
         }
 
     def primary_correlation_type(

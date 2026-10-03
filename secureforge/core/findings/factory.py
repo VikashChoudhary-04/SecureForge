@@ -180,7 +180,7 @@ class FindingFactory:
 
         digest = hashlib.sha256(
             serialized.encode("utf-8")
-        ).hexdigest().upper()[:9]
+        ).hexdigest().upper()[:12]
 
         return f"SF-{digest}"
         

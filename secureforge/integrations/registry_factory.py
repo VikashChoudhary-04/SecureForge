@@ -1,5 +1,3 @@
-"""Factory functions for SecureForge security-tool integrations."""
-
 from __future__ import annotations
 
 from secureforge.core.config import ScanConfiguration
@@ -21,6 +19,7 @@ def build_default_registry(
     *,
     configuration: ScanConfiguration | None = None,
 ) -> IntegrationRegistry:
+    """Build the default registry of security-tool integrations."""
     del configuration
     return IntegrationRegistry(
         integrations=[
@@ -58,3 +57,4 @@ __all__ = [
     "build_default_registry",
     "build_registry",
 ]
+

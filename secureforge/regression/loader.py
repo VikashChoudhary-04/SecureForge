@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import re
 
 import yaml
 
@@ -23,8 +24,20 @@ class RegressionLoader:
             raise RegressionConfigurationError(
                 f"Regression configuration not found: {configuration_path}"
             )
+        raw_text = configuration_path.read_text(
+            encoding="utf-8"
+        )
+
+        if re.search(
+            r"(?im)^\s*enabled\s*:\s*(?:yes|no|on|off)\s*$",
+            raw_text,
+        ):
+            raise RegressionConfigurationError(
+                "Regression test 'enabled' must be boolean."
+            )
+
         try:
-            data = yaml.safe_load(configuration_path.read_text(encoding="utf-8"))
+            data = yaml.safe_load(raw_text)
         except yaml.YAMLError as exc:
             raise RegressionConfigurationError(
                 "Invalid YAML in regression configuration."

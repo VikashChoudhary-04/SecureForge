@@ -26,7 +26,18 @@ class ScanRunFactory:
                 "Scan version cannot be empty"
             )
 
-        if not configuration.target.name.strip():
+        if (
+            configuration.target is None
+            and configuration.profile != "ci"
+        ):
+            raise ValueError(
+                "Scan target is required for this scan profile"
+            )
+
+        if (
+            configuration.target is not None
+            and not configuration.target.name.strip()
+        ):
             raise ValueError(
                 "Scan target name cannot be empty"
             )
@@ -47,10 +58,12 @@ class ScanRunFactory:
             configuration.metadata
         )
 
-        target_metadata = {
-            "target_name": configuration.target.name,
-            "target_type": configuration.target.target_type.value,
-        }
+        target_metadata = {}
+        if configuration.target is not None:
+            target_metadata = {
+                "target_name": configuration.target.name,
+                "target_type": configuration.target.target_type.value,
+            }
 
         for key, value in target_metadata.items():
             scan_metadata.setdefault(

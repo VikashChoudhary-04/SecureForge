@@ -65,7 +65,7 @@ class TargetConfiguration(BaseModel):
 
     name: str
 
-    target_type: TargetType
+    target_type: TargetType = TargetType.WEB
 
     base_url: str | None = None
 
@@ -99,7 +99,7 @@ class ScanConfiguration(BaseModel):
 
     application: str
 
-    version: str
+    version: str = "1.0.0"
 
     profile: ScanProfile = ScanProfile.QUICK
 

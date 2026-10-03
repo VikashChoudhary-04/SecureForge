@@ -54,7 +54,12 @@ class ScanResultStore:
 
         with self._lock:
             path.write_text(
-                json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False),
+                json.dumps(
+                    payload,
+                    indent=2,
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ),
                 encoding="utf-8",
             )
         return path
@@ -97,7 +102,11 @@ class ScanResultStore:
         raise ScanResultStoreError("SecurityScanResult must contain a scan ID.")
 
     @classmethod
-    def _serialize_result(cls, result: SecurityScanResult, scan_id: str):
+    def _serialize_result(
+        cls,
+        result: SecurityScanResult,
+        scan_id: str,
+    ):
         payload = (
             result.model_dump(mode="json")
             if hasattr(result, "model_dump")
@@ -111,7 +120,8 @@ class ScanResultStore:
         execution = payload.get("execution", {})
         if not isinstance(execution, dict):
             execution = {}
-        execution.setdefault("scan_id", scan_id)
+
+        execution["scan_id"] = scan_id
 
         pipeline_obj = getattr(result, "pipeline", None)
         if pipeline_obj is not None and hasattr(pipeline_obj, "to_dict"):
@@ -136,6 +146,7 @@ class ScanResultStore:
             return value.to_dict()
         if hasattr(value, "__dataclass_fields__"):
             from dataclasses import asdict
+
             return asdict(value)
         if isinstance(value, dict):
             return {
@@ -147,7 +158,10 @@ class ScanResultStore:
         return value
 
     @staticmethod
-    def _validate_payload(payload: dict[str, Any], scan_id: str) -> None:
+    def _validate_payload(
+        payload: dict[str, Any],
+        scan_id: str,
+    ) -> None:
         required_sections = {"scan", "findings", "pipeline"}
         if not required_sections.issubset(payload):
             raise ScanResultStoreError(
@@ -184,3 +198,4 @@ class ScanResultStore:
 
 
 __all__ = ["ScanResultStore", "ScanResultStoreError"]
+

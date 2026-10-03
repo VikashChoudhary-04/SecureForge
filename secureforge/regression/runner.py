@@ -48,6 +48,10 @@ class RegressionRunner:
         configuration: RegressionRunConfiguration,
     ) -> RegressionSuiteResult:
         """Load the configured suite and execute it."""
+        if not configuration.suite_path.is_file():
+            raise FileNotFoundError(
+                f"Regression configuration not found: {configuration.suite_path}"
+            )
         suite = self.loader.load(
             configuration.suite_path
         )
@@ -61,10 +65,19 @@ class RegressionRunner:
             ),
         )
 
-        return self.engine.run_suite(
-            suite,
-            executor.execute,
-        )
+        if hasattr(self.engine, "executor"):
+            self.engine.executor = executor.execute
+            return self.engine.run_suite(suite)
+
+        try:
+            engine = RegressionEngine(
+                executor=executor.execute,
+            )
+        except TypeError:
+            engine = self.engine.__class__()
+            engine.executor = executor.execute
+
+        return engine.run_suite(suite)
 
 
 def build_regression_runner() -> RegressionRunner:

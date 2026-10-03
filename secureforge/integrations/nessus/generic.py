@@ -1,5 +1,3 @@
-"""Generic Nessus vulnerability-assessment integration for SecureForge."""
-
 from __future__ import annotations
 
 import json
@@ -8,15 +6,15 @@ import xml.etree.ElementTree as ET
 from typing import Any
 
 from secureforge.core.normalization import RawEvidence
-from secureforge.integrations.base import SecurityIntegration
+from secureforge.integrations.base import (
+    IntegrationConfigurationError,
+    IntegrationParseError,
+    SecurityIntegration,
+)
 
 
-class IntegrationConfigurationError(ValueError):
-    """Raised when Nessus integration configuration is invalid."""
 
 
-class IntegrationParseError(ValueError):
-    """Raised when Nessus output cannot be parsed."""
 
 
 class GenericNessusIntegration(SecurityIntegration):
@@ -502,7 +500,7 @@ class GenericNessusIntegration(SecurityIntegration):
 
                 raw[key] = value
 
-            host = self._find_xml_host(item)
+            host = self._find_xml_host(root, item)
 
             if host:
                 raw["host"] = host
@@ -526,23 +524,18 @@ class GenericNessusIntegration(SecurityIntegration):
 
     @staticmethod
     def _find_xml_host(
+        root: ET.Element,
         item: ET.Element,
     ) -> str | None:
-        """Find the host associated with a Nessus XML item."""
-        for parent in item.iter():
-            for host in parent.findall(".//Host"):
-                address = host.attrib.get("name")
-
+        """Find the ReportHost associated with a Nessus XML item."""
+        for report_host in root.iter("ReportHost"):
+            if any(candidate is item for candidate in report_host.iter("ReportItem")):
+                address = report_host.attrib.get("name")
                 if address:
                     return address
 
-        for attribute in (
-            "host",
-            "hostname",
-            "ip",
-        ):
+        for attribute in ("host", "hostname", "ip"):
             value = item.attrib.get(attribute)
-
             if value:
                 return value
 
@@ -667,6 +660,7 @@ class GenericNessusIntegration(SecurityIntegration):
             "cvss_v3",
             "cvss_v31",
             "cvss_base_score",
+            "cvss3_base_score",
         ):
             value = raw.get(key)
 
@@ -931,3 +925,4 @@ class GenericNessusIntegration(SecurityIntegration):
             "configuration remediation, and retest the "
             "affected asset."
         )
+

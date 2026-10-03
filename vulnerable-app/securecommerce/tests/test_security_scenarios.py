@@ -1,4 +1,3 @@
-```python
 # SecureCommerce security-scenario tests
 
 from __future__ import annotations
@@ -176,4 +175,3 @@ def test_synthetic_secret_exists_for_lab_validation():
         in body
         or app.config.get("TESTING") is True
     )
-```

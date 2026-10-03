@@ -1,30 +1,26 @@
 security_gate:
-name: default
-description: "Default SecureForge release security policy."
+  name: default
+  description: "Default SecureForge release security policy."
 
 critical:
-action: block
-
+  action: block
 high:
-action: block
-
+  action: block
 medium:
-action: review
-
+  action: review
 low:
-action: pass
-
+  action: pass
 info:
-action: pass
+  action: pass
 
 settings:
-require_confirmed_critical: true
-require_confirmed_high: true
-fail_on_tool_error: true
-fail_on_regression_failure: true
+  require_confirmed_critical: true
+  require_confirmed_high: true
+  fail_on_tool_error: true
+  fail_on_regression_failure: true
 
 exceptions:
-enabled: true
-require_approval: true
-require_reason: true
-require_expiry: true
+  enabled: true
+  require_approval: true
+  require_reason: true
+  require_expiry: true

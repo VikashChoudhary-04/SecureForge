@@ -44,18 +44,12 @@ class CorrelationEngine:
 
         for index, source in enumerate(finding_list):
             for target in finding_list[index + 1:]:
-                link = self._build_link(
-                    source,
-                    target,
-                )
+                link = self._build_link(source, target)
 
                 if link is None:
                     continue
 
-                group_key = self._group_key(
-                    source,
-                    target,
-                )
+                group_key = self._group_key(source, target)
 
                 correlated = groups.setdefault(
                     group_key,
@@ -67,32 +61,19 @@ class CorrelationEngine:
                     ),
                 )
 
-                correlated.add_source_finding(
-                    source.finding_id
-                )
-                correlated.add_source_finding(
-                    target.finding_id
-                )
+                correlated.add_source_finding(source.finding_id)
+                correlated.add_source_finding(target.finding_id)
 
                 for evidence in source.evidence:
-                    correlated.add_evidence(
-                        evidence.evidence_id
-                    )
+                    correlated.add_evidence(evidence.evidence_id)
 
                 for evidence in target.evidence:
-                    correlated.add_evidence(
-                        evidence.evidence_id
-                    )
+                    correlated.add_evidence(evidence.evidence_id)
 
                 correlated.add_link(link)
 
-                if (
-                    link.confidence
-                    == CorrelationConfidence.HIGH
-                ):
-                    correlated.confidence = (
-                        CorrelationConfidence.HIGH
-                    )
+                if link.confidence == CorrelationConfidence.HIGH:
+                    correlated.confidence = CorrelationConfidence.HIGH
 
         return list(groups.values())
 
@@ -101,39 +82,30 @@ class CorrelationEngine:
         source: Finding,
         target: Finding,
     ) -> CorrelationLink | None:
-        """Build a correlation link when enough signals agree."""
-        signals = self.matcher.match(
-            source,
-            target,
-        )
+        """Build a correlation link when enough independent signals agree."""
+        signals = self.matcher.match(source, target)
 
-        if len(signals) < self.minimum_signals:
+        # CWE, asset, and endpoint represent independent primary signals.
+        # Parameter and title matches are supporting evidence and should not
+        # independently satisfy a high correlation threshold.
+        primary_signals = {
+            "same_cwe",
+            "same_asset",
+            "same_endpoint",
+        }
+        if len(primary_signals.intersection(signals)) < self.minimum_signals:
             return None
 
-        correlation_types = (
-            self.matcher.correlation_types(
-                signals
-            )
-        )
-
-        primary_type = (
-            self.matcher.primary_correlation_type(
-                signals
-            )
-        )
-
-        confidence = self._confidence_for_signals(
-            signals
-        )
+        correlation_types = self.matcher.correlation_types(signals)
+        primary_type = self.matcher.primary_correlation_type(signals)
+        confidence = self._confidence_for_signals(signals)
 
         return CorrelationLink(
             source_finding_id=source.finding_id,
             target_finding_id=target.finding_id,
             correlation_type=primary_type,
             confidence=confidence,
-            reason=self._build_reason(
-                signals
-            ),
+            reason=self._build_reason(signals),
             signals=signals,
             metadata={
                 "correlation_types": [
@@ -154,11 +126,7 @@ class CorrelationEngine:
             "same_endpoint",
         }
 
-        strong_count = len(
-            strong_signals.intersection(
-                signals
-            )
-        )
+        strong_count = len(strong_signals.intersection(signals))
 
         if strong_count >= 2:
             return CorrelationConfidence.HIGH
@@ -169,43 +137,24 @@ class CorrelationEngine:
         return CorrelationConfidence.MEDIUM
 
     @staticmethod
-    def _build_reason(
-        signals: list[str],
-    ) -> str:
+    def _build_reason(signals: list[str]) -> str:
         """Create a human-readable explanation for correlation."""
         formatted = ", ".join(signals)
-
         return (
             "Findings correlated using matching signals: "
             f"{formatted}."
         )
 
     @staticmethod
-    def _group_key(
-        source: Finding,
-        target: Finding,
-    ) -> str:
+    def _group_key(source: Finding, target: Finding) -> str:
         """Create a deterministic key for a finding pair."""
         return "::".join(
-            sorted(
-                [
-                    source.finding_id,
-                    target.finding_id,
-                ]
-            )
+            sorted([source.finding_id, target.finding_id])
         )
 
     @staticmethod
-    def _build_correlated_id(
-        source: Finding,
-        target: Finding,
-    ) -> str:
+    def _build_correlated_id(source: Finding, target: Finding) -> str:
         """Build a stable identifier for a correlated finding."""
-        first, second = sorted(
-            [
-                source.finding_id,
-                target.finding_id,
-            ]
-        )
-
+        first, second = sorted([source.finding_id, target.finding_id])
         return f"CORR-{first}-{second}"
+

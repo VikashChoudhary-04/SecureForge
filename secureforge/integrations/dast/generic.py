@@ -1,5 +1,3 @@
-"""Generic Dynamic Application Security Testing integration for SecureForge."""
-
 from __future__ import annotations
 
 import json
@@ -11,12 +9,11 @@ from secureforge.core.normalization import (
     RawEvidence,
 )
 from secureforge.integrations.base import (
+    IntegrationConfigurationError,
     SecurityIntegration,
 )
 
 
-class IntegrationConfigurationError(ValueError):
-    """Raised when an integration configuration is invalid."""
 
 
 class GenericDASTIntegration(SecurityIntegration):
@@ -674,3 +671,4 @@ class GenericDASTIntegration(SecurityIntegration):
             )
             for token in command
         ]
+

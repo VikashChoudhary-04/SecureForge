@@ -50,6 +50,42 @@ class NormalizationResult(BaseModel):
 
     normalized_at: datetime = Field(default_factory=utc_now)
 
+    @classmethod
+    def success_result(
+        cls,
+        *,
+        source: str,
+        findings: list[dict[str, Any]] | None = None,
+        evidence: list[RawEvidence] | None = None,
+        warnings: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> "NormalizationResult":
+        return cls(
+            source=source,
+            findings=list(findings or []),
+            evidence=list(evidence or []),
+            warnings=list(warnings or []),
+            metadata=dict(metadata or {}),
+            success=True,
+        )
+
+    @classmethod
+    def failure(
+        cls,
+        *,
+        source: str,
+        errors: list[str] | None = None,
+        findings: list[dict[str, Any]] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> "NormalizationResult":
+        return cls(
+            source=source,
+            findings=list(findings or []),
+            errors=list(errors or []),
+            metadata=dict(metadata or {}),
+            success=False,
+        )
+
     @property
     def finding_count(self) -> int:
         """Return the number of normalized findings."""

@@ -1,4 +1,3 @@
-```python
 # SecureCommerce OpenAPI tests
 
 from __future__ import annotations
@@ -154,4 +153,3 @@ def test_openapi_contains_download_endpoint():
     }
 
     assert "filename" in parameter_names
-```

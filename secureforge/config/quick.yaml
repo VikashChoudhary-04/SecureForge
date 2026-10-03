@@ -1,32 +1,30 @@
 project:
-name: securecommerce
-application: SecureCommerce
-environment: lab
-version: "0.1.0"
+  name: securecommerce
+  application: SecureCommerce
+  environment: lab
+  version: "0.1.0"
 
 scan:
-profile: quick
+  profile: quick
 
 target:
-source_path: "./vulnerable-app/securecommerce"
+  source_path: "./vulnerable-app/securecommerce"
 
 integrations:
-sast:
-enabled: true
-command: "sast-scanner --source {source_path} --format json"
-
-sca:
-enabled: true
-command: "sca-scanner --source {source_path} --format json"
-
-secrets:
-enabled: true
-command: "secret-scanner --source {source_path} --format json"
+  sast:
+    enabled: true
+    command: "sast-scanner --source {source_path} --format json"
+  sca:
+    enabled: true
+    command: "sca-scanner --source {source_path} --format json"
+  secrets:
+    enabled: true
+    command: "secret-scanner --source {source_path} --format json"
 
 output:
-directory: "./reports"
-json: "./reports/security-report.json"
-html: "./reports/security-report.html"
+  directory: "./reports"
+  json: "./reports/security-report.json"
+  html: "./reports/security-report.html"
 
 logging:
-level: "INFO"
+  level: "INFO"

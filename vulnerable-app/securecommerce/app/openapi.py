@@ -1,4 +1,3 @@
-```python
 # SecureCommerce OpenAPI definition
 
 from __future__ import annotations
@@ -39,21 +38,33 @@ OPENAPI_DOCUMENT = {
                         "name": "user_id",
                         "in": "path",
                         "required": True,
-                        "schema": {
-                            "type": "integer",
-                        },
+                        "schema": {"type": "integer"},
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "User returned.",
-                    },
-                    "401": {
-                        "description": "Authentication required.",
-                    },
-                    "403": {
-                        "description": "Access denied.",
-                    },
+                    "200": {"description": "User returned."},
+                    "401": {"description": "Authentication required."},
+                    "403": {"description": "Access denied."},
+                },
+            }
+        },
+        "/api/orders/{order_id}": {
+            "get": {
+                "summary": "Retrieve an order",
+                "description": "Retrieve a SecureCommerce order by ID.",
+                "parameters": [
+                    {
+                        "name": "order_id",
+                        "in": "path",
+                        "required": True,
+                        "schema": {"type": "integer"},
+                    }
+                ],
+                "responses": {
+                    "200": {"description": "Order returned."},
+                    "401": {"description": "Authentication required."},
+                    "403": {"description": "Access denied."},
+                    "404": {"description": "Order not found."},
                 },
             }
         },
@@ -70,20 +81,16 @@ OPENAPI_DOCUMENT = {
                         "name": "q",
                         "in": "query",
                         "required": False,
-                        "schema": {
-                            "type": "string",
-                        },
+                        "schema": {"type": "string"},
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Search response.",
-                    },
+                    "200": {"description": "Search response."},
                     "500": {
                         "description": (
                             "Database error caused by the "
                             "intentionally vulnerable implementation."
-                        ),
+                        )
                     },
                 },
             }
@@ -96,15 +103,9 @@ OPENAPI_DOCUMENT = {
                     "authorization endpoint."
                 ),
                 "responses": {
-                    "200": {
-                        "description": "Administrative action executed.",
-                    },
-                    "401": {
-                        "description": "Authentication required.",
-                    },
-                    "403": {
-                        "description": "Access denied.",
-                    },
+                    "200": {"description": "Administrative action executed."},
+                    "401": {"description": "Authentication required."},
+                    "403": {"description": "Access denied."},
                 },
             }
         },
@@ -120,10 +121,7 @@ OPENAPI_DOCUMENT = {
                         "name": "url",
                         "in": "query",
                         "required": True,
-                        "schema": {
-                            "type": "string",
-                            "format": "uri",
-                        },
+                        "schema": {"type": "string", "format": "uri"},
                         "description": (
                             "Remote URL to fetch. This parameter "
                             "is intentionally unsafe in the lab."
@@ -131,19 +129,9 @@ OPENAPI_DOCUMENT = {
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": (
-                            "Remote resource fetched."
-                        )
-                    },
-                    "400": {
-                        "description": "URL missing.",
-                    },
-                    "502": {
-                        "description": (
-                            "Remote request failed."
-                        ),
-                    },
+                    "200": {"description": "Remote resource fetched."},
+                    "400": {"description": "URL missing."},
+                    "502": {"description": "Remote request failed."},
                 },
             }
         },
@@ -160,9 +148,7 @@ OPENAPI_DOCUMENT = {
                         "multipart/form-data": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "file"
-                                ],
+                                "required": ["file"],
                                 "properties": {
                                     "file": {
                                         "type": "string",
@@ -174,12 +160,8 @@ OPENAPI_DOCUMENT = {
                     },
                 },
                 "responses": {
-                    "201": {
-                        "description": "File uploaded.",
-                    },
-                    "400": {
-                        "description": "Invalid upload request.",
-                    },
+                    "201": {"description": "File uploaded."},
+                    "400": {"description": "Invalid upload request."},
                 },
             }
         },
@@ -196,21 +178,13 @@ OPENAPI_DOCUMENT = {
                         "name": "filename",
                         "in": "path",
                         "required": True,
-                        "schema": {
-                            "type": "string",
-                        },
+                        "schema": {"type": "string"},
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "File returned.",
-                    },
-                    "400": {
-                        "description": "Invalid file request.",
-                    },
-                    "404": {
-                        "description": "File not found.",
-                    },
+                    "200": {"description": "File returned."},
+                    "400": {"description": "Invalid file request."},
+                    "404": {"description": "File not found."},
                 },
             }
         },
@@ -224,13 +198,11 @@ OPENAPI_DOCUMENT = {
 )
 def openapi_document():
     """Return the SecureCommerce OpenAPI document."""
-    return jsonify(
-        OPENAPI_DOCUMENT
-    )
+    return jsonify(OPENAPI_DOCUMENT)
 
 
 __all__ = [
     "OPENAPI_DOCUMENT",
     "openapi_bp",
 ]
-```
+
