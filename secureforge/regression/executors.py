@@ -68,20 +68,134 @@ class SecureCommerceRegressionExecutor:
 
         return executor(test)
 
+    def _authenticate_securecommerce_user(
+        self,
+        test: RegressionTest,
+        session: requests.Session,
+    ) -> dict[str, Any]:
+        """Authenticate a seeded SecureCommerce laboratory user."""
+        user_id = test.metadata.get(
+            "authenticated_user_id"
+        )
+
+        role = test.metadata.get(
+            "authenticated_user_role"
+        )
+
+        users_by_id = {
+            1: {
+                "username": "admin",
+                "password": "AdminPass123!",
+                "role": "admin",
+            },
+            2: {
+                "username": "alice",
+                "password": "AlicePass123!",
+                "role": "user",
+            },
+            3: {
+                "username": "bob",
+                "password": "BobPass123!",
+                "role": "user",
+            },
+        }
+
+        user = None
+
+        if user_id is not None:
+            try:
+                normalized_user_id = int(user_id)
+            except (TypeError, ValueError) as exc:
+                raise RegressionExecutorError(
+                    "authenticated_user_id must be an integer."
+                ) from exc
+
+            user = users_by_id.get(
+                normalized_user_id
+            )
+
+            if user is None:
+                raise RegressionExecutorError(
+                    f"No seeded SecureCommerce laboratory user "
+                    f"exists for ID {normalized_user_id}."
+                )
+
+            authenticated_user_id = normalized_user_id
+
+        elif role == "user":
+            authenticated_user_id = 2
+            user = users_by_id[2]
+
+        elif role == "admin":
+            authenticated_user_id = 1
+            user = users_by_id[1]
+
+        else:
+            raise RegressionExecutorError(
+                "SecureCommerce authentication requires "
+                "'authenticated_user_id' or a supported "
+                "'authenticated_user_role' in regression metadata."
+            )
+
+        login_target = urljoin(
+            self.base_url,
+            "/login",
+        )
+
+        response = session.post(
+            login_target,
+            json={
+                "username": user["username"],
+                "password": user["password"],
+            },
+            timeout=self.timeout,
+        )
+
+        if response.status_code != 200:
+            raise RegressionExecutorError(
+                "SecureCommerce authentication failed: "
+                f"HTTP {response.status_code}."
+            )
+
+        return {
+            "user_id": authenticated_user_id,
+            "username": user["username"],
+            "role": user["role"],
+            "login_status_code": response.status_code,
+        }
+
     def _execute_bola(
         self,
         test: RegressionTest,
     ) -> dict[str, Any]:
         """Verify that cross-user order access is denied."""
-        response = requests.get(
-            urljoin(
-                self.base_url,
-                test.target,
-            ),
-            timeout=self.timeout,
+        with requests.Session() as session:
+            authentication = (
+                self._authenticate_securecommerce_user(
+                    test,
+                    session,
+                )
+            )
+
+            response = session.get(
+                urljoin(
+                    self.base_url,
+                    test.target,
+                ),
+                timeout=self.timeout,
+            )
+
+        expected_status_code = int(
+            test.metadata.get(
+                "expected_status_code",
+                403,
+            )
         )
 
-        passed = response.status_code == 403
+        passed = (
+            response.status_code
+            == expected_status_code
+        )
 
         return {
             "status": (
@@ -99,7 +213,16 @@ class SecureCommerceRegressionExecutor:
             ),
             "evidence": {
                 "status_code": response.status_code,
-                "expected_status_code": 403,
+                "expected_status_code": expected_status_code,
+                "authenticated_user_id": (
+                    authentication["user_id"]
+                ),
+                "resource_owner_id": test.metadata.get(
+                    "resource_owner_id"
+                ),
+                "login_status_code": (
+                    authentication["login_status_code"]
+                ),
             },
         }
 
@@ -253,7 +376,7 @@ class SecureCommerceRegressionExecutor:
 
         secret_patterns = (
             re.compile(
-                r"""(?i)(api[_-]?key|secret|token)\s*=\s*['"][^'"]{12,}['"]"""
+                r"""(?i)(api[\_-]?key|secret|token)\s*=\s*['"][^'"]{12,}['"]"""
             ),
             re.compile(
                 r"(?i)sk-[a-z0-9_-]{16,}"
@@ -323,18 +446,33 @@ class SecureCommerceRegressionExecutor:
             test.target,
         )
 
-        response = requests.post(
-            target,
-            json={
-                "action": "list_users",
-            },
-            headers={
-                "X-User-Id": "2",
-            },
-            timeout=self.timeout,
+        with requests.Session() as session:
+            authentication = (
+                self._authenticate_securecommerce_user(
+                    test,
+                    session,
+                )
+            )
+
+            response = session.post(
+                target,
+                json={
+                    "action": "list_users",
+                },
+                timeout=self.timeout,
+            )
+
+        expected_status_code = int(
+            test.metadata.get(
+                "expected_status_code",
+                403,
+            )
         )
 
-        passed = response.status_code == 403
+        passed = (
+            response.status_code
+            == expected_status_code
+        )
 
         return {
             "status": (
@@ -352,7 +490,19 @@ class SecureCommerceRegressionExecutor:
             ),
             "evidence": {
                 "status_code": response.status_code,
-                "expected_status_code": 403,
+                "expected_status_code": expected_status_code,
+                "authenticated_user_id": (
+                    authentication["user_id"]
+                ),
+                "authenticated_user_role": (
+                    authentication["role"]
+                ),
+                "required_role": test.metadata.get(
+                    "required_role"
+                ),
+                "login_status_code": (
+                    authentication["login_status_code"]
+                ),
             },
         }
 

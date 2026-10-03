@@ -6,15 +6,29 @@ from datetime import datetime, timezone
 from typing import Any
 
 from secureforge.core.findings import Finding, FindingStatus, ValidationStatus
-from secureforge.core.policy import PolicyDecision
+from secureforge.core.metrics import SecurityMetricsCalculator
 from secureforge.core.release_gate import ReleaseGateDecision
-from secureforge.regression import RegressionGateDecision, RegressionResult, RegressionStatus, RegressionSuiteResult
+from secureforge.regression import (
+    RegressionGateDecision,
+    RegressionResult,
+    RegressionStatus,
+    RegressionSuiteResult,
+)
 from secureforge.validation.models import ValidationResult, ValidationSummary
 
 from .models import (
-    DecisionReport, PolicyReport, RegressionGateReport, RegressionReport,
-    ReleaseMetadata, RemediationItem, RemediationReport, ReportFinding,
-    RiskReport, ScanMetadata, SecurityReport, ValidationGateReport,
+    DecisionReport,
+    PolicyReport,
+    RegressionGateReport,
+    RegressionReport,
+    ReleaseMetadata,
+    RemediationItem,
+    RemediationReport,
+    ReportFinding,
+    RiskReport,
+    ScanMetadata,
+    SecurityReport,
+    ValidationGateReport,
     ValidationReport,
 )
 from .regression import build_regression_report
@@ -23,172 +37,633 @@ from .regression import build_regression_report
 def _stringify(value: Any) -> str:
     if value is None:
         return ""
+
     if isinstance(value, datetime):
         return value.isoformat()
+
     return str(value)
 
 
 class SecurityReportBuilder:
+    """Build complete SecureForge security reports."""
+
+    def __init__(
+        self,
+        *,
+        metrics_calculator: SecurityMetricsCalculator | None = None,
+    ) -> None:
+        self.metrics_calculator = (
+            metrics_calculator or SecurityMetricsCalculator()
+        )
+
     def build(
-        self, *, release: ReleaseMetadata | None = None,
-        scan: ScanMetadata | None = None, findings: list[Finding] | None = None,
-        risk, policy, decision: ReleaseGateDecision | None = None,
+        self,
+        *,
+        release: ReleaseMetadata | None = None,
+        scan: ScanMetadata | None = None,
+        findings: list[Finding] | None = None,
+        risk,
+        policy,
+        decision: ReleaseGateDecision | None = None,
         remediation: RemediationReport | None = None,
         regression: RegressionSuiteResult | None = None,
         regression_gate: RegressionGateDecision | None = None,
         validation: ValidationSummary | None = None,
         validation_results: list[ValidationResult] | None = None,
-        validation_gate: Any | None = None, generated_at: str | None = None,
-        release_id: str | None = None, application: str | None = None,
-        version: str | None = None, environment: str | None = None,
-        profile: str | None = None, scan_id: str | None = None,
-        scan_status: str | None = None, integrations: list[str] | None = None,
+        validation_gate: Any | None = None,
+        generated_at: str | None = None,
+        release_id: str | None = None,
+        application: str | None = None,
+        version: str | None = None,
+        environment: str | None = None,
+        profile: str | None = None,
+        scan_id: str | None = None,
+        scan_status: str | None = None,
+        integrations: list[str] | None = None,
         release_gate: ReleaseGateDecision | None = None,
         regression_results: list[dict[str, Any]] | None = None,
         **_: Any,
     ) -> SecurityReport:
+        """Build a complete report from existing SecureForge results."""
         findings = list(findings or [])
+
         decision = decision or release_gate
+
         if decision is None:
-            decision = ReleaseGateDecision(status="review", reason="No release-gate decision supplied.", release_allowed=False)
+            decision = ReleaseGateDecision(
+                status="review",
+                reason="No release-gate decision supplied.",
+                release_allowed=False,
+            )
+
         if release is None:
             release = ReleaseMetadata(
-                release_id=release_id or "", scan_id=scan_id or "",
-                application=application or "SecureCommerce", version=version or "0.1.0",
-                environment=environment or "lab", release_allowed=decision.release_allowed,
+                release_id=release_id or "",
+                scan_id=scan_id or "",
+                application=application or "SecureCommerce",
+                version=version or "0.1.0",
+                environment=environment or "lab",
+                release_allowed=decision.release_allowed,
                 release_blocked=not decision.release_allowed,
             )
+
         if scan is None:
             scan = ScanMetadata(
-                scan_id=scan_id or release.scan_id or "", profile=profile or "standard",
-                application=application or release.application, version=version or release.version,
-                target="", environment=environment or release.environment,
-                started_at="", completed_at="", status=scan_status or "completed",
+                scan_id=scan_id or release.scan_id or "",
+                profile=profile or "standard",
+                application=application or release.application,
+                version=version or release.version,
+                target="",
+                environment=environment or release.environment,
+                started_at="",
+                completed_at="",
+                status=scan_status or "completed",
                 integrations=integrations or [],
             )
+
         if remediation is None:
             remediation = RemediationReport(
                 total=len(findings),
-                open=sum(f.status == FindingStatus.OPEN for f in findings),
-                remediated=sum(f.status == FindingStatus.REMEDIATED for f in findings),
-                verified=sum(f.validation_status == ValidationStatus.VERIFIED for f in findings),
-                items=[RemediationItem(finding_id=f.finding_id, title=f.title, status=f.status.value, remediation=f.remediation) for f in findings],
+                open=sum(
+                    finding.status == FindingStatus.OPEN
+                    for finding in findings
+                ),
+                remediated=sum(
+                    finding.status == FindingStatus.REMEDIATED
+                    for finding in findings
+                ),
+                verified=sum(
+                    finding.validation_status
+                    == ValidationStatus.VERIFIED
+                    for finding in findings
+                ),
+                items=[
+                    RemediationItem(
+                        finding_id=finding.finding_id,
+                        title=finding.title,
+                        status=finding.status.value,
+                        remediation=finding.remediation,
+                    )
+                    for finding in findings
+                ],
             )
 
         if regression is None and regression_results is not None:
             results = []
+
             for item in regression_results:
-                status = str(item.get("status", "skipped")).lower()
+                status = str(
+                    item.get("status", "skipped")
+                ).lower()
+
                 status = RegressionStatus(status)
-                results.append(RegressionResult(
-                    test_id=str(item.get("test_id", "")),
-                    security_requirement=str(item.get("requirement", item.get("security_requirement", ""))),
-                    status=status,
-                    expected_result=str(item.get("expected_result", item.get("expected", ""))),
-                    actual_result=str(item.get("actual_result", item.get("actual", ""))),
-                    message=str(item.get("message", "")),
-                    evidence=dict(item.get("evidence", {}) or {}),
-                ))
+
+                results.append(
+                    RegressionResult(
+                        test_id=str(
+                            item.get("test_id", "")
+                        ),
+                        security_requirement=str(
+                            item.get(
+                                "requirement",
+                                item.get(
+                                    "security_requirement",
+                                    "",
+                                ),
+                            )
+                        ),
+                        status=status,
+                        expected_result=str(
+                            item.get(
+                                "expected_result",
+                                item.get("expected", ""),
+                            )
+                        ),
+                        actual_result=str(
+                            item.get(
+                                "actual_result",
+                                item.get("actual", ""),
+                            )
+                        ),
+                        message=str(
+                            item.get("message", "")
+                        ),
+                        evidence=dict(
+                            item.get("evidence", {}) or {}
+                        ),
+                    )
+                )
+
             regression = RegressionSuiteResult(
                 suite_id="securecommerce-regression",
                 suite_name="SecureCommerce Regression Suite",
-                status=RegressionStatus.FAILED if any(r.status == RegressionStatus.FAILED for r in results) else RegressionStatus.PASSED,
+                status=(
+                    RegressionStatus.FAILED
+                    if any(
+                        result.status
+                        == RegressionStatus.FAILED
+                        for result in results
+                    )
+                    else RegressionStatus.PASSED
+                ),
                 results=results,
             )
 
-        regression_report = build_regression_report(regression) if regression is not None else RegressionReport(suite_id="not-run", suite_name="Regression Testing", status="skipped")
+        regression_report = (
+            build_regression_report(regression)
+            if regression is not None
+            else RegressionReport(
+                suite_id="not-run",
+                suite_name="Regression Testing",
+                status="skipped",
+            )
+        )
+
         gate_report = None
+
         if regression_gate is not None:
             gate_report = RegressionGateReport(
-                allowed=regression_gate.allowed, blocked=not regression_gate.allowed,
-                status=str(regression_gate.status), reason=regression_gate.reason,
-                failed_tests=list(regression_gate.failed_tests), errored_tests=list(regression_gate.errored_tests),
-                skipped_tests=list(regression_gate.skipped_tests), failures=list(regression_gate.failures),
+                allowed=regression_gate.allowed,
+                blocked=not regression_gate.allowed,
+                status=str(regression_gate.status),
+                reason=regression_gate.reason,
+                failed_tests=list(
+                    regression_gate.failed_tests
+                ),
+                errored_tests=list(
+                    regression_gate.errored_tests
+                ),
+                skipped_tests=list(
+                    regression_gate.skipped_tests
+                ),
+                failures=list(
+                    regression_gate.failures
+                ),
             )
-        validation_report = self._build_validation(validation, validation_results)
+
+        validation_report = self._build_validation(
+            validation,
+            validation_results,
+        )
+
+        metrics = self._build_metrics(
+            findings=findings,
+            decision=decision,
+            regression=regression,
+            regression_gate=regression_gate,
+            validation_results=validation_results,
+        )
+
         return SecurityReport(
-            release=release, scan=scan, findings=[self._build_finding(f) for f in findings],
-            risk=self._build_risk(risk), policy=self._build_policy(policy), remediation=remediation,
-            decision=self._build_decision(decision), regression=regression_report,
-            regression_gate=gate_report, validation=validation_report,
-            validation_results=validation_report.results if validation_report else [],
-            validation_gate=self._build_validation_gate(validation_gate),
-            generated_at=generated_at or datetime.now(timezone.utc).isoformat(),
+            release=release,
+            scan=scan,
+            findings=[
+                self._build_finding(finding)
+                for finding in findings
+            ],
+            risk=self._build_risk(risk),
+            policy=self._build_policy(policy),
+            remediation=remediation,
+            decision=self._build_decision(decision),
+            metrics=metrics,
+            regression=regression_report,
+            regression_gate=gate_report,
+            validation=validation_report,
+            validation_results=(
+                validation_report.results
+                if validation_report
+                else []
+            ),
+            validation_gate=self._build_validation_gate(
+                validation_gate
+            ),
+            generated_at=(
+                generated_at
+                or datetime.now(timezone.utc).isoformat()
+            ),
+        )
+
+    def _build_metrics(
+        self,
+        *,
+        findings: list[Finding],
+        decision: ReleaseGateDecision,
+        regression: RegressionSuiteResult | None,
+        regression_gate: RegressionGateDecision | None,
+        validation_results: list[ValidationResult] | None,
+    ):
+        """Calculate metrics from the evidence used by this report."""
+        release_decisions = [decision]
+
+        regression_failures: list[str] = []
+
+        if regression_gate is not None:
+            regression_failures.extend(
+                regression_gate.failed_tests
+            )
+
+            regression_failures.extend(
+                regression_gate.errored_tests
+            )
+
+        elif regression is not None:
+            regression_failures.extend(
+                result.test_id
+                for result in regression.results
+                if result.status
+                in {
+                    RegressionStatus.FAILED,
+                    RegressionStatus.ERROR,
+                }
+            )
+
+        return self.metrics_calculator.calculate(
+            findings=findings,
+            release_decisions=release_decisions,
+            regression_failures=regression_failures,
+            validation_results=validation_results,
         )
 
     @staticmethod
-    def _build_finding(finding):
+    def _build_finding(finding: Finding) -> ReportFinding:
         return ReportFinding(
-            finding_id=finding.finding_id, title=finding.title, source=finding.source,
-            asset=finding.asset, application=finding.application, endpoint=finding.endpoint,
-            parameter=finding.parameter, severity=finding.severity.value, confidence=finding.confidence.value,
-            status=finding.status.value, validation_status=finding.validation_status.value,
-            cwe=finding.cwe, owasp_mapping=finding.owasp_mapping,
-            security_requirement=finding.security_requirement, description=finding.description,
-            impact=finding.impact, remediation=finding.remediation,
-            evidence=[e.model_dump(mode="json") for e in finding.evidence],
-            regression_test=finding.regression_test, correlation_ids=list(finding.correlation_ids),
+            finding_id=finding.finding_id,
+            title=finding.title,
+            source=finding.source,
+            asset=finding.asset,
+            application=finding.application,
+            endpoint=finding.endpoint,
+            parameter=finding.parameter,
+            severity=finding.severity.value,
+            confidence=finding.confidence.value,
+            status=finding.status.value,
+            validation_status=finding.validation_status.value,
+            cwe=finding.cwe,
+            owasp_mapping=finding.owasp_mapping,
+            security_requirement=finding.security_requirement,
+            description=finding.description,
+            impact=finding.impact,
+            remediation=finding.remediation,
+            evidence=[
+                evidence.model_dump(mode="json")
+                for evidence in finding.evidence
+            ],
+            regression_test=finding.regression_test,
+            correlation_ids=list(
+                finding.correlation_ids
+            ),
         )
 
     @staticmethod
     def _build_risk(risk):
-        highest = risk.highest_severity or risk.contextual_risk
+        highest = (
+            risk.highest_severity
+            or risk.contextual_risk
+        )
+
         return RiskReport(
-            score=risk.score if risk.score is not None else risk.risk_score,
-            highest_severity=getattr(highest, "value", str(highest)),
-            finding_count=getattr(risk, "finding_count", 0) or 0,
-            confirmed_critical=getattr(risk, "confirmed_critical", 0),
-            confirmed_high=getattr(risk, "confirmed_high", 0),
-            factors=dict(risk.factors) if isinstance(risk.factors, dict) else list(risk.factors),
-            evaluated_at=_stringify(getattr(risk, "evaluated_at", "")),
+            score=(
+                risk.score
+                if risk.score is not None
+                else risk.risk_score
+            ),
+            highest_severity=getattr(
+                highest,
+                "value",
+                str(highest),
+            ),
+            finding_count=(
+                getattr(
+                    risk,
+                    "finding_count",
+                    0,
+                )
+                or 0
+            ),
+            confirmed_critical=getattr(
+                risk,
+                "confirmed_critical",
+                0,
+            ),
+            confirmed_high=getattr(
+                risk,
+                "confirmed_high",
+                0,
+            ),
+            factors=(
+                dict(risk.factors)
+                if isinstance(risk.factors, dict)
+                else list(risk.factors)
+            ),
+            evaluated_at=_stringify(
+                getattr(
+                    risk,
+                    "evaluated_at",
+                    "",
+                )
+            ),
         )
 
     @staticmethod
     def _build_policy(policy):
-        action = getattr(policy, "action", "")
-        action = getattr(action, "value", action)
+        action = getattr(
+            policy,
+            "action",
+            "",
+        )
+
+        action = getattr(
+            action,
+            "value",
+            action,
+        )
+
         return PolicyReport(
-            policy_name=getattr(policy, "policy_name", "default"), action=action,
-            allowed=bool(getattr(policy, "allowed", False)), reason=getattr(policy, "reason", ""),
-            violations=list(getattr(policy, "violations", [])), actions=getattr(policy, "actions", {}),
-            tool_errors=list(getattr(policy, "tool_errors", [])), regression_failures=list(getattr(policy, "regression_failures", [])),
-            exceptions=getattr(policy, "exceptions", []),
+            policy_name=getattr(
+                policy,
+                "policy_name",
+                "default",
+            ),
+            action=action,
+            allowed=bool(
+                getattr(
+                    policy,
+                    "allowed",
+                    False,
+                )
+            ),
+            reason=getattr(
+                policy,
+                "reason",
+                "",
+            ),
+            violations=list(
+                getattr(
+                    policy,
+                    "violations",
+                    [],
+                )
+            ),
+            actions=getattr(
+                policy,
+                "actions",
+                {},
+            ),
+            tool_errors=list(
+                getattr(
+                    policy,
+                    "tool_errors",
+                    [],
+                )
+            ),
+            regression_failures=list(
+                getattr(
+                    policy,
+                    "regression_failures",
+                    [],
+                )
+            ),
+            exceptions=getattr(
+                policy,
+                "exceptions",
+                [],
+            ),
         )
 
     @staticmethod
     def _build_decision(decision):
-        status = getattr(decision, "status", "review")
-        status = getattr(status, "value", status)
+        status = getattr(
+            decision,
+            "status",
+            "review",
+        )
+
+        status = getattr(
+            status,
+            "value",
+            status,
+        )
+
         if status == "blocked":
             status = "block"
-        return DecisionReport(status=status, reason=getattr(decision, "reason", ""), release_allowed=bool(getattr(decision, "release_allowed", False)))
+
+        return DecisionReport(
+            status=status,
+            reason=getattr(
+                decision,
+                "reason",
+                "",
+            ),
+            release_allowed=bool(
+                getattr(
+                    decision,
+                    "release_allowed",
+                    False,
+                )
+            ),
+        )
 
     @staticmethod
-    def _build_validation(validation, validation_results):
-        if validation is None and validation_results is None:
+    def _build_validation(
+        validation,
+        validation_results,
+    ):
+        if (
+            validation is None
+            and validation_results is None
+        ):
             return None
+
         if validation is None:
-            results = list(validation_results or [])
-            validation = ValidationSummary(total=len(results), confirmed=sum(r.confirmed for r in results), rejected=sum(r.rejected for r in results), inconclusive=sum(r.inconclusive for r in results), errors=sum(r.failed for r in results), remediated=sum(r.remediation_verified for r in results), results=results)
+            results = list(
+                validation_results or []
+            )
+
+            validation = ValidationSummary(
+                total=len(results),
+                confirmed=sum(
+                    result.confirmed
+                    for result in results
+                ),
+                rejected=sum(
+                    result.rejected
+                    for result in results
+                ),
+                inconclusive=sum(
+                    result.inconclusive
+                    for result in results
+                ),
+                errors=sum(
+                    result.failed
+                    for result in results
+                ),
+                remediated=sum(
+                    result.remediation_verified
+                    for result in results
+                ),
+                results=results,
+            )
+
         from .models import ValidationResultReport
-        reports = [ValidationResultReport(
-            finding_id=r.finding_id, outcome=getattr(r.outcome, "value", r.outcome), message=r.message,
-            validator=r.validator, validated_at=_stringify(r.validated_at), remediation_verified=r.remediation_verified,
-            confirmed=r.confirmed, rejected=r.rejected, inconclusive=r.inconclusive, failed=r.failed,
-            evidence=[e.model_dump(mode="json") for e in r.evidence],
-        ) for r in validation.results]
-        return ValidationReport(total=validation.total, confirmed=validation.confirmed, rejected=validation.rejected, inconclusive=validation.inconclusive, errors=validation.errors, remediated=validation.remediated, all_validated=validation.all_validated, results=reports)
+
+        reports = [
+            ValidationResultReport(
+                finding_id=result.finding_id,
+                outcome=getattr(
+                    result.outcome,
+                    "value",
+                    result.outcome,
+                ),
+                message=result.message,
+                validator=result.validator,
+                validated_at=_stringify(
+                    result.validated_at
+                ),
+                remediation_verified=(
+                    result.remediation_verified
+                ),
+                confirmed=result.confirmed,
+                rejected=result.rejected,
+                inconclusive=result.inconclusive,
+                failed=result.failed,
+                evidence=[
+                    evidence.model_dump(mode="json")
+                    for evidence in result.evidence
+                ],
+            )
+            for result in validation.results
+        ]
+
+        return ValidationReport(
+            total=validation.total,
+            confirmed=validation.confirmed,
+            rejected=validation.rejected,
+            inconclusive=validation.inconclusive,
+            errors=validation.errors,
+            remediated=validation.remediated,
+            all_validated=validation.all_validated,
+            results=reports,
+        )
 
     @staticmethod
     def _build_validation_gate(gate):
         if gate is None:
             return None
+
         return ValidationGateReport(
-            allowed=bool(getattr(gate, "allowed", False)), blocked=bool(getattr(gate, "blocked", False)),
-            status=str(getattr(gate, "status", "")), reason=str(getattr(gate, "reason", "")),
-            confirmed_findings=list(getattr(gate, "confirmed_findings", ())), unresolved_findings=list(getattr(gate, "unresolved_findings", ())),
-            remediation_verified=list(getattr(gate, "remediation_verified", ())), inconclusive_findings=list(getattr(gate, "inconclusive_findings", ())),
-            errored_findings=list(getattr(gate, "errored_findings", ())), requires_attention=bool(getattr(gate, "requires_attention", False)),
+            allowed=bool(
+                getattr(
+                    gate,
+                    "allowed",
+                    False,
+                )
+            ),
+            blocked=bool(
+                getattr(
+                    gate,
+                    "blocked",
+                    False,
+                )
+            ),
+            status=str(
+                getattr(
+                    gate,
+                    "status",
+                    "",
+                )
+            ),
+            reason=str(
+                getattr(
+                    gate,
+                    "reason",
+                    "",
+                )
+            ),
+            confirmed_findings=list(
+                getattr(
+                    gate,
+                    "confirmed_findings",
+                    (),
+                )
+            ),
+            unresolved_findings=list(
+                getattr(
+                    gate,
+                    "unresolved_findings",
+                    (),
+                )
+            ),
+            remediation_verified=list(
+                getattr(
+                    gate,
+                    "remediation_verified",
+                    (),
+                )
+            ),
+            inconclusive_findings=list(
+                getattr(
+                    gate,
+                    "inconclusive_findings",
+                    (),
+                )
+            ),
+            errored_findings=list(
+                getattr(
+                    gate,
+                    "errored_findings",
+                    (),
+                )
+            ),
+            requires_attention=bool(
+                getattr(
+                    gate,
+                    "requires_attention",
+                    False,
+                )
+            ),
         )
 
-__all__ = ["SecurityReportBuilder"]
+
+__all__ = [
+    "SecurityReportBuilder",
+]

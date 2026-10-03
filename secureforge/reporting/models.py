@@ -7,9 +7,12 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from secureforge.core.metrics import SecurityMetrics
+
 
 class ReleaseMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     scan_id: str = ""
     release_id: str = ""
     application: str
@@ -22,6 +25,7 @@ class ReleaseMetadata(BaseModel):
 
 class ScanMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     scan_id: str
     profile: str
     application: str = "securecommerce"
@@ -42,11 +46,13 @@ class ScanMetadata(BaseModel):
         if isinstance(value, dict) and value.get("target") is None:
             value = dict(value)
             value["target"] = ""
+
         return value
 
 
 class ReportFinding(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     finding_id: str
     title: str
     source: str
@@ -74,6 +80,7 @@ class ReportFinding(BaseModel):
 
 class RiskReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     score: float
     highest_severity: str
     finding_count: int = 0
@@ -97,6 +104,7 @@ class RiskReport(BaseModel):
 
 class PolicyReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     policy_name: str = "default"
     action: str = ""
     allowed: bool = False
@@ -114,6 +122,7 @@ class PolicyReport(BaseModel):
 
 class RemediationItem(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     finding_id: str
     title: str
     status: str
@@ -122,6 +131,7 @@ class RemediationItem(BaseModel):
 
 class RemediationReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     total: int
     open: int = 0
     remediated: int = 0
@@ -145,6 +155,7 @@ class RemediationReport(BaseModel):
 
 class RegressionTestReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     test_id: str
     status: str
     expected: str = ""
@@ -155,6 +166,7 @@ class RegressionTestReport(BaseModel):
 
 class RegressionReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     suite_id: str
     suite_name: str = ""
     status: str = ""
@@ -176,16 +188,21 @@ class RegressionReport(BaseModel):
     def normalize_timestamps(cls, value: Any) -> Any:
         if not isinstance(value, dict):
             return value
+
         normalized = dict(value)
+
         for name in ("started_at", "completed_at"):
             item = normalized.get(name)
+
             if isinstance(item, datetime):
                 normalized[name] = item.isoformat()
+
         return normalized
 
 
 class RegressionGateReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     allowed: bool
     blocked: bool
     status: str
@@ -198,6 +215,7 @@ class RegressionGateReport(BaseModel):
 
 class ValidationResultReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     finding_id: str
     outcome: str
     message: str
@@ -213,6 +231,7 @@ class ValidationResultReport(BaseModel):
 
 class ValidationReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     total: int
     confirmed: int
     rejected: int
@@ -225,6 +244,7 @@ class ValidationReport(BaseModel):
 
 class ValidationGateReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     allowed: bool
     blocked: bool
     status: str
@@ -239,6 +259,7 @@ class ValidationGateReport(BaseModel):
 
 class DecisionReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     status: str
     reason: str
     release_allowed: bool = False
@@ -250,6 +271,7 @@ class DecisionReport(BaseModel):
 
 class SecurityReport(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     release: ReleaseMetadata
     scan: ScanMetadata
     findings: list[ReportFinding] = Field(default_factory=list)
@@ -257,10 +279,17 @@ class SecurityReport(BaseModel):
     policy: PolicyReport
     remediation: RemediationReport
     decision: DecisionReport
+
+    metrics: SecurityMetrics = Field(
+        default_factory=SecurityMetrics
+    )
+
     regression: RegressionReport | None = None
     regression_gate: RegressionGateReport | None = None
     validation: ValidationReport | None = None
-    validation_results: list[ValidationResultReport] = Field(default_factory=list)
+    validation_results: list[ValidationResultReport] = Field(
+        default_factory=list
+    )
     validation_gate: ValidationGateReport | None = None
     generated_at: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)

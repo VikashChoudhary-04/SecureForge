@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from secureforge.core.findings import Finding
 from secureforge.core.risk import RiskAssessment
 
@@ -77,7 +79,7 @@ class PolicyEvaluator:
         finding: Finding,
         policy: PolicyConfig,
     ) -> bool:
-        """Determine whether an enabled policy exception applies."""
+        """Determine whether an active policy exception applies."""
         return (
             PolicyEvaluator.find_exception(
                 finding,
@@ -91,9 +93,14 @@ class PolicyEvaluator:
         finding: Finding,
         policy: PolicyConfig,
     ):
-        """Return the first enabled exception matching a finding."""
+        """Return the first active exception matching a finding."""
         for exception in policy.exceptions:
             if not exception.enabled:
+                continue
+
+            if not PolicyEvaluator._exception_is_active(
+                exception.expires_at
+            ):
                 continue
 
             if exception.finding_id == finding.finding_id:
@@ -108,6 +115,28 @@ class PolicyEvaluator:
                 return exception
 
         return None
+
+    @staticmethod
+    def _exception_is_active(
+        expires_at: str | None,
+    ) -> bool:
+        """Return whether an exception has not expired."""
+        if not expires_at:
+            return True
+
+        try:
+            expiration = datetime.fromisoformat(
+                expires_at
+            )
+        except ValueError:
+            return False
+
+        if expiration.tzinfo is None:
+            expiration = expiration.replace(
+                tzinfo=timezone.utc
+            )
+
+        return expiration > datetime.now(timezone.utc)
 
     @classmethod
     def action_priority(

@@ -10,11 +10,82 @@ from secureforge.regression import (
 )
 
 
+class FakeResponse:
+    """Minimal HTTP response used by executor tests."""
+
+    def __init__(
+        self,
+        status_code: int,
+        text: str = "",
+    ) -> None:
+        self.status_code = status_code
+        self.text = text
+
+
+class FakeSession:
+    """Minimal requests.Session replacement for executor tests."""
+
+    instances: list["FakeSession"] = []
+
+    def __init__(self) -> None:
+        self.post_calls: list[dict] = []
+        self.get_calls: list[dict] = []
+        self.login_response = FakeResponse(200)
+        self.protected_response = FakeResponse(403)
+        FakeSession.instances.append(self)
+
+    def __enter__(self) -> "FakeSession":
+        return self
+
+    def __exit__(
+        self,
+        exc_type,
+        exc_value,
+        traceback,
+    ) -> None:
+        return None
+
+    def post(
+        self,
+        url,
+        *,
+        json=None,
+        timeout=None,
+    ):
+        self.post_calls.append(
+            {
+                "url": url,
+                "json": json,
+                "timeout": timeout,
+            }
+        )
+
+        if url.endswith("/login"):
+            return self.login_response
+
+        return self.protected_response
+
+    def get(
+        self,
+        url,
+        *,
+        timeout=None,
+    ):
+        self.get_calls.append(
+            {
+                "url": url,
+                "timeout": timeout,
+            }
+        )
+        return self.protected_response
+
+
 def build_test(
     test_id: str,
     *,
     target: str = "/test",
     requirement: str = "SF-API-001",
+    metadata: dict | None = None,
 ) -> RegressionTest:
     """Build a representative regression test."""
     return RegressionTest(
@@ -27,7 +98,148 @@ def build_test(
         method="GET",
         expected_result="Secure behavior",
         failure_condition="Insecure behavior",
+        metadata=metadata or {},
     )
+
+
+def test_bola_executor_authenticates_before_protected_request(
+    monkeypatch,
+):
+    """BOLA regression should use a real authenticated session."""
+    FakeSession.instances.clear()
+
+    monkeypatch.setattr(
+        "secureforge.regression.executors.requests.Session",
+        FakeSession,
+    )
+
+    executor = SecureCommerceRegressionExecutor()
+
+    result = executor.execute(
+        build_test(
+            "BOLA-001",
+            target="/api/orders/2",
+            requirement="SF-AUTHZ-001",
+            metadata={
+                "authenticated_user_id": 2,
+                "resource_owner_id": 3,
+                "expected_status_code": 403,
+            },
+        )
+    )
+
+    session = FakeSession.instances[0]
+
+    assert result["status"] == "passed"
+    assert result["evidence"]["status_code"] == 403
+    assert result["evidence"]["authenticated_user_id"] == 2
+    assert result["evidence"]["resource_owner_id"] == 3
+
+    assert len(session.post_calls) == 1
+    assert session.post_calls[0]["url"] == (
+        "http://127.0.0.1:5000/login"
+    )
+    assert session.post_calls[0]["json"] == {
+        "username": "alice",
+        "password": "AlicePass123!",
+    }
+
+    assert len(session.get_calls) == 1
+    assert session.get_calls[0]["url"] == (
+        "http://127.0.0.1:5000/api/orders/2"
+    )
+
+
+def test_authz_executor_authenticates_non_admin_user(
+    monkeypatch,
+):
+    """AUTHZ regression should authenticate as the declared non-admin role."""
+    FakeSession.instances.clear()
+
+    monkeypatch.setattr(
+        "secureforge.regression.executors.requests.Session",
+        FakeSession,
+    )
+
+    executor = SecureCommerceRegressionExecutor()
+
+    result = executor.execute(
+        build_test(
+            "AUTHZ-001",
+            target="/vulnerable/admin-action",
+            requirement="SF-AUTHZ-001",
+            metadata={
+                "authenticated_user_role": "user",
+                "required_role": "admin",
+                "expected_status_code": 403,
+            },
+        )
+    )
+
+    session = FakeSession.instances[0]
+
+    assert result["status"] == "passed"
+    assert result["evidence"]["status_code"] == 403
+    assert result["evidence"]["authenticated_user_id"] == 2
+    assert result["evidence"]["authenticated_user_role"] == "user"
+    assert result["evidence"]["required_role"] == "admin"
+
+    assert len(session.post_calls) == 2
+
+    assert session.post_calls[0]["url"] == (
+        "http://127.0.0.1:5000/login"
+    )
+    assert session.post_calls[0]["json"] == {
+        "username": "alice",
+        "password": "AlicePass123!",
+    }
+
+    assert session.post_calls[1]["url"] == (
+        "http://127.0.0.1:5000/vulnerable/admin-action"
+    )
+    assert session.post_calls[1]["json"] == {
+        "action": "list_users",
+    }
+
+
+def test_securecommerce_authentication_failure_is_reported(
+    monkeypatch,
+):
+    """Regression execution should stop when lab authentication fails."""
+    FakeSession.instances.clear()
+
+    class FailedLoginSession(FakeSession):
+        """Session whose login endpoint rejects credentials."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.login_response = FakeResponse(401)
+
+    monkeypatch.setattr(
+        "secureforge.regression.executors.requests.Session",
+        FailedLoginSession,
+    )
+
+    executor = SecureCommerceRegressionExecutor()
+
+    try:
+        executor.execute(
+            build_test(
+                "AUTHZ-001",
+                target="/vulnerable/admin-action",
+                metadata={
+                    "authenticated_user_role": "user",
+                    "required_role": "admin",
+                },
+            )
+        )
+    except Exception as exc:
+        error = exc
+    else:
+        error = None
+
+    assert error is not None
+    assert "authentication failed" in str(error).lower()
 
 
 def test_secret_executor_detects_hardcoded_secret(
@@ -189,8 +401,7 @@ resource "null_resource" "insecure" {
 
     result = executor.execute(
         build_test(
-            "MISCONFIG-001",
-            requirement="SF-IAC-001",
+            "MISCONFIG-001"
         )
     )
 
