@@ -27,6 +27,15 @@ class PolicyDecision(BaseModel):
     reason: str = ""
     violations: list[str] = Field(default_factory=list)
 
+    # Release-gate context produced during policy evaluation.
+    #
+    # These fields allow the release gate to distinguish findings that
+    # were explicitly exempted from findings that remain independently
+    # release-blocking.
+    exceptions_applied: list[str] = Field(default_factory=list)
+    exception_findings: list[str] = Field(default_factory=list)
+    risk_blocking_findings: list[str] | None = None
+
     PASS: ClassVar["PolicyDecision"]
     REVIEW: ClassVar["PolicyDecision"]
     BLOCK: ClassVar["PolicyDecision"]
@@ -123,6 +132,15 @@ class PolicyEvaluation(BaseModel):
     policy_version: str
 
 
-PolicyDecision.PASS = PolicyDecision(action=PolicyAction.PASS, allowed=True)
-PolicyDecision.REVIEW = PolicyDecision(action=PolicyAction.REVIEW, allowed=False)
-PolicyDecision.BLOCK = PolicyDecision(action=PolicyAction.BLOCK, allowed=False)
+PolicyDecision.PASS = PolicyDecision(
+    action=PolicyAction.PASS,
+    allowed=True,
+)
+PolicyDecision.REVIEW = PolicyDecision(
+    action=PolicyAction.REVIEW,
+    allowed=False,
+)
+PolicyDecision.BLOCK = PolicyDecision(
+    action=PolicyAction.BLOCK,
+    allowed=False,
+)

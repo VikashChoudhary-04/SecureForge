@@ -138,6 +138,18 @@ class ReleaseGateEngine:
             [],
         )
 
+        exception_findings = {
+            str(item)
+            for item in (
+                getattr(
+                    policy,
+                    "exception_findings",
+                    None,
+                )
+                or []
+            )
+        }
+
         for finding in findings or []:
             finding_id = str(
                 getattr(
@@ -146,6 +158,12 @@ class ReleaseGateEngine:
                     finding,
                 )
             )
+
+            # An approved exception suppresses only the specific finding
+            # it covers. Other critical findings remain independently
+            # capable of blocking the release.
+            if finding_id in exception_findings:
+                continue
 
             severity = getattr(
                 getattr(
@@ -170,29 +188,58 @@ class ReleaseGateEngine:
             ) or severity == "critical":
                 blocking.append(finding_id)
 
-        if risk is not None and bool(
+        risk_blocking_findings = getattr(
+            policy,
+            "risk_blocking_findings",
+            None,
+        )
+
+        if risk_blocking_findings is not None:
+            if any(
+                str(finding_id) not in exception_findings
+                for finding_id in risk_blocking_findings
+            ):
+                blocking.append("risk-threshold")
+
+        elif risk is not None and bool(
             getattr(
                 risk,
                 "blocked",
                 False,
             )
         ):
-            blocking.append("risk-threshold")
+            # Backward-compatible fallback for callers that provide a
+            # standalone policy decision without risk evidence produced
+            # by PolicyEngine.
+            risk_finding_id = getattr(
+                risk,
+                "finding_id",
+                None,
+            )
+
+            if str(risk_finding_id) not in exception_findings:
+                blocking.append("risk-threshold")
 
         if policy is None:
             policy_decision = ReleaseDecision.PASS
         else:
-            action = getattr(
+            policy_source = getattr(
                 policy,
+                "decision",
+                policy,
+            )
+
+            action = getattr(
+                policy_source,
                 "action",
                 None,
             )
 
             if action is None:
                 action = getattr(
-                    policy,
+                    policy_source,
                     "status",
-                    policy,
+                    policy_source,
                 )
 
             action = getattr(
@@ -307,6 +354,18 @@ class ReleaseGateEngine:
             }:
                 tool_errors.append("regression")
 
+        exceptions_applied = [
+            str(item)
+            for item in (
+                getattr(
+                    policy,
+                    "exceptions_applied",
+                    None,
+                )
+                or []
+            )
+        ]
+
         return ReleaseGateInput(
             application=(
                 application
@@ -322,6 +381,7 @@ class ReleaseGateEngine:
             review_findings=review,
             failed_regressions=failed_regressions,
             tool_errors=tool_errors,
+            exceptions_applied=exceptions_applied,
             metadata=dict(
                 metadata or {}
             ),

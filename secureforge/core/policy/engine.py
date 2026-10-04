@@ -57,6 +57,8 @@ class PolicyEngine:
         review_findings: list[str] = []
         passed_findings: list[str] = []
         exceptions_applied: list[str] = []
+        exception_findings: list[str] = []
+        risk_blocking_findings: list[str] = []
         reasons: list[str] = []
 
         final_decision = PolicyDecision.PASS
@@ -93,6 +95,10 @@ class PolicyEngine:
                     exception.exception_id
                 )
 
+                exception_findings.append(
+                    finding.finding_id
+                )
+
                 passed_findings.append(
                     finding.finding_id
                 )
@@ -104,6 +110,17 @@ class PolicyEngine:
                 )
 
                 continue
+
+            if bool(
+                getattr(
+                    assessment,
+                    "blocked",
+                    False,
+                )
+            ):
+                risk_blocking_findings.append(
+                    finding.finding_id
+                )
 
             rule = self.evaluator.match_rule(
                 finding,
@@ -224,6 +241,23 @@ class PolicyEngine:
             reasons.append(
                 "No policy conditions were triggered."
             )
+
+        # Preserve the release-relevant evidence on the policy decision
+        # itself. The release gate consumes this decision object, while
+        # PolicyEvaluation retains the richer policy-evaluation details.
+        final_decision = final_decision.model_copy(
+            update={
+                "exceptions_applied": self._unique(
+                    exceptions_applied
+                ),
+                "exception_findings": self._unique(
+                    exception_findings
+                ),
+                "risk_blocking_findings": self._unique(
+                    risk_blocking_findings
+                ),
+            }
+        )
 
         return PolicyEvaluation(
             decision=final_decision,

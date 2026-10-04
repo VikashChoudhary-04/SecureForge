@@ -16,6 +16,7 @@ from secureforge.core.release_gate import (
     ReleaseGateInput,
 )
 from secureforge.core.risk import RiskAssessment
+from secureforge.core.scan.security_pipeline import SecurityPipeline
 
 
 def build_finding(
@@ -101,6 +102,9 @@ def test_exception_does_not_bypass_independent_blocking_finding() -> None:
         blocking.finding_id
     ]
     assert policy_result.decision.action == PolicyAction.BLOCK
+    assert policy_result.decision.exception_findings == [
+        exempted.finding_id
+    ]
 
     gate_input = ReleaseGateInput(
         application="SecureCommerce",
@@ -142,3 +146,118 @@ def test_exception_does_not_bypass_independent_blocking_finding() -> None:
         "were applied."
         in release_result.reasons
     )
+
+
+def test_pipeline_exception_prevents_exempted_critical_finding_from_blocking() -> None:
+    """An exception must prevent its critical finding from independently blocking."""
+    exempted = build_finding(
+        finding_id="CRIT-EXEMPT-001",
+        severity="critical",
+    )
+
+    policy = PolicyConfig(
+        policy_id="critical-exception-policy",
+        version="1.0",
+        rules=[
+            PolicyRule(
+                rule_id="BLOCK-CRITICAL",
+                name="Block critical findings",
+                description=(
+                    "Critical findings block the release."
+                ),
+                severity="critical",
+                action=PolicyAction.BLOCK,
+            ),
+        ],
+        exceptions=[
+            PolicyException(
+                exception_id="EXC-CRITICAL-001",
+                finding_id=exempted.finding_id,
+                reason="Approved exception for regression testing.",
+                approved_by="security-team",
+            ),
+        ],
+    )
+
+    result = SecurityPipeline().evaluate(
+        [exempted],
+        policy=policy,
+    )
+
+    assert result.policy is not None
+    assert result.policy.action == PolicyAction.PASS
+    assert result.policy.allowed is True
+    assert result.policy.violations == []
+    assert result.policy.exception_findings == [
+        exempted.finding_id
+    ]
+    assert result.policy.risk_blocking_findings == []
+
+    assert result.release_gate is not None
+    assert result.release_gate.decision == ReleaseDecision.PASS
+    assert result.release_gate.blocking_findings == []
+    assert result.release_gate.exceptions_applied == [
+        "EXC-CRITICAL-001"
+    ]
+
+
+def test_pipeline_exception_does_not_bypass_independent_critical_finding() -> None:
+    """An exception must not suppress an unrelated critical finding."""
+    exempted = build_finding(
+        finding_id="CRIT-EXEMPT-002",
+        severity="critical",
+    )
+    blocking = build_finding(
+        finding_id="CRIT-BLOCK-001",
+        severity="critical",
+    )
+
+    policy = PolicyConfig(
+        policy_id="mixed-critical-exception-policy",
+        version="1.0",
+        rules=[
+            PolicyRule(
+                rule_id="BLOCK-CRITICAL",
+                name="Block critical findings",
+                description=(
+                    "Critical findings block the release."
+                ),
+                severity="critical",
+                action=PolicyAction.BLOCK,
+            ),
+        ],
+        exceptions=[
+            PolicyException(
+                exception_id="EXC-CRITICAL-002",
+                finding_id=exempted.finding_id,
+                reason="Approved exception for regression testing.",
+                approved_by="security-team",
+            ),
+        ],
+    )
+
+    result = SecurityPipeline().evaluate(
+        [exempted, blocking],
+        policy=policy,
+    )
+
+    assert result.policy is not None
+    assert result.policy.action == PolicyAction.BLOCK
+    assert result.policy.exception_findings == [
+        exempted.finding_id
+    ]
+    assert result.policy.risk_blocking_findings == [
+        blocking.finding_id
+    ]
+
+    assert result.release_gate is not None
+    assert result.release_gate.decision == ReleaseDecision.BLOCK
+
+    assert result.release_gate.blocking_findings == [
+        blocking.finding_id,
+        "risk-threshold",
+    ]
+
+    assert result.release_gate.exceptions_applied == [
+        "EXC-CRITICAL-002"
+    ]
