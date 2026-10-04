@@ -10,6 +10,7 @@ from secureforge.core.findings import Finding
 from secureforge.core.policy import PolicyConfig, PolicyEngine
 from secureforge.core.risk import RiskContext, RiskEngine, RiskLevel
 from secureforge.core.release_gate import ReleaseGateEngine
+from secureforge.core.requirements import RequirementRegistry
 from secureforge.regression.gate import RegressionGateDecision
 from secureforge.validation.engine import ValidationEngine
 from secureforge.validation.gate import (
@@ -281,6 +282,7 @@ class SecurityPipeline:
         release_gate_engine=None,
         validation_service=None,
         validation_engine=None,
+        requirement_registry: RequirementRegistry | None = None,
     ):
         self.correlation_engine = (
             correlation_engine
@@ -307,6 +309,7 @@ class SecurityPipeline:
 
         self.validation_service = validation_service
         self.validation_engine = validation_engine
+        self.requirement_registry = requirement_registry
 
     def evaluate(
         self,
@@ -385,6 +388,11 @@ class SecurityPipeline:
         )
 
         try:
+            self._validate_requirements(
+                findings,
+                risk_context=risk_context,
+            )
+
             result.correlated_findings = (
                 self._correlate(findings)
             )
@@ -525,6 +533,35 @@ class SecurityPipeline:
                 ),
             ],
         )
+
+    def _validate_requirements(
+        self,
+        findings,
+        *,
+        risk_context: RiskContext | None = None,
+    ) -> None:
+        """Validate referenced security requirements when a registry is configured."""
+        if self.requirement_registry is None:
+            return
+
+        requirement_ids = {
+            finding.security_requirement
+            for finding in findings
+            if finding.security_requirement
+        }
+
+        if risk_context is not None and risk_context.security_requirement:
+            requirement_ids.add(
+                risk_context.security_requirement
+            )
+
+        for requirement_id in sorted(requirement_ids):
+            if self.requirement_registry.contains(requirement_id):
+                continue
+
+            raise ValueError(
+                f"Unknown security requirement '{requirement_id}'"
+            )
 
     def _correlate(self, findings):
         if not findings:

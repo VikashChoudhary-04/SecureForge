@@ -1,5 +1,10 @@
 """Tests for the SecureForge security verification pipeline."""
 
+from secureforge.core.requirements import (
+    RequirementRegistry,
+    SecurityRequirement,
+    RequirementCategory,
+)
 from secureforge.core.risk import (
     AssetImportance,
     Environment,
@@ -291,3 +296,110 @@ def test_pipeline_accepts_custom_components(
     assert result.risk is not None
     assert result.policy is not None
     assert result.release_gate is not None
+
+
+
+def test_pipeline_accepts_findings_in_injected_requirement_registry(
+    sample_findings,
+) -> None:
+    """A configured registry should accept known finding requirements."""
+    requirement_ids = sorted(
+        {
+            finding.security_requirement
+            for finding in sample_findings
+            if finding.security_requirement
+        }
+    )
+    assert requirement_ids
+
+    registry = RequirementRegistry(
+        [
+            SecurityRequirement(
+                requirement_id=requirement_id,
+                title=f"Test requirement {requirement_id}",
+                description="Requirement used by the pipeline test.",
+                category=RequirementCategory.API,
+            )
+            for requirement_id in requirement_ids
+        ]
+    )
+    pipeline = SecurityPipeline(
+        requirement_registry=registry,
+    )
+
+    result = pipeline.evaluate(sample_findings)
+
+    assert result.errors == []
+    assert result.risk_assessments
+    assert result.release_gate is not None
+
+
+
+def test_pipeline_rejects_unknown_finding_requirement(
+    sample_findings,
+) -> None:
+    """An unknown finding requirement should stop pipeline evaluation."""
+    registry = RequirementRegistry()
+    pipeline = SecurityPipeline(
+        requirement_registry=registry,
+    )
+
+    result = pipeline.evaluate(sample_findings)
+
+    requirement_ids = sorted(
+        {
+            finding.security_requirement
+            for finding in sample_findings
+            if finding.security_requirement
+        }
+    )
+    assert requirement_ids
+
+    assert result.errors == [
+        f"Security pipeline failed: Unknown security requirement "
+        f"'{requirement_ids[0]}'"
+    ]
+    assert result.risk_assessments == []
+    assert result.policy is None
+    assert result.release_gate is None
+
+
+
+def test_pipeline_validates_scan_requirement_when_registry_is_configured(
+    sample_findings,
+) -> None:
+    """A scan-level security requirement should also use the catalog."""
+    requirement_id = "SF-SCAN-001"
+    registry = RequirementRegistry(
+        [
+            SecurityRequirement(
+                requirement_id=requirement_id,
+                title="Scan requirement",
+                description="Requirement used by the scan context test.",
+                category=RequirementCategory.API,
+            ),
+            *[
+                SecurityRequirement(
+                    requirement_id=finding.security_requirement,
+                    title=f"Finding requirement {finding.security_requirement}",
+                    description="Requirement used by the scan context test.",
+                    category=RequirementCategory.API,
+                )
+                for finding in sample_findings
+                if finding.security_requirement != requirement_id
+            ],
+        ]
+    )
+    pipeline = SecurityPipeline(
+        requirement_registry=registry,
+    )
+
+    result = pipeline.evaluate(
+        sample_findings,
+        risk_context=RiskContext(
+            security_requirement=requirement_id,
+        ),
+    )
+
+    assert result.errors == []
+    assert result.risk_assessments

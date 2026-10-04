@@ -8,6 +8,7 @@ from typing import Any
 
 import yaml
 
+from secureforge.core.requirements import RequirementLoader, RequirementRegistry
 from secureforge.core.scan import (
     ScanOrchestrator,
     ScanResultStore,
@@ -124,8 +125,12 @@ def build_runtime(
             f"Unsupported scan profile '{profile}'"
         )
 
+    requirement_registry = _load_default_requirement_registry()
+
     runner = ScanRunner()
-    pipeline = SecurityPipeline()
+    pipeline = SecurityPipeline(
+        requirement_registry=requirement_registry,
+    )
     store = ScanResultStore()
     orchestrator = ScanOrchestrator(
         runner=runner,
@@ -138,6 +143,23 @@ def build_runtime(
         pipeline=pipeline,
         runner=runner,
     )
+
+
+
+def _load_default_requirement_registry() -> RequirementRegistry:
+    """Load the repository security requirement catalog for production runtime."""
+    catalog_path = (
+        Path(__file__).resolve().parents[2]
+        / "requirements"
+        / "security-requirements.yaml"
+    )
+
+    try:
+        return RequirementLoader().load_registry(catalog_path)
+    except (OSError, ValueError, TypeError) as exc:
+        raise RuntimeConfigurationError(
+            f"Unable to load security requirement catalog: {catalog_path}: {exc}"
+        ) from exc
 
 
 def load_runtime_configuration(

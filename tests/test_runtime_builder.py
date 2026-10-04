@@ -8,6 +8,7 @@ import pytest
 
 from secureforge.config.models import ScanProfile
 from secureforge.config.runtime import (
+    build_runtime,
     RuntimeConfiguration,
     RuntimeConfigurationError,
 )
@@ -312,3 +313,15 @@ def test_unknown_target_fields_are_ignored(
     assert configuration.target.base_url == (
         "http://localhost:5000"
     )
+
+
+def test_build_runtime_loads_default_requirement_registry() -> None:
+    """The production runtime should inject the canonical requirement catalog."""
+    runtime = build_runtime()
+
+    registry = runtime.pipeline.requirement_registry
+
+    assert registry is not None
+    assert registry.contains("SF-AUTH-001")
+    assert registry.contains("SF-AUTHZ-001")
+    assert registry.contains("SF-REG-001")
