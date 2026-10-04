@@ -90,6 +90,11 @@ class ScanOrchestrator:
 
         pipeline_result = self.pipeline.run(
             execution.findings,
+            tool_errors=getattr(
+                execution,
+                "tool_errors",
+                [],
+            ),
             risk_context=risk_context,
             validation_requests=(
                 effective_requests if effective_requests else None
