@@ -536,15 +536,12 @@ class SecurityPipeline:
             )
         )
 
-        if correlated is None:
+        if not correlated:
             return findings
 
-        if (
-            correlated
-            and hasattr(
-                correlated[0],
-                "source_finding_ids",
-            )
+        if hasattr(
+            correlated[0],
+            "source_finding_ids",
         ):
             return findings
 

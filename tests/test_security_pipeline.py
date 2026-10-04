@@ -1,5 +1,10 @@
 """Tests for the SecureForge security verification pipeline."""
 
+from secureforge.core.risk import (
+    AssetImportance,
+    Environment,
+    RiskContext,
+)
 from secureforge.core.scan.security_pipeline import (
     SecurityPipeline,
 )
@@ -31,6 +36,89 @@ def test_pipeline_evaluates_findings(
     assert result.release_blocked == (
         not result.release_gate.release_allowed
     )
+
+
+def test_pipeline_applies_scan_risk_context(
+    sample_findings,
+) -> None:
+    """Verify scan-level risk context reaches contextual risk evaluation."""
+    pipeline = SecurityPipeline()
+
+    context = RiskContext(
+        asset_importance=AssetImportance.CRITICAL,
+        internet_exposed=True,
+        authentication_required=False,
+        sensitive_data=True,
+        exploit_evidence=True,
+        environment=Environment.PRODUCTION,
+        security_requirement="SF-SCAN-001",
+    )
+
+    result = pipeline.evaluate(
+        sample_findings,
+        risk_context=context,
+    )
+
+    assert result.risk_assessments
+
+    for assessment in result.risk_assessments:
+        assert assessment.context.asset_importance == (
+            AssetImportance.CRITICAL
+        )
+        assert assessment.context.internet_exposed is True
+        assert assessment.context.authentication_required is False
+        assert assessment.context.sensitive_data is True
+        assert assessment.context.exploit_evidence is True
+        assert assessment.context.environment == (
+            Environment.PRODUCTION
+        )
+
+
+def test_pipeline_preserves_finding_security_requirement(
+    sample_findings,
+) -> None:
+    """Verify a finding requirement overrides the scan-level requirement."""
+    pipeline = SecurityPipeline()
+
+    context = RiskContext(
+        security_requirement="SF-SCAN-001",
+    )
+
+    result = pipeline.evaluate(
+        sample_findings,
+        risk_context=context,
+    )
+
+    assert result.risk_assessments
+
+    for finding, assessment in zip(
+        result.correlated_findings,
+        result.risk_assessments,
+    ):
+        assert assessment.context.security_requirement == (
+            finding.security_requirement
+        )
+
+
+def test_pipeline_without_context_preserves_finding_requirement(
+    sample_findings,
+) -> None:
+    """Verify the legacy no-context path still derives the requirement."""
+    pipeline = SecurityPipeline()
+
+    result = pipeline.evaluate(
+        sample_findings
+    )
+
+    assert result.risk_assessments
+
+    for finding, assessment in zip(
+        result.correlated_findings,
+        result.risk_assessments,
+    ):
+        assert assessment.context.security_requirement == (
+            finding.security_requirement
+        )
 
 
 def test_pipeline_returns_serializable_result(
