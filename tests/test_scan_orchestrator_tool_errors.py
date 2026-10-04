@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from secureforge.core.release_gate import ReleaseDecision
-from secureforge.core.scan.models import ScanExecution, ScanStatus
+from secureforge.core.scan.models import (
+    ScanRun,
+    ToolExecutionResult,
+    ToolExecutionStatus,
+)
 from secureforge.core.scan.orchestrator import ScanOrchestrator
 
 
 class ToolErrorScanRunner:
-    """Return a scan execution containing a scanner execution error."""
+    """Return a scan run containing a failed security tool."""
 
     def run(
         self,
@@ -17,24 +23,40 @@ class ToolErrorScanRunner:
         profile: str,
         target: str,
         source_path: str | None = None,
-    ) -> ScanExecution:
-        """Return a completed scan with a tool error."""
-        return ScanExecution(
+    ) -> ScanRun:
+        """Return a completed scan containing a scanner execution error."""
+        timestamp = datetime.now(timezone.utc)
+
+        scan = ScanRun(
             scan_id=scan_id,
             profile=profile,
-            target=target,
-            status=ScanStatus.COMPLETED,
-            findings=[],
-            tool_errors=[
-                "DAST scanner failed to execute.",
-            ],
-            started_at="2026-10-04T10:00:00+00:00",
-            completed_at="2026-10-04T10:05:00+00:00",
+            application="securecommerce",
+            version="1.0.0",
+            environment="lab",
         )
 
+        scan.start()
 
-def test_scan_orchestrator_propagates_tool_errors_to_pipeline() -> None:
-    """Scanner execution errors must reach policy and release evaluation."""
+        scan.add_tool_result(
+            ToolExecutionResult(
+                tool_name="dast",
+                integration="dast",
+                status=ToolExecutionStatus.FAILED,
+                command=["dast", "--scan"],
+                exit_code=1,
+                error="DAST scanner failed to execute.",
+                started_at=timestamp,
+                completed_at=timestamp,
+            )
+        )
+
+        scan.complete()
+
+        return scan
+
+
+def test_scan_orchestrator_propagates_real_tool_errors_to_pipeline() -> None:
+    """Real scanner execution errors must reach policy and release evaluation."""
     orchestrator = ScanOrchestrator(
         runner=ToolErrorScanRunner()
     )

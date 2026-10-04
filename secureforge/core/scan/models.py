@@ -230,6 +230,15 @@ class ScanRun(BaseModel):
     def tool_error_count(self) -> int:
         return sum(1 for result in self.tool_results if result.failed)
 
+    @property
+    def tool_errors(self) -> list[str]:
+        """Return errors produced by failed or timed-out tools."""
+        return [
+            result.error
+            for result in self.tool_results
+            if result.failed and result.error
+        ]
+
 
 class SecurityScanResult(BaseModel):
     model_config = ConfigDict(extra="allow")
