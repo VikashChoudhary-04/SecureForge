@@ -1,7 +1,7 @@
-# SecureForge release-gate validation tests
+"""Release-gate validation tests for SecureForge."""
 
 from secureforge.core.findings.models import Finding, Severity
-from secureforge.core.policy.models import PolicyDecision
+from secureforge.core.policy.models import PolicyAction, PolicyDecision
 from secureforge.core.release_gate.engine import ReleaseGateEngine
 from secureforge.core.risk.models import RiskAssessment
 from secureforge.validation.gate import ValidationGateDecision
@@ -29,6 +29,7 @@ def _risk() -> RiskAssessment:
 
 def _policy() -> PolicyDecision:
     return PolicyDecision(
+        action=PolicyAction.PASS,
         allowed=True,
         status="passed",
         reason="Policy passed.",
@@ -114,4 +115,3 @@ def test_validation_pass_produces_passed_release() -> None:
     assert decision.status == "passed"
     assert decision.passed is True
     assert decision.blocked is False
-
