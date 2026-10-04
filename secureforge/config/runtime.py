@@ -40,6 +40,10 @@ class RuntimeConfiguration:
         return self._section("target")
 
     @property
+    def risk(self) -> dict[str, Any]:
+        return self._section("risk")
+
+    @property
     def integrations(self) -> dict[str, Any]:
         return self._section("integrations")
 

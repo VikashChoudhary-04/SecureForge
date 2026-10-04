@@ -11,6 +11,7 @@ from secureforge.core.config import (
     ScanConfiguration as CoreScanConfiguration,
     TargetConfiguration,
 )
+from secureforge.core.risk import RiskContext
 from secureforge.integrations.base import IntegrationContext
 from secureforge.integrations.ci import CIIntegration
 from secureforge.validation.models import ValidationMethod, ValidationRequest
@@ -49,6 +50,7 @@ class ScanOrchestrator:
         version: str = "1.0.0",
         commit_sha: str | None = None,
         environment: str = "lab",
+        risk_context: RiskContext | None = None,
         validation_requests: list[ValidationRequest] | None = None,
         validate_findings: bool = False,
         validation_method: ValidationMethod = ValidationMethod.HTTP,
@@ -67,6 +69,7 @@ class ScanOrchestrator:
             version=version,
             commit_sha=commit_sha,
             environment=environment,
+            risk_context=risk_context,
         )
 
         planned = (
@@ -87,6 +90,7 @@ class ScanOrchestrator:
 
         pipeline_result = self.pipeline.run(
             execution.findings,
+            risk_context=risk_context,
             validation_requests=(
                 effective_requests if effective_requests else None
             ),
@@ -164,6 +168,10 @@ class ScanOrchestrator:
                 version=kwargs["version"],
                 profile=kwargs["profile"],
                 environment=kwargs["environment"],
+                risk_context=(
+                    kwargs["risk_context"]
+                    or RiskContext()
+                ),
                 commit_sha=kwargs["commit_sha"],
                 target=target_configuration,
                 tools=[],
@@ -202,6 +210,10 @@ class ScanOrchestrator:
             version=kwargs["version"],
             profile="ci",
             environment=kwargs["environment"],
+            risk_context=(
+                kwargs["risk_context"]
+                or RiskContext()
+            ),
             commit_sha=kwargs["commit_sha"],
             target=TargetConfiguration(name="secureforge-ci"),
             tools=[],

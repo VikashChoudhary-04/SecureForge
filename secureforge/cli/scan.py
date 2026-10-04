@@ -12,6 +12,7 @@ from secureforge.config.runtime_builder import (
     RuntimeConfigurationError,
 )
 from secureforge.core.config.models import ScanProfile
+from secureforge.core.risk import RiskContext
 from secureforge.core.scan.models import SecurityScanResult
 from secureforge.core.scan.orchestrator import ScanOrchestrator
 from secureforge.core.scan.store import ScanResultStore
@@ -38,6 +39,7 @@ class ScanCommandConfiguration:
     version: str = "unknown"
     commit_sha: str | None = None
     environment: str = "lab"
+    risk_context: RiskContext | None = None
     output_directory: Path = Path("reports")
     scan_storage_directory: Path = Path("scans")
     validation_requests: tuple[ValidationRequest, ...] = ()
@@ -86,7 +88,10 @@ class ScanCommandService:
 
         profile = (
             configuration.profile.value
-            if isinstance(configuration.profile, ScanProfile)
+            if isinstance(
+                configuration.profile,
+                ScanProfile,
+            )
             else str(configuration.profile)
         )
 
@@ -114,6 +119,7 @@ class ScanCommandService:
             "version": configuration.version,
             "commit_sha": configuration.commit_sha,
             "environment": configuration.environment,
+            "risk_context": configuration.risk_context,
             "validation_requests": (
                 list(configuration.validation_requests)
                 if configuration.validation_requests
@@ -125,10 +131,13 @@ class ScanCommandService:
             "regression_result": regression_result,
         }
 
-        signature = inspect.signature(self.orchestrator.run)
+        signature = inspect.signature(
+            self.orchestrator.run
+        )
         parameters = signature.parameters.values()
         accepts_kwargs = any(
-            parameter.kind is inspect.Parameter.VAR_KEYWORD
+            parameter.kind
+            is inspect.Parameter.VAR_KEYWORD
             for parameter in parameters
         )
 
@@ -198,10 +207,15 @@ class ScanCommandService:
 
         profile = (
             configuration.profile.value
-            if isinstance(configuration.profile, ScanProfile)
+            if isinstance(
+                configuration.profile,
+                ScanProfile,
+            )
             else str(configuration.profile)
         )
-        is_ci_profile = profile.strip().lower() == "ci"
+        is_ci_profile = (
+            profile.strip().lower() == "ci"
+        )
 
         if not is_ci_profile:
             if (

@@ -8,7 +8,7 @@ from typing import Any, Iterable
 from secureforge.core.correlation import CorrelationEngine
 from secureforge.core.findings import Finding
 from secureforge.core.policy import PolicyConfig, PolicyEngine
-from secureforge.core.risk import RiskEngine, RiskLevel
+from secureforge.core.risk import RiskContext, RiskEngine, RiskLevel
 from secureforge.core.release_gate import ReleaseGateEngine
 from secureforge.regression.gate import RegressionGateDecision
 from secureforge.validation.engine import ValidationEngine
@@ -87,7 +87,11 @@ class SecurityPipelineResult:
     def risk(self):
         if len(self.risk_assessments) == 1:
             assessment = self.risk_assessments[0]
-            if getattr(assessment, "finding_count", None) == len(self.findings):
+            if getattr(
+                assessment,
+                "finding_count",
+                None,
+            ) == len(self.findings):
                 return assessment
 
         from secureforge.core.risk.models import RiskAssessment
@@ -99,7 +103,9 @@ class SecurityPipelineResult:
                 contextual_risk=RiskLevel.INFO,
                 risk_score=0.0,
                 factors=[],
-                explanation="No findings were available for risk assessment.",
+                explanation=(
+                    "No findings were available for risk assessment."
+                ),
                 evaluated_at="",
                 finding_count=len(self.findings),
             )
@@ -107,28 +113,47 @@ class SecurityPipelineResult:
         highest = max(
             self.risk_assessments,
             key=lambda item: float(
-                getattr(item, "risk_score", getattr(item, "score", 0.0))
+                getattr(
+                    item,
+                    "risk_score",
+                    getattr(item, "score", 0.0),
+                )
             ),
         )
         risk_level = getattr(
             highest,
             "contextual_risk",
-            getattr(highest, "highest_severity", RiskLevel.INFO),
+            getattr(
+                highest,
+                "highest_severity",
+                RiskLevel.INFO,
+            ),
         )
         return RiskAssessment(
             finding_id="aggregate",
             base_severity=risk_level,
             contextual_risk=risk_level,
             risk_score=max(
-                float(getattr(item, "risk_score", getattr(item, "score", 0.0)))
+                float(
+                    getattr(
+                        item,
+                        "risk_score",
+                        getattr(item, "score", 0.0),
+                    )
+                )
                 for item in self.risk_assessments
             ),
             factors=[
                 factor
                 for item in self.risk_assessments
-                for factor in (getattr(item, "factors", []) or [])
+                for factor in (
+                    getattr(item, "factors", [])
+                    or []
+                )
             ],
-            explanation="Aggregate contextual risk for the scan.",
+            explanation=(
+                "Aggregate contextual risk for the scan."
+            ),
             evaluated_at="",
             finding_count=len(self.findings),
         )
@@ -145,7 +170,9 @@ class SecurityPipelineResult:
     def validation(self):
         if self.validation_results is None:
             return None
-        return ValidationService.summarize(self.validation_results)
+        return ValidationService.summarize(
+            self.validation_results
+        )
 
     @property
     def release_allowed(self):
@@ -155,7 +182,11 @@ class SecurityPipelineResult:
             getattr(
                 self.release_decision,
                 "release_allowed",
-                getattr(self.release_decision, "allowed", False),
+                getattr(
+                    self.release_decision,
+                    "allowed",
+                    False,
+                ),
             )
         )
 
@@ -166,9 +197,15 @@ class SecurityPipelineResult:
     @property
     def execution(self):
         from secureforge.core.scan.models import ScanExecution
+
         application = (
-            getattr(self.findings[0], "application", "securecommerce")
-            if self.findings else "securecommerce"
+            getattr(
+                self.findings[0],
+                "application",
+                "securecommerce",
+            )
+            if self.findings
+            else "securecommerce"
         )
         return ScanExecution(
             scan_id="pipeline-result",
@@ -189,26 +226,44 @@ class SecurityPipelineResult:
                 return value.to_dict()
             if hasattr(value, "__dataclass_fields__"):
                 from dataclasses import asdict
+
                 return asdict(value)
             if isinstance(value, list):
                 return [dump(item) for item in value]
             if isinstance(value, tuple):
                 return [dump(item) for item in value]
             if isinstance(value, dict):
-                return {key: dump(item) for key, item in value.items()}
+                return {
+                    key: dump(item)
+                    for key, item in value.items()
+                }
             return value
 
         return {
             "findings": dump(self.findings),
-            "correlated_findings": dump(self.correlated_findings),
+            "correlated_findings": dump(
+                self.correlated_findings
+            ),
             "risk": dump(self.risk),
             "policy": dump(self.policy),
-            "release_gate": dump(self.release_gate),
-            "validation": dump(self.validation),
-            "validation_results": dump(self.validation_results),
-            "validation_gate": dump(self.validation_gate),
-            "regression": dump(self.regression),
-            "regression_gate": dump(self.regression_gate),
+            "release_gate": dump(
+                self.release_gate
+            ),
+            "validation": dump(
+                self.validation
+            ),
+            "validation_results": dump(
+                self.validation_results
+            ),
+            "validation_gate": dump(
+                self.validation_gate
+            ),
+            "regression": dump(
+                self.regression
+            ),
+            "regression_gate": dump(
+                self.regression_gate
+            ),
             "errors": list(self.errors),
             "warnings": list(self.warnings),
             "release_allowed": self.release_allowed,
@@ -227,12 +282,29 @@ class SecurityPipeline:
         validation_service=None,
         validation_engine=None,
     ):
-        self.correlation_engine = correlation_engine or CorrelationEngine()
-        self.risk_engine = risk_engine or RiskEngine()
-        self.policy_engine = policy_engine or PolicyEngine()
-        self.release_gate_engine = release_gate_engine or ReleaseGateEngine()
-        if validation_service is None and validation_engine is None:
+        self.correlation_engine = (
+            correlation_engine
+            or CorrelationEngine()
+        )
+        self.risk_engine = (
+            risk_engine
+            or RiskEngine()
+        )
+        self.policy_engine = (
+            policy_engine
+            or PolicyEngine()
+        )
+        self.release_gate_engine = (
+            release_gate_engine
+            or ReleaseGateEngine()
+        )
+
+        if (
+            validation_service is None
+            and validation_engine is None
+        ):
             validation_service = ValidationService()
+
         self.validation_service = validation_service
         self.validation_engine = validation_engine
 
@@ -246,11 +318,15 @@ class SecurityPipeline:
         regression_result=None,
         regression_gate=None,
         validation_requests=None,
+        risk_context: RiskContext | None = None,
         **_,
     ):
         effective_regression = (
-            regression if regression is not None else regression_result
+            regression
+            if regression is not None
+            else regression_result
         )
+
         return self._evaluate(
             list(findings),
             tool_errors=tool_errors or [],
@@ -258,6 +334,7 @@ class SecurityPipeline:
             regression=effective_regression,
             regression_gate=regression_gate,
             validation_requests=validation_requests,
+            risk_context=risk_context,
         )
 
     def run(
@@ -271,11 +348,15 @@ class SecurityPipeline:
         regression_gate=None,
         tool_errors=None,
         policy=None,
+        risk_context: RiskContext | None = None,
         **_,
     ):
         effective_regression = (
-            regression if regression is not None else regression_result
+            regression
+            if regression is not None
+            else regression_result
         )
+
         return self._evaluate(
             list(findings),
             tool_errors=tool_errors or [],
@@ -284,6 +365,7 @@ class SecurityPipeline:
             regression_gate=regression_gate,
             validation_requests=validation_requests,
             run_regression=run_regression,
+            risk_context=risk_context,
         )
 
     def _evaluate(
@@ -296,52 +378,102 @@ class SecurityPipeline:
         regression_gate,
         validation_requests,
         run_regression=False,
+        risk_context: RiskContext | None = None,
     ):
-        result = SecurityPipelineResult(findings=findings)
+        result = SecurityPipelineResult(
+            findings=findings
+        )
+
         try:
-            result.correlated_findings = self._correlate(findings)
-            result.risk_assessments = self._assess_risk(
-                result.correlated_findings
+            result.correlated_findings = (
+                self._correlate(findings)
             )
-            effective_policy = policy or self._default_policy()
+
+            result.risk_assessments = (
+                self._assess_risk(
+                    result.correlated_findings,
+                    risk_context=risk_context,
+                )
+            )
+
+            effective_policy = (
+                policy or self._default_policy()
+            )
+
             evaluation = self.policy_engine.evaluate(
                 result.correlated_findings,
                 result.risk_assessments,
                 effective_policy,
                 tool_errors=len(tool_errors),
-                failed_regressions=self._regression_failures(regression),
+                failed_regressions=(
+                    self._regression_failures(
+                        regression
+                    )
+                ),
             )
-            result.policy_decision = getattr(evaluation, "decision", evaluation)
+
+            result.policy_decision = getattr(
+                evaluation,
+                "decision",
+                evaluation,
+            )
 
             if tool_errors:
-                violations = getattr(result.policy_decision, "violations", None)
+                violations = getattr(
+                    result.policy_decision,
+                    "violations",
+                    None,
+                )
                 if isinstance(violations, list):
                     violations.extend(tool_errors)
 
             if validation_requests:
-                self._run_validation(result, validation_requests)
+                self._run_validation(
+                    result,
+                    validation_requests,
+                )
 
             result.regression = regression
 
             if regression_gate is not None:
-                result.regression_gate = regression_gate
+                result.regression_gate = (
+                    regression_gate
+                )
             elif regression is not None:
-                result.regression_gate = self._build_regression_gate(regression)
+                result.regression_gate = (
+                    self._build_regression_gate(
+                        regression
+                    )
+                )
 
-            result.release_decision = self.release_gate_engine.evaluate(
-                findings=result.correlated_findings,
-                risk=result.risk,
-                policy=result.policy,
-                regression_gate=result.regression_gate,
-                validation_gate=result.validation_gate,
+            result.release_decision = (
+                self.release_gate_engine.evaluate(
+                    findings=result.correlated_findings,
+                    risk=result.risk,
+                    policy=result.policy,
+                    regression_gate=(
+                        result.regression_gate
+                    ),
+                    validation_gate=(
+                        result.validation_gate
+                    ),
+                )
             )
+
         except Exception as exc:
-            result.errors.append(f"Security pipeline failed: {exc}")
+            result.errors.append(
+                f"Security pipeline failed: {exc}"
+            )
+
         return result
 
     @staticmethod
     def _default_policy():
-        from secureforge.core.policy.models import PolicyAction, PolicyRule
+        from secureforge.core.policy.models import (
+            PolicyAction,
+            PolicyRule,
+        )
+
         return PolicyConfig(
             policy_id="secureforge-default",
             version="1.0",
@@ -349,35 +481,45 @@ class SecurityPipeline:
                 PolicyRule(
                     rule_id="BLOCK-CRITICAL",
                     name="Block critical",
-                    description="Critical findings block release.",
+                    description=(
+                        "Critical findings block release."
+                    ),
                     severity="critical",
                     action=PolicyAction.BLOCK,
                 ),
                 PolicyRule(
                     rule_id="BLOCK-HIGH",
                     name="Block high",
-                    description="High findings block release.",
+                    description=(
+                        "High findings block release."
+                    ),
                     severity="high",
                     action=PolicyAction.BLOCK,
                 ),
                 PolicyRule(
                     rule_id="REVIEW-MEDIUM",
                     name="Review medium",
-                    description="Medium findings require review.",
+                    description=(
+                        "Medium findings require review."
+                    ),
                     severity="medium",
                     action=PolicyAction.REVIEW,
                 ),
                 PolicyRule(
                     rule_id="PASS-LOW",
                     name="Pass low",
-                    description="Low findings are permitted.",
+                    description=(
+                        "Low findings are permitted."
+                    ),
                     severity="low",
                     action=PolicyAction.PASS,
                 ),
                 PolicyRule(
                     rule_id="PASS-INFO",
                     name="Pass info",
-                    description="Informational findings are permitted.",
+                    description=(
+                        "Informational findings are permitted."
+                    ),
                     severity="info",
                     action=PolicyAction.PASS,
                 ),
@@ -387,72 +529,202 @@ class SecurityPipeline:
     def _correlate(self, findings):
         if not findings:
             return []
-        correlated = self.correlation_engine.correlate(findings)
+
+        correlated = (
+            self.correlation_engine.correlate(
+                findings
+            )
+        )
+
         if correlated is None:
             return findings
-        if correlated and hasattr(correlated[0], "source_finding_ids"):
+
+        if (
+            correlated
+            and hasattr(
+                correlated[0],
+                "source_finding_ids",
+            )
+        ):
             return findings
+
         return list(correlated)
 
-    def _assess_risk(self, findings):
-        return [self.risk_engine.evaluate(finding) for finding in findings]
+    def _assess_risk(
+        self,
+        findings,
+        *,
+        risk_context: RiskContext | None = None,
+    ):
+        assessments = []
 
-    def _run_validation(self, result, requests):
+        for finding in findings:
+            if risk_context is None:
+                context = RiskContext(
+                    security_requirement=(
+                        finding.security_requirement
+                    )
+                )
+            else:
+                context = risk_context.model_copy(
+                    update={
+                        "security_requirement": (
+                            finding.security_requirement
+                            or risk_context.security_requirement
+                        )
+                    }
+                )
+
+            assessments.append(
+                self.risk_engine.evaluate(
+                    finding,
+                    context,
+                )
+            )
+
+        return assessments
+
+    def _run_validation(
+        self,
+        result,
+        requests,
+    ):
         if self.validation_engine is not None:
-            raw = self.validation_engine.validate_many(requests)
+            raw = (
+                self.validation_engine.validate_many(
+                    requests
+                )
+            )
         elif self.validation_service is not None:
-            raw = self.validation_service.validate_many(requests)
+            raw = (
+                self.validation_service.validate_many(
+                    requests
+                )
+            )
         else:
             raw = []
 
-        if isinstance(raw, ValidationSummary):
-            result.validation_results = list(raw.results)
-        elif isinstance(raw, tuple) and len(raw) == 2:
-            result.validation_results = list(raw[0])
+        if isinstance(
+            raw,
+            ValidationSummary,
+        ):
+            result.validation_results = list(
+                raw.results
+            )
+        elif (
+            isinstance(raw, tuple)
+            and len(raw) == 2
+        ):
+            result.validation_results = list(
+                raw[0]
+            )
             result.validation_gate = raw[1]
         else:
-            result.validation_results = list(getattr(raw, "results", raw))
+            result.validation_results = list(
+                getattr(
+                    raw,
+                    "results",
+                    raw,
+                )
+            )
 
         if result.validation_gate is None:
-            summary = ValidationService.summarize(result.validation_results)
-            result.validation_gate = evaluate_validation_run(
-                ValidationRun(summary=summary)
+            summary = (
+                ValidationService.summarize(
+                    result.validation_results
+                )
+            )
+            result.validation_gate = (
+                evaluate_validation_run(
+                    ValidationRun(
+                        summary=summary
+                    )
+                )
             )
 
     @staticmethod
-    def _regression_failures(regression):
+    def _regression_failures(
+        regression,
+    ):
         if regression is None:
             return []
+
         return [
-            getattr(item, "test_id", "unknown")
-            for item in getattr(regression, "results", [])
-            if getattr(getattr(item, "status", None), "value",
-                       getattr(item, "status", None)) in {"failed", "error"}
+            getattr(
+                item,
+                "test_id",
+                "unknown",
+            )
+            for item in getattr(
+                regression,
+                "results",
+                [],
+            )
+            if getattr(
+                getattr(
+                    item,
+                    "status",
+                    None,
+                ),
+                "value",
+                getattr(
+                    item,
+                    "status",
+                    None,
+                ),
+            )
+            in {"failed", "error"}
         ]
 
     @staticmethod
-    def _build_regression_gate(regression):
-        from secureforge.regression.assessment import RegressionAssessment
-        from secureforge.regression.gate import evaluate_regression_gate
+    def _build_regression_gate(
+        regression,
+    ):
+        from secureforge.regression.assessment import (
+            RegressionAssessment,
+        )
+        from secureforge.regression.gate import (
+            evaluate_regression_gate,
+        )
+
         return evaluate_regression_gate(
-            RegressionAssessment.from_suite(regression)
+            RegressionAssessment.from_suite(
+                regression
+            )
         )
 
     def summarize(self, result):
         return {
-            "finding_count": len(result.findings),
-            "risk": result.risk.model_dump(mode="json"),
+            "finding_count": len(
+                result.findings
+            ),
+            "risk": result.risk.model_dump(
+                mode="json"
+            ),
             "policy": (
-                result.policy.model_dump(mode="json")
-                if hasattr(result.policy, "model_dump")
+                result.policy.model_dump(
+                    mode="json"
+                )
+                if hasattr(
+                    result.policy,
+                    "model_dump",
+                )
                 else result.policy
             ),
             "release_gate": (
-                result.release_gate.model_dump(mode="json")
-                if hasattr(result.release_gate, "model_dump")
+                result.release_gate.model_dump(
+                    mode="json"
+                )
+                if hasattr(
+                    result.release_gate,
+                    "model_dump",
+                )
                 else result.release_gate
             ),
         }
 
 
-__all__ = ["SecurityPipeline", "SecurityPipelineResult"]
+__all__ = [
+    "SecurityPipeline",
+    "SecurityPipelineResult",
+]

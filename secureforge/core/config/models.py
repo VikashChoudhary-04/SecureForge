@@ -7,13 +7,18 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from secureforge.core.risk import RiskContext
+
 
 class ScanProfile(str, Enum):
     """Supported SecureForge verification profiles."""
 
     QUICK = "quick"
+
     STANDARD = "standard"
+
     FULL = "full"
+
     CI = "ci"
 
 
@@ -21,8 +26,26 @@ class TargetType(str, Enum):
     """Types of application targets supported by SecureForge."""
 
     WEB = "web"
+
     API = "api"
+
     WEB_AND_API = "web_and_api"
+
+
+class IntegrationConfiguration(BaseModel):
+    """Typed configuration for one security integration."""
+
+    model_config = ConfigDict(extra="allow")
+
+    name: str
+
+    enabled: bool = True
+
+    command: Any = None
+
+    options: dict[str, Any] = Field(
+        default_factory=dict
+    )
 
 
 class ToolConfiguration(BaseModel):
@@ -105,7 +128,15 @@ class ScanConfiguration(BaseModel):
 
     environment: str = "lab"
 
+    risk_context: RiskContext = Field(
+        default_factory=RiskContext
+    )
+
     target: TargetConfiguration
+
+    integrations: dict[str, IntegrationConfiguration] = Field(
+        default_factory=dict
+    )
 
     tools: list[ToolConfiguration] = Field(
         default_factory=list
@@ -144,6 +175,7 @@ class ScanConfiguration(BaseModel):
 
 
 __all__ = [
+    "IntegrationConfiguration",
     "ScanConfiguration",
     "ScanProfile",
     "TargetConfiguration",
