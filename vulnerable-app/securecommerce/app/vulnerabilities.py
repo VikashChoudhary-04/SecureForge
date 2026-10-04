@@ -22,21 +22,25 @@ from .models import User
 def vulnerable_user_lookup(
     user_id: str,
 ) -> dict[str, Any] | None:
-    """Perform an intentionally unsafe SQL query.
+    """Perform a parameterized SQL user lookup.
 
-    The query concatenates user-controlled input directly into SQL.
+    The lookup uses a bound SQL parameter so user-controlled input
+    cannot alter the SQL query structure.
     The query intentionally runs through the application's configured
-    SQLAlchemy connection so the vulnerable laboratory endpoint uses
-    the same database as the rest of the application.
+    SQLAlchemy connection so the laboratory endpoint uses the same
+    database as the rest of the application.
     """
     query = (
         "SELECT id, username, email, role "
         "FROM users "
-        f"WHERE id = {user_id}"
+        "WHERE id = :user_id"
     )
 
     connection = db.session.connection()
-    row = connection.execute(text(query)).mappings().first()
+    row = connection.execute(
+        text(query),
+        {"user_id": user_id},
+    ).mappings().first()
 
     if row is None:
         return None
@@ -144,4 +148,3 @@ __all__ = [
     "vulnerable_profile_lookup",
     "vulnerable_user_lookup",
 ]
-
