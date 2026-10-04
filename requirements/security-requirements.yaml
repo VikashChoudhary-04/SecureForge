@@ -1,131 +1,109 @@
 requirements:
 
-* id: SF-AUTH-001
-  title: Authentication Security
-  description: "Authentication mechanisms must be securely implemented and enforced."
-  category: authentication
-  owasp:
-
-  * "A07:2025-Identification and Authentication Failures"
+  - requirement_id: SF-AUTH-001
+    title: Authentication Security
+    description: "Authentication mechanisms must be securely implemented and enforced."
+    category: authentication
+    owasp: "A07:2025-Identification and Authentication Failures"
     cwe:
-  * CWE-287
-  * CWE-384
+      - CWE-287
+      - CWE-384
 
-* id: SF-AUTH-002
-  title: Session Security
-  description: "Sessions must be securely created, maintained, expired, and invalidated."
-  category: authentication
-  owasp:
-
-  * "A07:2025-Identification and Authentication Failures"
+  - requirement_id: SF-AUTH-002
+    title: Session Security
+    description: "Sessions must be securely created, maintained, expired, and invalidated."
+    category: authentication
+    owasp: "A07:2025-Identification and Authentication Failures"
     cwe:
-  * CWE-613
+      - CWE-613
 
-* id: SF-AUTHZ-001
-  title: Object-Level Authorization
-  description: "Users must only access objects they are authorized to access."
-  category: authorization
-  owasp:
-
-  * "API1:2023-Broken Object Level Authorization"
+  - requirement_id: SF-AUTHZ-001
+    title: Object-Level Authorization
+    description: "Users must only access objects they are authorized to access."
+    category: authorization
+    owasp: "API1:2023-Broken Object Level Authorization"
     cwe:
-  * CWE-639
-  * CWE-862
+      - CWE-639
+      - CWE-862
 
-* id: SF-AUTHZ-002
-  title: Function-Level Authorization
-  description: "Privileged application functions must enforce appropriate authorization."
-  category: authorization
-  owasp:
-
-  * "API5:2023-Broken Function Level Authorization"
+  - requirement_id: SF-AUTHZ-002
+    title: Function-Level Authorization
+    description: "Privileged application functions must enforce appropriate authorization."
+    category: authorization
+    owasp: "API5:2023-Broken Function Level Authorization"
     cwe:
-  * CWE-862
-  * CWE-863
+      - CWE-862
+      - CWE-863
 
-* id: SF-API-001
-  title: API Security
-  description: "API endpoints must enforce appropriate security controls and input handling."
-  category: api
-  owasp:
-
-  * "API Security Top 10"
+  - requirement_id: SF-API-001
+    title: API Security
+    description: "API endpoints must enforce appropriate security controls and input handling."
+    category: api
+    owasp: "API Security Top 10"
     cwe:
-  * CWE-20
+      - CWE-20
 
-* id: SF-API-002
-  title: API Resource Protection
-  description: "API resources must have appropriate rate, size, and resource-consumption controls."
-  category: api
-  owasp:
-
-  * "API4:2023-Unrestricted Resource Consumption"
+  - requirement_id: SF-API-002
+    title: API Resource Protection
+    description: "API resources must have appropriate rate, size, and resource-consumption controls."
+    category: api
+    owasp: "API4:2023-Unrestricted Resource Consumption"
     cwe:
-  * CWE-400
+      - CWE-400
 
-* id: SF-INPUT-001
-  title: Input Validation
-  description: "Untrusted input must be validated and safely handled."
-  category: input_validation
-  owasp:
-
-  * "A05:2025-Injection"
+  - requirement_id: SF-INPUT-001
+    title: Input Validation
+    description: "Untrusted input must be validated and safely handled."
+    category: input
+    owasp: "A05:2025-Injection"
     cwe:
-  * CWE-20
-  * CWE-89
-  * CWE-79
+      - CWE-20
+      - CWE-89
+      - CWE-79
 
-* id: SF-SECRET-001
-  title: Secret Protection
-  description: "Secrets, credentials, tokens, and private keys must not be exposed in source code or artifacts."
-  category: secrets
-  owasp:
-
-  * "A02:2025-Security Misconfiguration"
+  - requirement_id: SF-SECRET-001
+    title: Secret Protection
+    description: "Secrets, credentials, tokens, and private keys must not be exposed in source code or artifacts."
+    category: secret
+    owasp: "A02:2025-Security Misconfiguration"
     cwe:
-  * CWE-798
-  * CWE-321
+      - CWE-798
+      - CWE-321
 
-* id: SF-DEP-001
-  title: Dependency Security
-  description: "Application dependencies must be inventoried and maintained against known vulnerabilities."
-  category: dependency
-  owasp:
-
-  * "A06:2025-Vulnerable and Outdated Components"
+  - requirement_id: SF-DEP-001
+    title: Dependency Security
+    description: "Application dependencies must be inventoried and maintained against known vulnerabilities."
+    category: dependency
+    owasp: "A06:2025-Vulnerable and Outdated Components"
     cwe:
-  * CWE-1104
+      - CWE-1104
 
-* id: SF-CONTAINER-001
-  title: Container Security
-  description: "Container images and runtime configurations must follow secure deployment practices."
-  category: container
-  cwe:
-
-  * CWE-250
-  * CWE-269
-
-* id: SF-IAC-001
-  title: Infrastructure Security
-  description: "Infrastructure-as-Code must enforce secure resource exposure, permissions, and configuration."
-  category: infrastructure
-  cwe:
-
-  * CWE-732
-  * CWE-284
-
-* id: SF-TRANSPORT-001
-  title: Transport Security
-  description: "Sensitive communications must use secure transport and appropriate TLS configuration."
-  category: transport
-  owasp:
-
-  * "A04:2025-Cryptographic Failures"
+  - requirement_id: SF-CONTAINER-001
+    title: Container Security
+    description: "Container images and runtime configurations must follow secure deployment practices."
+    category: container
     cwe:
-  * CWE-319
-  * CWE-295
+      - CWE-250
+      - CWE-269
 
-* id: SF-REG-001
-  title: Security Regression Prevention
-  description: "Previously confirmed security defects must have repeatable regression coverage."
-  category: regression
+  - requirement_id: SF-IAC-001
+    title: Infrastructure Security
+    description: "Infrastructure-as-Code must enforce secure resource exposure, permissions, and configuration."
+    category: infrastructure
+    cwe:
+      - CWE-732
+      - CWE-284
+
+  - requirement_id: SF-TRANSPORT-001
+    title: Transport Security
+    description: "Sensitive communications must use secure transport and appropriate TLS configuration."
+    category: transport
+    owasp: "A04:2025-Cryptographic Failures"
+    cwe:
+      - CWE-319
+      - CWE-295
+
+  - requirement_id: SF-REG-001
+    title: Security Regression Prevention
+    description: "Previously confirmed security defects must have repeatable regression coverage."
+    category: regression
