@@ -130,8 +130,29 @@ def test_list_orders(client):
     assert data["orders"][0]["user_id"] == 2
 
 
-def test_get_order(client):
-    """Order endpoint should return order details."""
+def test_get_order_requires_authentication(client):
+    """Order endpoint should require authentication."""
+    response = client.get("/api/orders/1")
+
+    assert response.status_code == 401
+
+    data = response.get_json()
+
+    assert data["error"] == "authentication required"
+
+
+def test_get_order_returns_owner_order(client):
+    """Authenticated users should access their own orders."""
+    login_response = client.post(
+        "/login",
+        json={
+            "username": "alice",
+            "password": "AlicePass123!",
+        },
+    )
+
+    assert login_response.status_code == 200
+
     response = client.get("/api/orders/1")
 
     assert response.status_code == 200
@@ -141,6 +162,27 @@ def test_get_order(client):
     assert data["id"] == 1
     assert data["user_id"] == 2
     assert len(data["items"]) == 2
+
+
+def test_get_order_blocks_non_owner(client):
+    """Authenticated users should not access another user's order."""
+    login_response = client.post(
+        "/login",
+        json={
+            "username": "bob",
+            "password": "BobPass123!",
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    response = client.get("/api/orders/1")
+
+    assert response.status_code == 403
+
+    data = response.get_json()
+
+    assert data["error"] == "insufficient privileges"
 
 
 def test_create_order(client):
@@ -225,4 +267,3 @@ def test_admin_users_endpoint(client):
     data = response.get_json()
 
     assert len(data["users"]) == 3
-

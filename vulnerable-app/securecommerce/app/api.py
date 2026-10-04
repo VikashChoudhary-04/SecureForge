@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request
 
 from .database import db
 from .models import Order, OrderItem, Product, User
+from .security import current_user
 
 api_bp = Blueprint(
     "api",
@@ -321,7 +322,19 @@ def list_orders():
 
 @api_bp.get("/orders/<int:order_id>")
 def get_order(order_id: int):
-    """Return one order."""
+    """Return one order belonging to the authenticated user."""
+    user = current_user()
+
+    if user is None:
+        return (
+            jsonify(
+                {
+                    "error": "authentication required"
+                }
+            ),
+            401,
+        )
+
     order = db.session.get(
         Order,
         order_id,
@@ -335,6 +348,16 @@ def get_order(order_id: int):
                 }
             ),
             404,
+        )
+
+    if order.user_id != user.id:
+        return (
+            jsonify(
+                {
+                    "error": "insufficient privileges"
+                }
+            ),
+            403,
         )
 
     return jsonify(
@@ -377,4 +400,3 @@ def admin_users():
             ]
         }
     )
-
