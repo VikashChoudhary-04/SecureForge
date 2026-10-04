@@ -1,4 +1,4 @@
-"""Tests for intentionally vulnerable SecureCommerce behavior."""
+"""Tests for SecureCommerce vulnerable and remediated behavior."""
 
 from __future__ import annotations
 
@@ -75,8 +75,8 @@ def test_vulnerable_profile_allows_cross_user_access(client):
     assert data["profile"]["username"] == "bob"
 
 
-def test_vulnerable_admin_action_allows_normal_user(client):
-    """The vulnerable admin endpoint should omit role validation."""
+def test_admin_action_denies_normal_user(client):
+    """The admin endpoint should reject non-admin users."""
     login_response = client.post(
         "/login",
         json={
@@ -94,10 +94,34 @@ def test_vulnerable_admin_action_allows_normal_user(client):
         },
     )
 
+    assert response.status_code == 403
+    data = response.get_json()
+    assert data["error"] == "insufficient privileges"
+
+
+def test_admin_action_allows_admin_user(client):
+    """The admin endpoint should allow administrators."""
+    login_response = client.post(
+        "/login",
+        json={
+            "username": "admin",
+            "password": "AdminPass123!",
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    response = client.post(
+        "/vulnerable/admin-action",
+        json={
+            "action": "list_users",
+        },
+    )
+
     assert response.status_code == 200
     data = response.get_json()
-    assert data["request_identity"]["username"] == "alice"
-    assert data["request_identity"]["role"] == "user"
+    assert data["request_identity"]["username"] == "admin"
+    assert data["request_identity"]["role"] == "admin"
     assert data["result"]["status"] == "success"
 
 
@@ -117,7 +141,7 @@ def test_vulnerable_file_endpoint_exposes_resolved_path(client):
 
 
 def test_vulnerable_fetch_rejects_unsupported_scheme(client):
-    """The SSRF endpoint should reject non-HTTP schemes."""
+    """The SSRF endpoint should reject unsupported schemes."""
     response = client.get(
         "/vulnerable/fetch"
         "?url=file:///etc/passwd"
@@ -151,5 +175,4 @@ def test_vulnerable_endpoints_are_lab_scoped(client):
         },
     )
 
-    assert response.status_code == 200
-
+    assert response.status_code == 401

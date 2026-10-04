@@ -1,10 +1,12 @@
-"""Deliberately vulnerable routes for the SecureCommerce lab."""
+"""Security-focused laboratory routes for the SecureCommerce lab."""
 
 from __future__ import annotations
 
+from html import escape
+
 from flask import Blueprint, jsonify, request
 
-from .security import current_user
+from .security import current_user, role_required
 from .vulnerabilities import (
     vulnerable_admin_action,
     vulnerable_fetch_url,
@@ -65,7 +67,7 @@ def search_user():
 
 @vulnerable_bp.get("/search")
 def search():
-    """Intentionally vulnerable reflected-XSS endpoint."""
+    """Search endpoint with safely encoded reflected input."""
     query = request.args.get(
         "q",
         request.args.get(
@@ -74,6 +76,8 @@ def search():
         ),
     )
 
+    escaped_query = escape(query)
+
     return (
         "<!doctype html>"
         "<html>"
@@ -81,7 +85,7 @@ def search():
         "<body>"
         "<h1>Product Search</h1>"
         "<p>Search backend: SQLite database</p>"
-        f"<p>Search results for: {query}</p>"
+        f"<p>Search results for: {escaped_query}</p>"
         "</body>"
         "</html>"
     )
@@ -119,8 +123,9 @@ def vulnerable_profile(user_id: int):
     "/admin-action",
     methods=["GET", "POST"],
 )
+@role_required("admin")
 def vulnerable_admin():
-    """Intentionally vulnerable function-level authorization endpoint."""
+    """Administrative action endpoint restricted to administrators."""
     data = request.get_json(
         silent=True
     ) or {}
@@ -151,10 +156,6 @@ def vulnerable_admin():
 
     return jsonify(
         {
-            "warning": (
-                "This endpoint intentionally does "
-                "not enforce administrative authorization."
-            ),
             "request_identity": {
                 "authenticated": user is not None,
                 "user_id": user.id if user else None,

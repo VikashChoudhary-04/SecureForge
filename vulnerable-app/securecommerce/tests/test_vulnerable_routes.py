@@ -52,8 +52,8 @@ def client(app):
     return app.test_client()
 
 
-def test_reflected_xss_endpoint_reflects_input(client):
-    """The laboratory XSS endpoint should reflect supplied input."""
+def test_reflected_xss_endpoint_encodes_input(client):
+    """The search endpoint should HTML-encode supplied input."""
     payload = "<script>alert(1)</script>"
 
     response = client.get(
@@ -63,8 +63,11 @@ def test_reflected_xss_endpoint_reflects_input(client):
         },
     )
 
+    body = response.get_data(as_text=True)
+
     assert response.status_code == 200
-    assert payload in response.get_data(as_text=True)
+    assert payload not in body
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in body
 
 
 def test_sql_injection_endpoint_exists(client):
@@ -92,8 +95,8 @@ def test_bola_endpoint_exists(client):
     assert data["profile"]["username"] == "bob"
 
 
-def test_broken_function_authorization_endpoint_exists(client):
-    """The broken authorization endpoint should be reachable."""
+def test_admin_action_requires_authentication(client):
+    """The administrative endpoint should require authentication."""
     response = client.post(
         "/vulnerable/admin-action",
         json={
@@ -101,13 +104,13 @@ def test_broken_function_authorization_endpoint_exists(client):
         },
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 401
     data = response.get_json()
-    assert data["result"]["status"] == "success"
+    assert data["error"] == "authentication required"
 
 
 def test_path_traversal_endpoint_exists(client):
-    """The path traversal laboratory endpoint should be reachable."""
+    """The path traversal laboratory endpoint should resolve an unsafe path."""
     response = client.get(
         "/vulnerable/download",
         query_string={
@@ -137,4 +140,3 @@ def test_ssrf_endpoint_rejects_non_http_scheme(client):
     assert data["result"]["message"] == (
         "unsupported URL scheme"
     )
-

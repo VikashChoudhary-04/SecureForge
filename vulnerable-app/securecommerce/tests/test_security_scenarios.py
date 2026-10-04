@@ -58,10 +58,13 @@ def test_reflected_xss_scenario():
             },
         )
 
-    assert response.status_code == 200
-    assert marker in response.get_data(
+    body = response.get_data(
         as_text=True
     )
+
+    assert response.status_code == 200
+    assert marker not in body
+    assert "&lt;SecureForge-XSS-Test&gt;" in body
 
 
 def test_bola_scenario():
@@ -80,7 +83,7 @@ def test_bola_scenario():
     assert "id" in body or "username" in body
 
 
-def test_broken_function_level_authorization_scenario():
+def test_function_level_authorization_requires_authentication():
     app = create_test_app()
 
     with app.test_client() as client:
@@ -88,7 +91,7 @@ def test_broken_function_level_authorization_scenario():
             "/vulnerable/admin-action"
         )
 
-    assert response.status_code == 200
+    assert response.status_code == 401
 
 
 def test_ssrf_scenario():
