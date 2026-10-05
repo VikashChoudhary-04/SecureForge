@@ -465,6 +465,7 @@ class SecurityPipeline:
                     validation_gate=(
                         result.validation_gate
                     ),
+                    tool_errors=tool_errors,
                 )
             )
 

@@ -24,6 +24,7 @@ class ReleaseGateEngine:
         regression_gate: Any | None = None,
         validation_gate: Any | None = None,
         regression: Any | None = None,
+        tool_errors: list[str] | None = None,
         application: str = "",
         version: str = "",
         commit_sha: str | None = None,
@@ -37,6 +38,7 @@ class ReleaseGateEngine:
                 regression_gate=regression_gate,
                 validation_gate=validation_gate,
                 regression=regression,
+                tool_errors=tool_errors,
                 application=application,
                 version=version,
                 commit_sha=commit_sha,
@@ -80,11 +82,25 @@ class ReleaseGateEngine:
                     commit_sha=gate_input.commit_sha,
                     decision=ReleaseDecision.BLOCK,
                     reasons=[reason],
+                    blocking_findings=list(
+                        gate_input.blocking_findings
+                    ),
+                    review_findings=list(
+                        gate_input.review_findings
+                    ),
                     failed_regressions=[
                         str(item)
                         for item in failures
                     ],
-                    metadata=dict(gate_input.metadata),
+                    tool_errors=list(
+                        gate_input.tool_errors
+                    ),
+                    exceptions_applied=list(
+                        gate_input.exceptions_applied
+                    ),
+                    metadata=dict(
+                        gate_input.metadata
+                    ),
                 )
 
         decision, reasons = self.evaluator.evaluate(
@@ -126,6 +142,7 @@ class ReleaseGateEngine:
         regression_gate,
         validation_gate,
         regression,
+        tool_errors,
         application,
         version,
         commit_sha,
@@ -134,7 +151,10 @@ class ReleaseGateEngine:
         blocking: list[str] = []
         review: list[str] = []
         failed_regressions: list[str] = []
-        tool_errors: list[str] = []
+        release_tool_errors: list[str] = [
+            str(item)
+            for item in (tool_errors or [])
+        ]
 
         exception_findings = {
             str(item)
@@ -387,7 +407,7 @@ class ReleaseGateEngine:
                 "review",
                 "error",
             }:
-                tool_errors.append("regression")
+                release_tool_errors.append("regression")
 
         exceptions_applied = [
             str(item)
@@ -415,7 +435,7 @@ class ReleaseGateEngine:
             blocking_findings=blocking,
             review_findings=review,
             failed_regressions=failed_regressions,
-            tool_errors=tool_errors,
+            tool_errors=release_tool_errors,
             exceptions_applied=exceptions_applied,
             metadata=dict(
                 metadata or {}
