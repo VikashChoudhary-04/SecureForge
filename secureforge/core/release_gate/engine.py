@@ -131,12 +131,10 @@ class ReleaseGateEngine:
         commit_sha,
         metadata,
     ) -> ReleaseGateInput:
-        blocking, review, failed_regressions, tool_errors = (
-            [],
-            [],
-            [],
-            [],
-        )
+        blocking: list[str] = []
+        review: list[str] = []
+        failed_regressions: list[str] = []
+        tool_errors: list[str] = []
 
         exception_findings = {
             str(item)
@@ -150,6 +148,32 @@ class ReleaseGateEngine:
             )
         }
 
+        policy_blocking_findings = getattr(
+            policy,
+            "blocking_findings",
+            None,
+        )
+
+        policy_review_findings = getattr(
+            policy,
+            "review_findings",
+            None,
+        )
+
+        if policy_blocking_findings is not None:
+            blocking.extend(
+                str(item)
+                for item in policy_blocking_findings
+                if str(item) not in exception_findings
+            )
+
+        if policy_review_findings is not None:
+            review.extend(
+                str(item)
+                for item in policy_review_findings
+                if str(item) not in exception_findings
+            )
+
         for finding in findings or []:
             finding_id = str(
                 getattr(
@@ -160,8 +184,7 @@ class ReleaseGateEngine:
             )
 
             # An approved exception suppresses only the specific finding
-            # it covers. Other critical findings remain independently
-            # capable of blocking the release.
+            # it covers. Other findings remain independently evaluated.
             if finding_id in exception_findings:
                 continue
 
@@ -179,14 +202,24 @@ class ReleaseGateEngine:
                 ),
             )
 
-            if bool(
-                getattr(
-                    finding,
-                    "blocked",
-                    False,
+            # Preserve the legacy critical-severity fallback for callers
+            # that provide a manually constructed PolicyDecision without
+            # policy finding evidence.
+            if (
+                policy_blocking_findings is None
+                and (
+                    bool(
+                        getattr(
+                            finding,
+                            "blocked",
+                            False,
+                        )
+                    )
+                    or severity == "critical"
                 )
-            ) or severity == "critical":
-                blocking.append(finding_id)
+            ):
+                if finding_id not in blocking:
+                    blocking.append(finding_id)
 
         risk_blocking_findings = getattr(
             policy,
@@ -199,7 +232,8 @@ class ReleaseGateEngine:
                 str(finding_id) not in exception_findings
                 for finding_id in risk_blocking_findings
             ):
-                blocking.append("risk-threshold")
+                if "risk-threshold" not in blocking:
+                    blocking.append("risk-threshold")
 
         elif risk is not None and bool(
             getattr(
@@ -218,7 +252,8 @@ class ReleaseGateEngine:
             )
 
             if str(risk_finding_id) not in exception_findings:
-                blocking.append("risk-threshold")
+                if "risk-threshold" not in blocking:
+                    blocking.append("risk-threshold")
 
         if policy is None:
             policy_decision = ReleaseDecision.PASS

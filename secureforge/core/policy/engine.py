@@ -256,6 +256,15 @@ class PolicyEngine:
                 "risk_blocking_findings": self._unique(
                     risk_blocking_findings
                 ),
+                "blocking_findings": self._unique(
+                    blocking_findings
+                ),
+                "review_findings": self._unique(
+                    review_findings
+                ),
+                "passed_findings": self._unique(
+                    passed_findings
+                ),
             }
         )
 

@@ -261,3 +261,85 @@ def test_pipeline_exception_does_not_bypass_independent_critical_finding() -> No
     assert result.release_gate.exceptions_applied == [
         "EXC-CRITICAL-002"
     ]
+
+
+def test_pipeline_preserves_high_policy_blocking_finding_in_release_gate() -> None:
+    """A policy-blocking HIGH finding must remain visible in the release record."""
+    finding = build_finding(
+        finding_id="HIGH-POLICY-BLOCK-001",
+        severity="high",
+    )
+
+    policy = PolicyConfig(
+        policy_id="high-block-policy",
+        version="1.0",
+        rules=[
+            PolicyRule(
+                rule_id="BLOCK-HIGH",
+                name="Block high findings",
+                description=(
+                    "High severity findings block the release."
+                ),
+                severity="high",
+                action=PolicyAction.BLOCK,
+            ),
+        ],
+    )
+
+    result = SecurityPipeline().evaluate(
+        [finding],
+        policy=policy,
+    )
+
+    assert result.policy is not None
+    assert result.policy.action == PolicyAction.BLOCK
+    assert result.policy.blocking_findings == [
+        finding.finding_id
+    ]
+
+    assert result.release_gate is not None
+    assert result.release_gate.decision == ReleaseDecision.BLOCK
+    assert result.release_gate.blocking_findings == [
+        finding.finding_id
+    ]
+
+
+def test_pipeline_preserves_medium_policy_review_finding_in_release_gate() -> None:
+    """A policy-review MEDIUM finding must remain visible in the release record."""
+    finding = build_finding(
+        finding_id="MEDIUM-POLICY-REVIEW-001",
+        severity="medium",
+    )
+
+    policy = PolicyConfig(
+        policy_id="medium-review-policy",
+        version="1.0",
+        rules=[
+            PolicyRule(
+                rule_id="REVIEW-MEDIUM",
+                name="Review medium findings",
+                description=(
+                    "Medium severity findings require security review."
+                ),
+                severity="medium",
+                action=PolicyAction.REVIEW,
+            ),
+        ],
+    )
+
+    result = SecurityPipeline().evaluate(
+        [finding],
+        policy=policy,
+    )
+
+    assert result.policy is not None
+    assert result.policy.action == PolicyAction.REVIEW
+    assert result.policy.review_findings == [
+        finding.finding_id
+    ]
+
+    assert result.release_gate is not None
+    assert result.release_gate.decision == ReleaseDecision.REVIEW
+    assert result.release_gate.review_findings == [
+        finding.finding_id
+    ]

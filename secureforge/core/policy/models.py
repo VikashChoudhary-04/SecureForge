@@ -29,12 +29,16 @@ class PolicyDecision(BaseModel):
 
     # Release-gate context produced during policy evaluation.
     #
-    # These fields allow the release gate to distinguish findings that
-    # were explicitly exempted from findings that remain independently
-    # release-blocking.
+    # None means the decision did not originate from the current
+    # policy-evaluation evidence contract. An explicit empty list means
+    # the policy engine evaluated the findings and found no entries
+    # for that category.
     exceptions_applied: list[str] = Field(default_factory=list)
     exception_findings: list[str] = Field(default_factory=list)
     risk_blocking_findings: list[str] | None = None
+    blocking_findings: list[str] | None = None
+    review_findings: list[str] | None = None
+    passed_findings: list[str] | None = None
 
     PASS: ClassVar["PolicyDecision"]
     REVIEW: ClassVar["PolicyDecision"]
