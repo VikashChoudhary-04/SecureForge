@@ -83,6 +83,38 @@ def test_scan_store_loads_saved_result(
     )
 
 
+def test_scan_store_preserves_release_gate_evidence(
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Preserve release-gate decision evidence across persistence."""
+    store = ScanResultStore(
+        directory=tmp_path
+    )
+
+    store.save(
+        sample_scan_result
+    )
+
+    loaded = store.load(
+        sample_scan_result.execution.scan_id
+    )
+
+    release_gate = loaded["pipeline"]["release_gate"]
+
+    assert release_gate["decision"] == "block"
+    assert release_gate["status"] == "blocked"
+    assert release_gate["release_allowed"] is False
+    assert release_gate["reasons"] == [
+        "The release contains a confirmed critical security finding."
+    ]
+    assert release_gate["blocking_findings"] == []
+    assert release_gate["review_findings"] == []
+    assert release_gate["failed_regressions"] == []
+    assert release_gate["tool_errors"] == []
+    assert release_gate["exceptions_applied"] == []
+
+
 def test_scan_store_exists(
     sample_scan_result,
     tmp_path: Path,
