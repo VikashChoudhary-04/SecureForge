@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shlex
 from typing import Any
 
 from secureforge.config.runtime import (
@@ -278,7 +279,7 @@ def _normalize_command(
         return []
 
     if isinstance(command, str):
-        return [command]
+        return shlex.split(command)
 
     return _normalize_string_list(command)
 

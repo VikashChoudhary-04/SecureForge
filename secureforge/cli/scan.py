@@ -11,7 +11,10 @@ from secureforge.cli.report import (
 from secureforge.config.runtime_builder import (
     RuntimeConfigurationError,
 )
-from secureforge.core.config.models import ScanProfile
+from secureforge.core.config.models import (
+    ScanConfiguration,
+    ScanProfile,
+)
 from secureforge.core.risk import RiskContext
 from secureforge.core.scan.models import SecurityScanResult
 from secureforge.core.scan.orchestrator import ScanOrchestrator
@@ -33,6 +36,7 @@ class ScanCommandConfiguration:
 
     scan_id: str
     profile: ScanProfile | str
+    scan_configuration: ScanConfiguration | None = None
     target: str | None = None
     source_path: Path | None = None
     application: str = "securecommerce"
@@ -120,6 +124,7 @@ class ScanCommandService:
             "commit_sha": configuration.commit_sha,
             "environment": configuration.environment,
             "risk_context": configuration.risk_context,
+            "configuration": configuration.scan_configuration,
             "validation_requests": (
                 list(configuration.validation_requests)
                 if configuration.validation_requests

@@ -227,6 +227,82 @@ def test_scan_command_accepts_full_profile(
     )
 
 
+def test_scan_command_loads_full_profile_configuration(
+    monkeypatch,
+    sample_scan_result,
+    tmp_path: Path,
+) -> None:
+    """Load the selected profile's scanner configuration."""
+    captured: dict[str, object] = {}
+
+    class FakeService:
+        def run(
+            self,
+            configuration,
+        ):
+            captured["configuration"] = (
+                configuration
+            )
+            return sample_scan_result
+
+    monkeypatch.setattr(
+        "secureforge.cli.main.build_scan_command_service",
+        lambda: FakeService(),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "--profile",
+            "full",
+            "--target",
+            "http://127.0.0.1:5000",
+            "--source-path",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code in {
+        0,
+        1,
+    }
+
+    configuration = captured[
+        "configuration"
+    ]
+
+    assert (
+        configuration.profile
+        == ScanProfile.FULL
+    )
+
+    scan_configuration = (
+        configuration.scan_configuration
+    )
+
+    assert (
+        scan_configuration.profile
+        == ScanProfile.FULL
+    )
+
+    nmap_tools = [
+        tool
+        for tool in scan_configuration.tools
+        if tool.name == "nmap"
+    ]
+
+    assert len(nmap_tools) == 1
+    assert nmap_tools[0].enabled is True
+    assert nmap_tools[0].command == [
+        "nmap",
+        "-sV",
+        "-oX",
+        "-",
+        "{network_target}",
+    ]
+
+
 def test_scan_command_displays_result(
     monkeypatch,
     sample_scan_result,

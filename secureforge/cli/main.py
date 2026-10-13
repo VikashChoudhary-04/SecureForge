@@ -16,6 +16,7 @@ from secureforge.cli.scan import (
     build_scan_command_service,
 )
 from secureforge.config.runtime import RuntimeConfigurationError
+from secureforge.config.runtime_factory import load_scan_configuration
 from secureforge.core.config.models import ScanProfile
 from secureforge.regression.cli import app as regression_app
 
@@ -121,9 +122,16 @@ def scan(
         regression=regression,
     )
 
+    scan_configuration = _load_profile_scan_configuration(
+        scan_profile=scan_profile,
+        target=target,
+        source_path=source_path,
+    )
+
     config = ScanCommandConfiguration(
         scan_id=scan_id,
         profile=scan_profile,
+        scan_configuration=scan_configuration,
         target=target,
         source_path=source_path,
         application=application,
@@ -174,6 +182,63 @@ def scan(
         raise typer.Exit(code=2) from exc
 
     _print_scan_result(result)
+
+
+def _load_profile_scan_configuration(
+    *,
+    scan_profile: ScanProfile,
+    target: str | None,
+    source_path: Path | None,
+):
+    """Load the canonical configuration for the selected scan profile."""
+    if scan_profile == ScanProfile.CI:
+        return None
+
+    config_path = (
+        Path(__file__).resolve().parents[1]
+        / "config"
+        / f"{scan_profile.value}.yaml"
+    )
+
+    try:
+        scan_configuration = load_scan_configuration(
+            config_path
+        )
+    except RuntimeConfigurationError:
+        raise
+    except Exception as exc:
+        raise RuntimeConfigurationError(
+            "Failed to load scan profile configuration "
+            f"'{scan_profile.value}' from {config_path}: {exc}"
+        ) from exc
+
+    if target is not None:
+        updated_target = scan_configuration.target.model_copy(
+            update={
+                "base_url": target,
+            }
+        )
+
+        scan_configuration = scan_configuration.model_copy(
+            update={
+                "target": updated_target,
+            }
+        )
+
+    if source_path is not None:
+        updated_target = scan_configuration.target.model_copy(
+            update={
+                "source_path": str(source_path),
+            }
+        )
+
+        scan_configuration = scan_configuration.model_copy(
+            update={
+                "target": updated_target,
+            }
+        )
+
+    return scan_configuration
 
 
 @app.command()

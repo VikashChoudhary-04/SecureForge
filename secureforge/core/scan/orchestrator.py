@@ -51,6 +51,7 @@ class ScanOrchestrator:
         commit_sha: str | None = None,
         environment: str = "lab",
         risk_context: RiskContext | None = None,
+        configuration: CoreScanConfiguration | None = None,
         validation_requests: list[ValidationRequest] | None = None,
         validate_findings: bool = False,
         validation_method: ValidationMethod = ValidationMethod.HTTP,
@@ -70,6 +71,7 @@ class ScanOrchestrator:
             commit_sha=commit_sha,
             environment=environment,
             risk_context=risk_context,
+            configuration=configuration,
         )
 
         planned = (
@@ -151,44 +153,47 @@ class ScanOrchestrator:
         parameters = signature.parameters
 
         if "configuration" in parameters:
-            integrations = {}
+            configuration = kwargs.get("configuration")
 
-            target = kwargs["target"]
-            source_path = kwargs["source_path"]
+            if configuration is None:
+                integrations = {}
 
-            target_configuration = None
-            if target is not None:
-                target_configuration = TargetConfiguration(
-                    name=target,
-                    base_url=target,
-                    source_path=(
-                        str(source_path)
-                        if source_path is not None
-                        else None
+                target = kwargs["target"]
+                source_path = kwargs["source_path"]
+
+                target_configuration = None
+                if target is not None:
+                    target_configuration = TargetConfiguration(
+                        name=target,
+                        base_url=target,
+                        source_path=(
+                            str(source_path)
+                            if source_path is not None
+                            else None
+                        ),
+                    )
+
+                configuration = CoreScanConfiguration(
+                    application=kwargs["application"],
+                    version=kwargs["version"],
+                    profile=kwargs["profile"],
+                    environment=kwargs["environment"],
+                    risk_context=(
+                        kwargs["risk_context"]
+                        or RiskContext()
                     ),
+                    commit_sha=kwargs["commit_sha"],
+                    target=target_configuration,
+                    tools=[],
+                    metadata={
+                        "source_path": (
+                            str(source_path)
+                            if source_path is not None
+                            else None
+                        ),
+                        "integrations": integrations,
+                    },
                 )
-
-            configuration = CoreScanConfiguration(
-                application=kwargs["application"],
-                version=kwargs["version"],
-                profile=kwargs["profile"],
-                environment=kwargs["environment"],
-                risk_context=(
-                    kwargs["risk_context"]
-                    or RiskContext()
-                ),
-                commit_sha=kwargs["commit_sha"],
-                target=target_configuration,
-                tools=[],
-                metadata={
-                    "source_path": (
-                        str(source_path)
-                        if source_path is not None
-                        else None
-                    ),
-                    "integrations": integrations,
-                },
-            )
 
             result = self.runner.run(
                 configuration,

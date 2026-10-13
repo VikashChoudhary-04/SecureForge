@@ -1,5 +1,11 @@
 """Tests for SecureForge scan orchestration."""
 
+from secureforge.core.config.models import (
+    ScanConfiguration,
+    ScanProfile,
+    TargetConfiguration,
+    ToolConfiguration,
+)
 from secureforge.core.scan.orchestrator import (
     ScanOrchestrator,
 )
@@ -161,3 +167,84 @@ def test_scan_orchestrator_accepts_regression_gate(
     assert result.pipeline.regression_gate == (
         sample_regression_gate
     )
+
+
+def test_scan_orchestrator_preserves_configured_tools(
+) -> None:
+    """Preserve configured scanner tools for runner execution."""
+    captured = {}
+
+    class CapturingRunner:
+        def run(
+            self,
+            configuration,
+            commit_sha=None,
+        ):
+            captured["configuration"] = configuration
+
+            from secureforge.core.scan.models import ScanRun
+
+            scan = ScanRun(
+                scan_id="configured-tool-scan",
+                application=configuration.application,
+                version=configuration.version,
+                profile=configuration.profile,
+                environment=configuration.environment,
+            )
+            scan.start()
+            scan.complete()
+            return scan
+
+    configured_tool = ToolConfiguration(
+        name="nmap",
+        enabled=True,
+        executable="nmap",
+        command=[
+            "nmap",
+            "-sV",
+            "-oX",
+            "-",
+            "127.0.0.1",
+        ],
+        timeout_seconds=300,
+    )
+
+    scan_configuration = ScanConfiguration(
+        application="SecureCommerce",
+        version="0.1.0",
+        profile=ScanProfile.FULL,
+        environment="lab",
+        target=TargetConfiguration(
+            name="127.0.0.1",
+            network_target="127.0.0.1",
+        ),
+        tools=[
+            configured_tool,
+        ],
+    )
+
+    orchestrator = ScanOrchestrator(
+        runner=CapturingRunner()
+    )
+
+    orchestrator._run_runner(
+        scan_id="configured-tool-scan",
+        profile="full",
+        target="127.0.0.1",
+        source_path=None,
+        application="SecureCommerce",
+        version="0.1.0",
+        commit_sha=None,
+        environment="lab",
+        risk_context=None,
+        configuration=scan_configuration,
+    )
+
+    configuration = captured["configuration"]
+
+    assert configuration is scan_configuration
+    assert configuration.profile == ScanProfile.FULL
+    assert configuration.tools == [
+        configured_tool,
+    ]
+    assert configuration.tools[0].name == "nmap"
