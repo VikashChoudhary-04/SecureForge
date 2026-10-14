@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 
 from secureforge.core.config import (
     ScanConfiguration,
@@ -66,6 +67,19 @@ class ScanPlanner:
         ),
     }
 
+    TARGET_PLACEHOLDERS: dict[str, str] = {
+        "base_url": "base_url",
+        "container_image": "container_image",
+        "iac_path": "iac_path",
+        "network_target": "network_target",
+        "openapi_url": "openapi_url",
+        "source_path": "source_path",
+    }
+
+    PLACEHOLDER_PATTERN = re.compile(
+        r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}"
+    )
+
     def required_integrations(
         self,
         configuration: ScanConfiguration,
@@ -104,7 +118,10 @@ class ScanPlanner:
             planned.append(
                 PlannedTool(
                     integration=integration,
-                    configuration=tool,
+                    configuration=self._render_tool_configuration(
+                        tool,
+                        configuration,
+                    ),
                     reason=(
                         f"Tool '{integration}' is enabled "
                         "for the selected scan profile."
@@ -156,6 +173,88 @@ class ScanPlanner:
                 and not configured[integration].enabled
             )
         ]
+
+    def _render_tool_configuration(
+        self,
+        tool: ToolConfiguration,
+        configuration: ScanConfiguration,
+    ) -> ToolConfiguration:
+        """Resolve target placeholders in a tool configuration."""
+        values = self._target_values(
+            configuration
+        )
+
+        return tool.model_copy(
+            update={
+                "command": [
+                    self._render_value(
+                        value,
+                        values,
+                    )
+                    for value in tool.command
+                ],
+                "arguments": [
+                    self._render_value(
+                        value,
+                        values,
+                    )
+                    for value in tool.arguments
+                ],
+            }
+        )
+
+    @classmethod
+    def _render_value(
+        cls,
+        value: str,
+        values: dict[str, str | None],
+    ) -> str:
+        """Render supported placeholders in one command value."""
+
+        def replace(match: re.Match[str]) -> str:
+            placeholder = match.group(1)
+
+            if placeholder not in cls.TARGET_PLACEHOLDERS:
+                raise ValueError(
+                    f"Unsupported command placeholder "
+                    f"'{{{placeholder}}}'."
+                )
+
+            target_field = cls.TARGET_PLACEHOLDERS[
+                placeholder
+            ]
+            resolved = values.get(
+                target_field
+            )
+
+            if resolved is None or not str(resolved).strip():
+                raise ValueError(
+                    f"Target value '{target_field}' is required "
+                    f"to resolve '{{{placeholder}}}'."
+                )
+
+            return str(resolved)
+
+        return cls.PLACEHOLDER_PATTERN.sub(
+            replace,
+            value,
+        )
+
+    @staticmethod
+    def _target_values(
+        configuration: ScanConfiguration,
+    ) -> dict[str, str | None]:
+        """Return target values available for command rendering."""
+        target = configuration.target
+
+        return {
+            "base_url": target.base_url,
+            "container_image": target.container_image,
+            "iac_path": target.iac_path,
+            "network_target": target.network_target,
+            "openapi_url": target.openapi_url,
+            "source_path": target.source_path,
+        }
 
     @staticmethod
     def _normalize_profile(
