@@ -356,7 +356,7 @@ def test_runner_records_missing_integration_warning() -> None:
 
 
 def test_runner_records_disabled_integration_warning() -> None:
-    """Verify disabled integrations are reported separately."""
+    """Verify configured profile integrations that are disabled are reported."""
     configuration = build_configuration(
         tools=[
             ToolConfiguration(
@@ -747,3 +747,59 @@ def test_runner_can_execute_standard_profile() -> None:
 
     assert scan.status == ScanStatus.COMPLETED
     assert len(scan.tool_results) == 6
+
+
+def test_runner_executes_real_planner_and_executor_chain(
+    tmp_path,
+) -> None:
+    """Verify planner rendering reaches the real subprocess executor."""
+    source_path = tmp_path / "securecommerce"
+
+    configuration = build_configuration(
+        tools=[
+            ToolConfiguration(
+                name="sast",
+                command=[
+                    "python",
+                    "-c",
+                    (
+                        "import sys; "
+                        "print(sys.argv[1])"
+                    ),
+                    "{source_path}",
+                ],
+            )
+        ]
+    )
+
+    configuration = configuration.model_copy(
+        update={
+            "target": configuration.target.model_copy(
+                update={
+                    "source_path": str(source_path),
+                }
+            )
+        }
+    )
+
+    runner = ScanRunner()
+
+    scan = runner.run(
+        configuration
+    )
+
+    assert scan.status == ScanStatus.COMPLETED
+    assert len(scan.tool_results) == 1
+
+    result = scan.tool_results[0]
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.exit_code == 0
+    assert result.stdout.strip() == str(source_path)
+    assert result.command == [
+        "python",
+        "-c",
+        "import sys; print(sys.argv[1])",
+        str(source_path),
+    ]
+    assert result.metadata["integration"] == "sast"
