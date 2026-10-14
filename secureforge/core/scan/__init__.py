@@ -8,7 +8,6 @@ from .executor import (
 )
 from .factory import ScanRunFactory
 from .models import (
-    ScanConfiguration,
     ScanExecution,
     ScanProfile,
     ScanRun,
@@ -40,7 +39,6 @@ from .store import (
 
 
 __all__ = [
-    "ScanConfiguration",
     "ScanEvidenceNormalizer",
     "ScanExecution",
     "ScanExecutionError",

@@ -46,18 +46,6 @@ class RawEvidence(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class ScanConfiguration(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    application: str
-    version: str
-    profile: ScanProfile = ScanProfile.STANDARD
-    environment: str = "development"
-    commit_sha: str | None = None
-    target: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-
 class ToolExecutionResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
