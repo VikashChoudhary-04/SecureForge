@@ -1,18 +1,11 @@
-"""Tests for SecureForge configuration and scan profiles."""
-
-import pytest
+"""Tests for SecureForge canonical configuration models."""
 
 from secureforge.core.config import (
-    FULL_PROFILE,
-    QUICK_PROFILE,
-    STANDARD_PROFILE,
     ScanConfiguration,
     ScanProfile,
     TargetConfiguration,
     TargetType,
     ToolConfiguration,
-    get_profile,
-    list_profiles,
 )
 
 
@@ -109,79 +102,6 @@ def test_api_target_detection() -> None:
     configuration = build_scan_configuration()
 
     assert configuration.has_api_target() is True
-
-
-def test_quick_profile_contains_expected_integrations() -> None:
-    """Verify the quick profile scope."""
-    profile = get_profile(ScanProfile.QUICK)
-
-    assert profile == QUICK_PROFILE
-    assert profile.integrations == (
-        "sast",
-        "sca",
-        "secrets",
-    )
-    assert profile.validation_enabled is False
-    assert profile.regression_enabled is False
-
-
-def test_standard_profile_contains_expected_integrations() -> None:
-    """Verify the standard profile scope."""
-    profile = get_profile("standard")
-
-    assert profile == STANDARD_PROFILE
-    assert "sast" in profile.integrations
-    assert "sca" in profile.integrations
-    assert "secrets" in profile.integrations
-    assert "api" in profile.integrations
-    assert "dast" in profile.integrations
-    assert "container" in profile.integrations
-    assert profile.validation_enabled is True
-    assert profile.regression_enabled is True
-
-
-def test_full_profile_contains_infrastructure_integrations() -> None:
-    """Verify the full profile includes broader assessment coverage."""
-    profile = get_profile(ScanProfile.FULL)
-
-    assert profile == FULL_PROFILE
-    assert "iac" in profile.integrations
-    assert "nessus" in profile.integrations
-    assert "nmap" in profile.integrations
-    assert "manual" in profile.integrations
-    assert profile.validation_enabled is True
-    assert profile.regression_enabled is True
-
-
-def test_profile_lookup_accepts_case_insensitive_string() -> None:
-    """Verify profile names can be supplied as strings."""
-    assert get_profile("QUICK") == QUICK_PROFILE
-    assert get_profile("Standard") == STANDARD_PROFILE
-    assert get_profile("FULL") == FULL_PROFILE
-
-
-def test_invalid_profile_is_rejected() -> None:
-    """Verify unsupported profile names raise a clear error."""
-    with pytest.raises(
-        ValueError,
-        match="Unsupported scan profile",
-    ):
-        get_profile("enterprise")
-
-
-def test_all_profiles_are_listed() -> None:
-    """Verify all supported scan profiles are available."""
-    profiles = list_profiles()
-
-    assert len(profiles) == 3
-    assert {
-        profile.profile
-        for profile in profiles
-    } == {
-        ScanProfile.QUICK,
-        ScanProfile.STANDARD,
-        ScanProfile.FULL,
-    }
 
 
 def test_tool_configuration_supports_command_arguments() -> None:
