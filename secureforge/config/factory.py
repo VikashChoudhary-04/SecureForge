@@ -11,8 +11,6 @@ def create_runtime(
     config_path: str | Path | None = None,
     *,
     profile: str | None = None,
-    target: str | None = None,
-    source_path: str | Path | None = None,
 ):
     """Create a SecureForge runtime from the selected profile."""
     if config_path is not None:
@@ -23,8 +21,6 @@ def create_runtime(
 
     return build_runtime(
         profile=profile or "quick",
-        target=target,
-        source_path=source_path,
     )
 
 

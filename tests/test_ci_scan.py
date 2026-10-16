@@ -13,8 +13,6 @@ def test_ci_profile_runs_through_secureforge_pipeline(
     """The CI profile executes through the complete scan pipeline."""
     runtime = create_runtime(
         profile="ci",
-        target=None,
-        source_path=Path("."),
     )
 
     result = runtime.orchestrator.run(
@@ -50,8 +48,6 @@ def test_ci_profile_does_not_require_external_scanner_commands(
     """The deterministic CI profile does not execute external scanners."""
     runtime = create_runtime(
         profile="ci",
-        target=None,
-        source_path=tmp_path,
     )
 
     result = runtime.orchestrator.run(
@@ -79,8 +75,6 @@ def test_ci_profile_produces_pipeline_dictionary(
     """The CI pipeline result can be serialized."""
     runtime = create_runtime(
         profile="ci",
-        target=None,
-        source_path=tmp_path,
     )
 
     result = runtime.orchestrator.run(

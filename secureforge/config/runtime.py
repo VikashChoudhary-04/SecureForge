@@ -116,8 +116,6 @@ class SecureForgeRuntime:
 def build_runtime(
     *,
     profile: str = "quick",
-    source_path: str | Path | None = None,
-    target: str | None = None,
 ) -> SecureForgeRuntime:
     normalized_profile = str(profile).strip().lower()
     if normalized_profile not in {"quick", "standard", "full", "ci"}:
@@ -143,7 +141,6 @@ def build_runtime(
         pipeline=pipeline,
         runner=runner,
     )
-
 
 
 def _load_default_requirement_registry() -> RequirementRegistry:

@@ -25,8 +25,6 @@ CONFIG_DIR = (
 def test_build_runtime_returns_secureforge_runtime() -> None:
     runtime = build_runtime(
         profile="quick",
-        source_path=None,
-        target=None,
     )
 
     assert isinstance(
