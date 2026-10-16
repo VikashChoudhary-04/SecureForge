@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from secureforge.config.models import ScanProfile
+from secureforge.core.config.models import ScanProfile
 from secureforge.config.runtime import (
     build_runtime,
     RuntimeConfiguration,
