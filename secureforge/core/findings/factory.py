@@ -104,6 +104,9 @@ class FindingFactory:
 
         normalized = str(value).strip().lower()
 
+        if normalized == "unknown":
+            return Confidence.MEDIUM
+
         try:
             return Confidence(normalized)
         except ValueError as exc:

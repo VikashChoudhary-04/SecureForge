@@ -8,13 +8,19 @@ from typing import Any
 
 import yaml
 
+from secureforge.core.normalization import NormalizationPipeline
 from secureforge.core.requirements import RequirementLoader, RequirementRegistry
 from secureforge.core.scan import (
     ScanOrchestrator,
     ScanResultStore,
+    ScanResultNormalizer,
     ScanRunner,
     SecurityPipeline,
 )
+from secureforge.integrations.normalization import (
+    build_default_normalization_registry,
+)
+from secureforge.integrations.registry_factory import build_default_registry
 
 
 class RuntimeConfigurationError(Exception):
@@ -125,7 +131,24 @@ def build_runtime(
 
     requirement_registry = _load_default_requirement_registry()
 
-    runner = ScanRunner()
+    integration_registry = build_default_registry()
+
+    normalization_registry = build_default_normalization_registry(
+        integration_registry=integration_registry,
+    )
+
+    normalization_pipeline = NormalizationPipeline(
+        normalization_registry,
+    )
+
+    normalizer = ScanResultNormalizer(
+        pipeline=normalization_pipeline,
+    )
+
+    runner = ScanRunner(
+        normalizer=normalizer,
+    )
+
     pipeline = SecurityPipeline(
         requirement_registry=requirement_registry,
     )

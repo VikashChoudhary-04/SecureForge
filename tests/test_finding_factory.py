@@ -97,6 +97,16 @@ def test_factory_normalizes_confidence() -> None:
     assert finding.confidence == Confidence.HIGH
 
 
+def test_factory_normalizes_unknown_confidence_to_medium() -> None:
+    """Verify scanner-unknown confidence uses the model default."""
+    data = build_data()
+    data["confidence"] = "unknown"
+
+    finding = FindingFactory().create(data)
+
+    assert finding.confidence == Confidence.MEDIUM
+
+
 def test_factory_normalizes_status() -> None:
     """Verify lifecycle status strings are normalized."""
     data = build_data()
