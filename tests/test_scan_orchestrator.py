@@ -38,6 +38,48 @@ def test_scan_orchestrator_runs_scan(
     assert result.pipeline.release_gate is not None
 
 
+def test_scan_orchestrator_populates_result_summary(
+    fake_scan_runner,
+) -> None:
+    """Populate the final result summary from the executed scan."""
+    orchestrator = ScanOrchestrator(
+        runner=fake_scan_runner
+    )
+
+    result = orchestrator.run(
+        scan_id="scan-summary-001",
+        profile="standard",
+        target="http://localhost:5000",
+    )
+
+    assert result.summary.finding_count == len(
+        result.findings
+    )
+
+    assert result.summary.high_findings == sum(
+        finding.severity.value == "high"
+        for finding in result.findings
+    )
+
+    assert result.summary.medium_findings == sum(
+        finding.severity.value == "medium"
+        for finding in result.findings
+    )
+
+    assert result.summary.low_findings == sum(
+        finding.severity.value == "low"
+        for finding in result.findings
+    )
+
+    assert result.summary.info_findings == sum(
+        finding.severity.value in {
+            "info",
+            "informational",
+        }
+        for finding in result.findings
+    )
+
+
 def test_scan_orchestrator_exposes_release_status(
     fake_scan_runner,
 ) -> None:

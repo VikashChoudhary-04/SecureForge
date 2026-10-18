@@ -18,7 +18,7 @@ from secureforge.validation.models import ValidationMethod, ValidationRequest
 from secureforge.validation.planner import ValidationPlanner
 
 from .factory import ScanRunFactory
-from .models import ScanExecution, SecurityScanResult
+from .models import ScanExecution, ScanSummary, SecurityScanResult
 from .runner import ScanRunner
 from .security_pipeline import SecurityPipeline
 
@@ -129,6 +129,31 @@ class ScanOrchestrator:
             tool_errors=getattr(execution, "tool_errors", []),
         )
 
+        summary = ScanSummary()
+
+        tools = getattr(
+            execution,
+            "tools",
+            [],
+        )
+
+        summary.tool_count = len(tools)
+        summary.successful_tools = sum(
+            tool.succeeded
+            for tool in tools
+        )
+        summary.failed_tools = sum(
+            tool.failed
+            for tool in tools
+        )
+        summary.skipped_tools = sum(
+            tool.status.value == "skipped"
+            for tool in tools
+        )
+        summary.update_findings(
+            pipeline_result.findings
+        )
+
         return SecurityScanResult(
             execution=scan_execution,
             findings=pipeline_result.findings,
@@ -140,6 +165,7 @@ class ScanOrchestrator:
             environment=environment,
             status=execution.status,
             commit_sha=commit_sha,
+            summary=summary,
         )
 
     def _run_runner(self, **kwargs: Any):
