@@ -248,8 +248,8 @@ SecureForge is organized as a verification pipeline rather than as a single scan
 ┌─────────────────────────────────────────────────────┐
 │                 Security Evidence                   │
 │                                                     │
-│ SAST │ SCA │ Secrets │ API │ DAST │ Container │ IaC │
-│ Nmap │ Nessus │ Manual Validation │ Other Sources   │
+│ SAST │ SCA │ Secrets │ API │ DAST │ Container │ IaC│
+│ Nmap │ Nessus │ Manual Validation │ Other Sources  │
 └───────────────────────┬─────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
@@ -273,13 +273,13 @@ SecureForge is organized as a verification pipeline rather than as a single scan
 ┌─────────────────────────────────────────────────────┐
 │                 Contextual Risk                     │
 │                                                     │
-│     Severity + Confidence + Application Context     │
+│     Severity + Confidence + Application Context      │
 └───────────────────────┬─────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
 │                 Policy Evaluation                   │
 │                                                     │
-│          Evidence + Risk + Requirements             │
+│          Evidence + Risk + Requirements              │
 └───────────────────────┬─────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
