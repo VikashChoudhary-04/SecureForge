@@ -486,6 +486,8 @@ class SecurityPipeline:
         return PolicyConfig(
             policy_id="secureforge-default",
             version="1.0",
+            fail_on_tool_error=True,
+            fail_on_regression_failure=True,
             rules=[
                 PolicyRule(
                     rule_id="BLOCK-CRITICAL",

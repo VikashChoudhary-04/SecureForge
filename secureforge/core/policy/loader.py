@@ -65,6 +65,9 @@ class PolicyLoader:
                 section = data.get(severity)
                 if isinstance(section, dict) and section.get("action"):
                     actions[severity] = str(section["action"]).lower()
+
+            settings = data.get("settings", {})
+
             data = {
                 "policy_id": "secureforge-default",
                 "version": "1.0",
@@ -76,10 +79,21 @@ class PolicyLoader:
                     {"rule_id": "PASS-INFO", "name": "Pass informational findings", "description": "Informational findings do not block release.", "severity": "info", "action": actions.get("info", "pass"), "enabled": True},
                 ],
                 "exceptions": [],
-                "fail_on_tool_error": False,
-                "fail_on_regression_failure": True,
+                "fail_on_tool_error": bool(
+                    settings.get(
+                        "fail_on_tool_error",
+                        False,
+                    )
+                ),
+                "fail_on_regression_failure": bool(
+                    settings.get(
+                        "fail_on_regression_failure",
+                        True,
+                    )
+                ),
                 "metadata": {"intended_environment": "lab", "policy_owner": "SecureForge", "review_required_for_exceptions": True},
             }
+
         try:
             return PolicyConfig.model_validate(
                 data

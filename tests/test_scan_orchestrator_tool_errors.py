@@ -79,7 +79,7 @@ def test_scan_orchestrator_propagates_real_tool_errors_to_pipeline() -> None:
 
     assert result.pipeline.release_gate is not None
     assert result.pipeline.release_gate.decision == (
-        ReleaseDecision.REVIEW
+        ReleaseDecision.BLOCK
     )
     assert result.pipeline.release_gate.tool_errors == [
         "DAST scanner failed to execute.",

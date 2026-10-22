@@ -122,6 +122,45 @@ fail_on_regression_failure: true
     assert policy.fail_on_regression_failure is True
 
 
+def test_loader_preserves_legacy_settings(
+    tmp_path: Path,
+) -> None:
+    """Verify legacy policy settings are preserved during conversion."""
+    path = write_yaml(
+        tmp_path / "policy.yaml",
+        """
+security_gate:
+  name: default
+
+critical:
+  action: block
+
+high:
+  action: block
+
+medium:
+  action: review
+
+low:
+  action: pass
+
+info:
+  action: pass
+
+settings:
+  fail_on_tool_error: true
+  fail_on_regression_failure: false
+""",
+    )
+
+    policy = PolicyLoader().load_file(
+        path
+    )
+
+    assert policy.fail_on_tool_error is True
+    assert policy.fail_on_regression_failure is False
+
+
 def test_loader_loads_exceptions(
     tmp_path: Path,
 ) -> None:

@@ -86,7 +86,7 @@ def test_pipeline_preserves_finding_security_requirement(
     pipeline = SecurityPipeline()
 
     context = RiskContext(
-        security_requirement="SF-SCAN-001",
+        security_requirement="SF-SCAN-001"
     )
 
     result = pipeline.evaluate(
@@ -183,6 +183,37 @@ def test_pipeline_preserves_tool_errors(
     )
 
     assert result.policy is not None
+
+    assert any(
+        "DAST scanner failed to execute."
+        in violation
+        for violation in result.policy.violations
+    )
+
+
+def test_pipeline_blocks_release_on_default_tool_error(
+    sample_findings,
+) -> None:
+    """The built-in default policy must block on tool execution errors."""
+    pipeline = SecurityPipeline()
+
+    result = pipeline.evaluate(
+        sample_findings,
+        tool_errors=[
+            "DAST scanner failed to execute."
+        ],
+    )
+
+    assert result.policy is not None
+    assert result.policy.action.value == "block"
+    assert result.policy.allowed is False
+
+    assert result.release_gate is not None
+    assert result.release_gate.decision.value == "block"
+    assert result.release_gate.release_allowed is False
+
+    assert result.release_allowed is False
+    assert result.release_blocked is True
 
     assert any(
         "DAST scanner failed to execute."
@@ -298,7 +329,6 @@ def test_pipeline_accepts_custom_components(
     assert result.release_gate is not None
 
 
-
 def test_pipeline_accepts_findings_in_injected_requirement_registry(
     sample_findings,
 ) -> None:
@@ -334,7 +364,6 @@ def test_pipeline_accepts_findings_in_injected_requirement_registry(
     assert result.release_gate is not None
 
 
-
 def test_pipeline_rejects_unknown_finding_requirement(
     sample_findings,
 ) -> None:
@@ -362,7 +391,6 @@ def test_pipeline_rejects_unknown_finding_requirement(
     assert result.risk_assessments == []
     assert result.policy is None
     assert result.release_gate is None
-
 
 
 def test_pipeline_validates_scan_requirement_when_registry_is_configured(

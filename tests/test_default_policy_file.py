@@ -192,11 +192,11 @@ def test_default_policy_fails_on_regression_failure() -> None:
     assert policy.fail_on_regression_failure is True
 
 
-def test_default_policy_allows_tool_errors_to_require_review() -> None:
-    """Verify tool errors do not automatically block by configuration."""
+def test_default_policy_fails_on_tool_error() -> None:
+    """Verify tool errors are configured to block."""
     policy = load_default_policy()
 
-    assert policy.fail_on_tool_error is False
+    assert policy.fail_on_tool_error is True
 
 
 def test_default_policy_blocks_critical_finding() -> None:
