@@ -12,385 +12,499 @@
 
 </div>
 
-## 🎯 The Security Question
+SecureForge is a modular **application-security verification and release-gating framework** for web applications and APIs.
 
-* SecureForge is built around one practical security question:
-* **Is this application release secure enough to ship?**
-* Instead of treating security testing as a collection of disconnected scanner results, SecureForge turns security evidence into an explainable release decision:
+It brings security evidence, finding normalization, correlation, security requirements, contextual risk evaluation, policy enforcement, validation, regression testing, reporting, and release decisions into one workflow.
 
-  * `PASS`
-  * `REVIEW`
-  * `BLOCK`
+Instead of asking only:
 
-## 🧩 What SecureForge Is
+> **"Did a security tool find something?"**
 
-* SecureForge is a continuous security verification and release-gating platform for web and API applications.
-* It collects security evidence from multiple sources, normalizes the results, correlates related findings, validates important vulnerabilities, evaluates contextual risk, maps findings to security requirements, and applies explicit release policies.
-* The goal is not simply to find vulnerabilities.
-* The goal is to determine whether known security risks have been sufficiently understood, validated, remediated, and verified before release.
+SecureForge asks:
 
-### The Core Idea
+> **"Based on the available security evidence, validation results, security requirements, risk, policy, and regression status — should this release PASS, require REVIEW, or be BLOCKED?"**
 
-* SecureForge follows a security lifecycle:
+---
 
-  * **Discover → Validate → Prioritize → Remediate → Retest → Prevent Recurrence**
-* A scanner finding is not automatically treated as a confirmed vulnerability.
-* Security evidence is evaluated in context.
-* Important findings can be manually validated.
-* Multiple tool results can be correlated into a single security issue.
-* Security requirements provide application-specific meaning.
-* Policy determines whether the release should pass, require review, or be blocked.
-* Confirmed vulnerabilities can become regression tests so the same weakness is not silently reintroduced.
+## 🎯 Why SecureForge?
 
-## 🚫 What SecureForge Is Not
+Modern application security often produces fragmented results.
 
-* SecureForge is not a replacement for:
+A development team may receive:
 
-  * Burp Suite
-  * Nmap
-  * Nessus
-  * SAST tools
-  * SCA tools
-  * Secret scanners
-  * DAST tools
-  * Container scanners
-  * IaC scanners
-  * Wireshark
-  * Metasploit
-* SecureForge uses mature security tools as evidence producers instead of unnecessarily reimplementing their capabilities.
-* SecureForge is also not:
+- SAST findings
+- SCA findings
+- Secret-scanning alerts
+- API-security findings
+- DAST findings
+- Container findings
+- IaC findings
+- Manual penetration-testing evidence
+- Regression results
 
-  * A SIEM
-  * A SOC platform
-  * An enterprise vulnerability-management replacement
-  * A full cloud-security platform
-  * A generic vulnerability scanner
-  * An attack-path platform
-  * A massive SaaS product
-  * An AI security chatbot
+The difficult part is not simply collecting those results.
 
-## 🏗️ How It Works
+The difficult part is turning them into a **consistent, explainable security decision**.
 
-### 1. Discover
+SecureForge is designed to provide that decision layer.
 
-* Security evidence is collected from available security testing and analysis sources.
-* Sources can include:
-
-  * SAST
-  * SCA
-  * Secret scanning
-  * API security testing
-  * DAST
-  * Container scanning
-  * IaC scanning
-  * Nessus
-  * Nmap
-  * Manual validation
-  * Burp Suite
-  * Wireshark
-  * Controlled Metasploit validation
-
-### 2. Normalize
-
-* Different tools produce different formats and terminology.
-* SecureForge converts those results into a common finding model.
-* A normalized finding can contain:
-
-  * Finding ID
-  * Title
-  * Source
-  * Asset
-  * Application
-  * Endpoint
-  * Parameter
-  * CWE
-  * OWASP mapping
-  * Security requirement
-  * Severity
-  * Confidence
-  * Evidence
-  * Description
-  * Impact
-  * Remediation
-  * Status
-  * Validation status
-  * First seen
-  * Last seen
-  * Regression test
-
-### 3. Correlate
-
-* Multiple tools may identify the same underlying security weakness.
-* SecureForge correlates related evidence instead of treating every scanner result as an independent vulnerability.
-* Example:
-
-  * SAST identifies a possible SQL injection.
-  * DAST identifies a possible SQL injection.
-  * Burp Suite manually confirms the SQL injection.
-  * SecureForge correlates these results into one finding with multiple evidence sources.
-
-### 4. Validate
-
-* Important findings can be validated before they influence a security decision.
-* Validation can establish:
-
-  * Whether the vulnerability is actually exploitable.
-  * Whether the affected component is reachable.
-  * Whether authentication or authorization controls work correctly.
-  * Whether the reported impact is accurate.
-  * Whether the evidence supports the finding.
-* Validation status can distinguish:
-
-  * Suspected
-  * Detected
-  * Confirmed
-  * False Positive
-  * Remediated
-  * Retested
-
-### 5. Prioritize
-
-* Severity alone does not determine practical risk.
-* SecureForge considers contextual factors such as:
-
-  * Asset importance
-  * Internet exposure
-  * Authentication requirements
-  * Sensitive-data exposure
-  * Exploit evidence
-  * Confidence
-  * Security requirements
-  * Environment
-* This creates a more meaningful security decision than blindly sorting by scanner severity.
-
-### 6. Apply Policy
-
-* Security policy converts security findings into release decisions.
-* Example policy:
-
-```yaml
-security_gate:
-  critical:
-    action: block
-  high:
-    action: block
-  medium:
-    action: review
-  low:
-    action: pass
+```text
+Security Evidence
+       ↓
+Normalization
+       ↓
+Correlation
+       ↓
+Requirement Mapping
+       ↓
+Contextual Risk
+       ↓
+Policy Evaluation
+       ↓
+Validation / Regression
+       ↓
+Release Gate
+       ↓
+PASS / REVIEW / BLOCK
 ```
 
-* Policies can also consider contextual conditions.
-* Examples:
+---
 
-  * Critical confirmed vulnerabilities block the release.
-  * High-confidence authorization vulnerabilities can block the release.
-  * Open security-secret requirements can block the release.
-  * Medium-risk findings may require review.
+## 🧩 Core Capabilities
 
-### 7. Remediate and Retest
+### Security Evidence Collection
 
-* A blocked release should not remain blocked indefinitely.
-* SecureForge supports a lifecycle where developers:
+SecureForge provides an integration architecture for security evidence from categories such as:
 
-  * Understand the finding.
-  * Remediate the issue.
-  * Run security verification again.
-  * Validate the fix.
-  * Update the finding state.
-  * Confirm that the security requirement is satisfied.
+- SAST
+- SCA
+- Secret scanning
+- API security
+- DAST
+- Container security
+- IaC security
+- Nmap
+- Nessus
+- Manual security validation
 
-### 8. Prevent Recurrence
+External security tools remain responsible for performing their specialized security testing.
 
-* Important vulnerabilities can become regression tests.
-* Examples:
+SecureForge is responsible for processing their evidence and using it as part of the security-verification workflow.
 
-  * `BOLA-001`
-  * `SQLI-001`
-  * `XSS-001`
-  * `AUTHZ-001`
-  * `SECRET-001`
-  * `MISCONFIG-001`
-* Future releases can automatically verify that previously fixed weaknesses remain fixed.
+### Finding Normalization
+
+Different security tools produce different schemas, terminology, severity models, and evidence formats.
+
+SecureForge converts supported results into a common finding representation.
+
+A finding can contain information such as:
+
+- Finding ID
+- Title
+- Source
+- Asset
+- Application
+- Endpoint
+- Parameter
+- CWE
+- OWASP mapping
+- Security requirement
+- Severity
+- Confidence
+- Evidence
+- Description
+- Impact
+- Remediation
+- Status
+- Validation status
+- First seen
+- Last seen
+- Regression test
+
+### Finding Correlation
+
+Multiple security tools can identify the same underlying weakness.
+
+SecureForge can correlate related evidence so that one vulnerability is not incorrectly treated as multiple independent vulnerabilities.
+
+```text
+SAST
+  ↓
+Possible SQL Injection
+
+DAST
+  ↓
+Possible SQL Injection
+
+Manual Validation
+  ↓
+Confirmed SQL Injection
+
+        ↓
+
+Correlated Security Finding
+```
+
+Correlation can improve evidence quality, confidence, reporting, and release-decision accuracy.
+
+### Security Requirements
+
+Findings can be mapped to explicit security requirements.
+
+Examples include:
+
+- `SF-AUTH-001`
+- `SF-AUTH-002`
+- `SF-AUTHZ-001`
+- `SF-AUTHZ-002`
+- `SF-API-001`
+- `SF-API-002`
+- `SF-INPUT-001`
+- `SF-SECRET-001`
+- `SF-DEP-001`
+- `SF-CONTAINER-001`
+- `SF-IAC-001`
+- `SF-TRANSPORT-001`
+- `SF-REG-001`
+
+This provides application-specific security meaning beyond a raw scanner finding.
+
+### Contextual Risk Evaluation
+
+SecureForge separates vulnerability severity from contextual security risk.
+
+Risk evaluation can consider factors such as:
+
+- Severity
+- Confidence
+- Asset importance
+- Internet exposure
+- Authentication requirements
+- Sensitive-data exposure
+- Exploit evidence
+- Security requirements
+- Environment
+
+The objective is to make the reasoning behind a security decision understandable rather than relying on an opaque score.
+
+### Policy Enforcement
+
+The policy engine converts security conditions into explicit actions.
+
+Policies can define:
+
+- Blocking conditions
+- Review conditions
+- Passing conditions
+- Exceptions
+- Tool-execution requirements
+- Regression requirements
+- Security requirements
+
+### Validation
+
+Important findings can be validated before they influence the final security decision.
+
+Validation can help establish:
+
+- Whether a vulnerability is actually exploitable.
+- Whether the affected component is reachable.
+- Whether authentication or authorization controls work correctly.
+- Whether the reported impact is accurate.
+- Whether the evidence supports the finding.
+
+### Security Regression Testing
+
+Important security weaknesses can become repeatable regression tests.
+
+The current SecureCommerce regression suite demonstrates:
+
+- `BOLA-001`
+- `SQLI-001`
+- `XSS-001`
+- `SECRET-001`
+- `AUTHZ-001`
+- `MISCONFIG-001`
+
+This turns security fixes into repeatable verification rather than one-time testing.
+
+### Release Gating
+
+SecureForge produces a final release decision:
+
+- `PASS`
+- `REVIEW`
+- `BLOCK`
+
+The decision is based on the configured security policy and the available verification results.
+
+---
+
+## 🏗️ Architecture
+
+SecureForge is organized as a verification pipeline rather than as a single scanner.
+
+```text
+┌─────────────────────────────────────────────────────┐
+│                 Security Evidence                   │
+│                                                     │
+│ SAST │ SCA │ Secrets │ API │ DAST │ Container │ IaC│
+│ Nmap │ Nessus │ Manual Validation │ Other Sources  │
+└───────────────────────┬─────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│                    Normalization                    │
+│                                                     │
+│        Tool Output → Common Finding Model           │
+└───────────────────────┬─────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│                     Correlation                     │
+│                                                     │
+│        Related Evidence → Unified Finding           │
+└───────────────────────┬─────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│               Requirement Mapping                   │
+│                                                     │
+│       Finding → Security Requirement                │
+└───────────────────────┬─────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│                 Contextual Risk                     │
+│                                                     │
+│     Severity + Confidence + Application Context      │
+└───────────────────────┬─────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│                 Policy Evaluation                   │
+│                                                     │
+│          Evidence + Risk + Requirements              │
+└───────────────────────┬─────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│          Validation / Regression Gates              │
+└───────────────────────┬─────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│                   Release Gate                      │
+│                                                     │
+│             PASS / REVIEW / BLOCK                   │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎯 Target Independence
+
+SecureForge is **not limited to SecureCommerce**.
+
+The core framework is designed to work with different web and API applications through configuration, integrations, security requirements, and target-specific regression definitions.
+
+### SecureCommerce
+
+SecureCommerce is the project's deliberately vulnerable **reference and laboratory application**.
+
+It exists to provide a controlled target for demonstrating and testing SecureForge.
+
+### Other Targets
+
+A different application can provide its own:
+
+- Base URL
+- API base URL
+- OpenAPI specification
+- Source path
+- Container image
+- Security integrations
+- Security requirements
+- Policy
+- Regression suite
+
+The important architectural distinction is:
+
+> **SecureForge is the reusable verification framework. SecureCommerce is the reference target used to demonstrate it.**
+
+The core security-verification pipeline is therefore not conceptually tied to a particular application.
+
+Some regression tests are necessarily target-specific because they depend on application-specific endpoints, users, credentials, infrastructure, or expected behavior.
+
+---
 
 ## 🧪 SecureCommerce
 
-* SecureForge includes a deliberately vulnerable laboratory application named **SecureCommerce**.
-* SecureCommerce provides a realistic target for demonstrating the complete verification lifecycle.
+SecureCommerce is a deliberately vulnerable e-commerce application included as a controlled security-testing target.
 
-### Application Features
+It provides a realistic application environment for demonstrating the SecureForge lifecycle.
 
-* User registration
-* Authentication
-* User profiles
-* Role-based access
-* Product catalog
-* Shopping cart
-* Orders
-* Administrative functionality
-* REST API
-* Database
-* File upload
-* External integration
-* Sensitive data
-* Authentication and authorization controls
+### Application Areas
 
-### Why SecureCommerce Exists
+The laboratory application includes functionality and scenarios involving:
 
-* The application provides controlled security weaknesses that can be discovered, validated, remediated, retested, and converted into regression tests.
-* It allows SecureForge to demonstrate security verification against a realistic application instead of relying only on synthetic scanner output.
+- Registration
+- Authentication
+- Users and profiles
+- Roles
+- Products
+- Orders
+- REST APIs
+- Database-backed functionality
+- File handling
+- External integrations
+- Authentication and authorization controls
 
-## 🔐 Security Scenarios
+### Security Scenarios
 
-### Authentication
+The application provides controlled scenarios for security verification, including areas such as:
 
-* Weak authentication controls
-* Weak session management
-* Authentication bypass scenarios
-* Improper session handling
+- Authentication
+- Authorization
+- BOLA / IDOR
+- Function-level authorization
+- SQL injection
+- XSS
+- API security
+- SSRF
+- File handling
+- Secret exposure
+- Dependency security
+- Container security
+- Infrastructure configuration
 
-### Authorization
+SecureCommerce is intentionally designed for authorized local laboratory testing.
 
-* IDOR
-* BOLA
-* Broken function-level authorization
-* Privilege escalation through authorization weaknesses
+---
 
-### Injection
+## 🔐 Security Verification Lifecycle
 
-* SQL injection
-* Unsafe input handling
-* Injection through application and API parameters
+SecureForge follows a repeatable security-verification lifecycle.
 
-### Cross-Site Scripting
+### Discover
 
-* Reflected XSS
-* Stored XSS
-* Unsafe output handling
+Collect security evidence from configured sources.
 
-### API Security
+### Normalize
 
-* Missing authentication
-* BOLA
-* Broken function-level authorization
-* Excessive data exposure
-* Input validation weaknesses
-* Security misconfiguration
-* Rate and resource-control weaknesses
+Convert tool-specific results into the SecureForge finding model.
 
-### SSRF
+### Correlate
 
-* Controlled server-side request forgery scenarios where practical
+Identify related evidence that represents the same underlying security issue.
 
-### File Security
+### Map
 
-* Insecure file handling
-* Unsafe upload behavior
-* File validation weaknesses
+Associate findings with relevant security requirements and classifications.
 
-### Dependency Security
+### Validate
 
-* Vulnerable dependencies
-* Known vulnerable package versions
+Determine whether important findings are supported by sufficient evidence.
 
-### Secret Exposure
+### Prioritize
 
-* Fake API keys
-* Test credentials
-* Hardcoded secrets
+Evaluate security risk using severity, confidence, and application context.
 
-### Container Security
+### Remediate
 
-* Running as root
-* Vulnerable packages
-* Insecure configuration
-* Unnecessary exposed ports
+Provide information necessary to address the underlying security issue.
 
-### Infrastructure as Code
+### Retest
 
-* Public exposure
-* Permissive firewall rules
-* Insecure storage
-* Excessive permissions
+Verify that remediation actually addressed the vulnerability.
 
-### Infrastructure Exposure
+### Prevent Recurrence
 
-* Unexpected exposed services
-* Unnecessary network exposure
-* Infrastructure weaknesses identified through authorized scanning
+Convert important security weaknesses into repeatable regression tests.
 
-## 📚 Security Standards
+### Release Gate
 
-* SecureForge maps security findings to recognized security standards and classifications where appropriate.
+Use the resulting evidence, risk, requirements, validation, and policy to produce:
 
-### OWASP Top 10
+```text
+PASS
+REVIEW
+BLOCK
+```
 
-* Application security risks can be mapped to the OWASP Top 10.
+---
 
-### OWASP API Security Top 10
+## 🚦 Release Decisions
 
-* API-specific vulnerabilities can be mapped to the OWASP API Security Top 10.
+### PASS
 
-### OWASP ASVS 5.0
+The configured security policy does not identify a blocking or review condition, and the required verification conditions have passed.
 
-* Security requirements can reference relevant ASVS controls.
-* SecureForge does not claim complete ASVS compliance.
-* Only the documented and implemented subset is represented.
+### REVIEW
 
-### CWE
+The release requires human security review before it should proceed.
 
-* Findings can be mapped to relevant Common Weakness Enumeration identifiers.
+`REVIEW` is not equivalent to automatic security approval.
 
-### CVSS
+### BLOCK
 
-* CVSS can be used where an appropriate vulnerability severity representation is required.
-* Contextual risk remains separate from raw severity.
+A configured security condition requires the release to stop.
+
+Examples can include:
+
+- Confirmed critical vulnerabilities
+- Confirmed high-impact authorization vulnerabilities
+- Unsatisfied mandatory security requirements
+- Failed security regression tests
+- Required security integrations failing to execute
+- Other explicitly configured blocking conditions
+
+---
 
 ## 📋 Security Requirements
 
-* SecureForge uses internal security requirements to give application-specific meaning to vulnerabilities.
-* Example requirements include:
+SecureForge uses a requirement registry to represent application-security expectations.
 
-  * `SF-AUTH-001`
-  * `SF-AUTHZ-001`
-  * `SF-AUTHZ-002`
-  * `SF-API-001`
-  * `SF-API-002`
-  * `SF-INPUT-001`
-  * `SF-SECRET-001`
-  * `SF-DEP-001`
-  * `SF-CONTAINER-001`
-  * `SF-IAC-001`
-  * `SF-TRANSPORT-001`
-  * `SF-REG-001`
-* A finding can therefore communicate not only that a vulnerability exists, but which security requirement it violates.
+Current requirement identifiers include:
+
+```text
+SF-AUTH-001
+SF-AUTH-002
+SF-AUTHZ-001
+SF-AUTHZ-002
+SF-API-001
+SF-API-002
+SF-INPUT-001
+SF-SECRET-001
+SF-DEP-001
+SF-CONTAINER-001
+SF-IAC-001
+SF-TRANSPORT-001
+SF-REG-001
+```
+
+A security finding can therefore identify not only **what is wrong**, but also **which security requirement is affected**.
+
+---
 
 ## 🧩 Finding Model
 
-* Every normalized finding follows a consistent structure.
-* A finding can contain:
+A normalized finding can contain:
 
-  * Finding ID
-  * Title
-  * Source
-  * Asset
-  * Application
-  * Endpoint
-  * Parameter
-  * CWE
-  * OWASP mapping
-  * Security requirement
-  * Severity
-  * Confidence
-  * Evidence
-  * Description
-  * Impact
-  * Remediation
-  * Status
-  * Validation status
-  * First seen
-  * Last seen
-  * Regression test
+- Finding ID
+- Title
+- Source
+- Asset
+- Application
+- Endpoint
+- Parameter
+- CWE
+- OWASP mapping
+- Security requirement
+- Severity
+- Confidence
+- Evidence
+- Description
+- Impact
+- Remediation
+- Status
+- Validation status
+- First seen
+- Last seen
+- Regression test
 
 ### Example
 
@@ -406,325 +520,281 @@ Evidence: User A accessed User B's order
 Regression Test: BOLA-001
 ```
 
-## 🔄 Normalization
+---
 
-* Security tools produce different output formats.
-* SecureForge transforms those results into a consistent internal representation.
-* Normalization makes different security sources easier to:
+## 🔄 Security Integrations
 
-  * Compare
-  * Correlate
-  * Validate
-  * Prioritize
-  * Report
-  * Test against policy
-
-## 🔗 Correlation
-
-* Correlation connects evidence that refers to the same underlying security problem.
-* Example:
-
-  * SAST → Possible SQL injection
-  * DAST → Possible SQL injection
-  * Burp → Confirmed SQL injection
-* Instead of producing three unrelated vulnerabilities, SecureForge can represent one correlated vulnerability backed by multiple evidence sources.
-
-### Why Correlation Matters
-
-* Correlation reduces duplicate findings.
-* It improves confidence.
-* It creates stronger evidence.
-* It helps security teams understand how different testing methods support the same conclusion.
-* It prevents security decisions from being distorted by duplicate scanner results.
-
-## ⚖️ Contextual Risk
-
-* SecureForge separates severity from contextual risk.
-* Risk evaluation can consider:
-
-  * Severity
-  * Confidence
-  * Asset importance
-  * Internet exposure
-  * Authentication requirement
-  * Sensitive data
-  * Exploit evidence
-  * Security requirement
-  * Environment
-* The risk model remains transparent and explainable rather than relying on an opaque mathematical score.
-
-## 🚦 Policy Engine
-
-* The policy engine converts security conditions into explicit actions.
-* Policies can define:
-
-  * Blocking conditions
-  * Review conditions
-  * Passing conditions
-  * Exceptions
-  * Contextual security requirements
-
-## 🚥 Release Decision
-
-* SecureForge produces one of three primary release decisions.
-
-### PASS
-
-* No policy condition requires the release to be blocked or reviewed.
-* Required security verification has passed.
-
-### REVIEW
-
-* Findings or conditions require human security review before release.
-* The release is not automatically approved as secure.
-
-### BLOCK
-
-* A policy condition requires the release to stop.
-* Examples include:
-
-  * Confirmed critical vulnerabilities
-  * Confirmed high-impact authorization vulnerabilities
-  * Unresolved mandatory security requirements
-  * Other explicitly configured blocking conditions
-
-## 🧪 Verification Profiles
-
-### Quick
-
-* SAST
-* Secret scanning
-* SCA
-
-### Standard
-
-* Quick profile
-* API security
-* DAST
-* Container security
-
-### Full
-
-* Standard profile
-* IaC security
-* Nessus
-* Nmap
-* Manual validation
-
-## 🔌 Security Integrations
+SecureForge uses an integration architecture for incorporating security evidence from different sources.
 
 ### Application Security
 
-* SAST
-* SCA
-* Secret scanners
-* API security
-* DAST
-* Container scanners
-* IaC scanners
+Integration categories include:
 
-### Infrastructure and Configuration
+- SAST
+- SCA
+- Secret scanning
+- API security
+- DAST
+- Container security
+- IaC security
 
-* Nessus
-* Nmap
-* Container security
-* Infrastructure configuration analysis
+### Infrastructure Security
 
-### Manual and Expert Validation
+Integration categories include:
 
-* Burp Suite
-* Wireshark
-* Metasploit
-* Manual evidence
-* Controlled validation workflows
+- Nmap
+- Nessus
+- Infrastructure configuration analysis
+- Container security
+
+### Manual Security Validation
+
+External security tools can also support manually validated evidence.
+
+Examples include:
+
+- Burp Suite Professional
+- Wireshark
+- Metasploit
+- Manual testing
+
+External tools are evidence producers. SecureForge provides the processing, verification, policy, and release-decision layer.
+
+Specific external tools must be installed and configured in the environment before they can execute successfully.
+
+---
 
 ## 🕷️ Burp Suite
 
-* Burp Suite can provide manually validated evidence for web and API vulnerabilities.
-* SecureForge can consume the result rather than attempting to reproduce Burp's testing capabilities.
-* Example use cases:
+Burp Suite can be used for authorized manual web and API security testing.
 
-  * BOLA validation
-  * Authorization testing
-  * SQL injection validation
-  * XSS validation
-  * Session testing
-  * API security testing
+Potential evidence includes:
+
+- BOLA validation
+- Authorization testing
+- SQL injection validation
+- XSS validation
+- Session testing
+- API security testing
+
+SecureForge does not attempt to replace Burp Suite.
+
+Instead, validated Burp evidence can participate in the SecureForge security-verification workflow.
+
+---
 
 ## 🌐 Nmap and Nessus
 
 ### Nmap
 
-* Nmap can provide authorized attack-surface and service-discovery evidence.
-* Example information:
+Nmap can provide authorized attack-surface and service-discovery evidence such as:
 
-  * Open ports
-  * Services
-  * Service versions
-  * Unexpected exposed services
+- Open ports
+- Services
+- Service versions
+- Unexpected exposed services
 
 ### Nessus
 
-* Nessus can provide vulnerability-assessment evidence for infrastructure and exposed services.
-* SecureForge can normalize relevant Nessus findings into its internal security model.
+Nessus can provide vulnerability-assessment evidence for infrastructure and exposed services.
+
+Relevant Nessus results can be incorporated into SecureForge when the integration is configured and the tool is available.
+
+---
 
 ## 📡 Wireshark
 
-* Wireshark can provide manual network-level validation evidence.
-* It can help investigate:
+Wireshark can provide manual network-level evidence for situations such as:
 
-  * Unexpected network communication
-  * Cleartext traffic
-  * Protocol behavior
-  * Security-control verification
-  * Network-level evidence associated with an application finding
+- Unexpected network communication
+- Cleartext traffic
+- Protocol behavior
+- Security-control verification
+- Network-level investigation of application behavior
+
+SecureForge does not replace Wireshark.
+
+---
 
 ## 💥 Metasploit
 
-* Metasploit can be used for controlled vulnerability validation in the laboratory environment.
-* SecureForge does not attempt to replace Metasploit.
-* Metasploit evidence can strengthen the validation stage when exploitation is appropriate and authorized.
+Metasploit can be used for controlled vulnerability validation in an authorized laboratory environment.
+
+SecureForge does not replace Metasploit.
+
+Where appropriate, validated Metasploit evidence can strengthen the evidence supporting a security finding.
+
+---
+
+## 📚 Security Standards
+
+SecureForge can map security findings and requirements to recognized security classifications and standards where appropriate.
+
+### OWASP Top 10
+
+Application security findings can be mapped to relevant OWASP Top 10 categories.
+
+### OWASP API Security Top 10
+
+API-related findings can be mapped to relevant OWASP API Security Top 10 categories.
+
+### OWASP ASVS
+
+Security requirements can reference relevant ASVS controls.
+
+SecureForge does **not** claim complete ASVS compliance. Only the requirements represented and implemented by the project are within its verification scope.
+
+### CWE
+
+Findings can be mapped to relevant Common Weakness Enumeration identifiers.
+
+### CVSS
+
+CVSS can be used where an appropriate vulnerability-severity representation is required.
+
+CVSS severity and SecureForge contextual risk are treated as related but distinct concepts.
+
+---
+
+## 🧪 Regression Testing
+
+SecureForge includes a regression framework for repeatable security verification.
+
+### Current SecureCommerce Regression Suite
+
+| Test | Area | Purpose |
+|---|---|---|
+| `BOLA-001` | Authorization | Verify object-level authorization |
+| `SQLI-001` | Injection | Verify SQL injection behavior |
+| `XSS-001` | Input / Output | Verify contextual output handling |
+| `SECRET-001` | Secrets | Verify secret-detection behavior |
+| `AUTHZ-001` | Authorization | Verify function-level authorization |
+| `MISCONFIG-001` | IaC | Verify infrastructure security controls |
+
+Regression results can influence the final release decision according to the configured policy.
+
+---
 
 ## 🔄 CI/CD Security Gate
 
-* SecureForge can operate as part of a GitHub Actions security pipeline.
-* Example lifecycle:
+SecureForge can be integrated into CI/CD workflows.
 
-  * Pull Request
-  * SecureForge verification
-  * Evidence collection
-  * Normalization
-  * Correlation
-  * Risk evaluation
-  * Policy evaluation
-  * Release decision
-
-### Example
+A typical workflow is:
 
 ```text
-Developer pushes code
-        ↓
-  GitHub Actions
-        ↓
-   SecureForge
-        ↓
+Developer Push
+      ↓
+GitHub Actions
+      ↓
+SecureForge
+      ↓
 Security Evidence
-        ↓
-   Normalization
-        ↓
-    Correlation
-        ↓
-  Risk Evaluation
-        ↓
-  Policy Engine
-        ↓
+      ↓
+Normalization
+      ↓
+Correlation
+      ↓
+Risk Evaluation
+      ↓
+Policy Evaluation
+      ↓
+Regression / Validation
+      ↓
 PASS / REVIEW / BLOCK
 ```
 
-* A `BLOCK` decision can fail the CI/CD pipeline and prevent the release from continuing.
+A `BLOCK` result can be used as a CI/CD release gate.
 
-## 🛠️ Remediation
+---
 
-* SecureForge should provide actionable remediation information rather than simply reporting that something is vulnerable.
+## 📊 Reporting
 
-### Developer Feedback
+SecureForge produces security-verification results that can be consumed by humans and automation.
 
-* Feedback should explain:
+Example report formats include:
 
-  * What happened
-  * Why it matters
-  * Where it happened
-  * How it was validated
-  * How it should be fixed
-  * How the fix will be verified
+- JSON
+- HTML
 
-* Example:
+Reports can contain:
 
-  * A BOLA finding identifies the vulnerable endpoint.
-  * Evidence demonstrates unauthorized access to another user's object.
-  * The remediation explains how authorization should be enforced.
-  * Retesting verifies that cross-user access is no longer possible.
+- Scan information
+- Application information
+- Version
+- Environment
+- Findings
+- Risk
+- Policy evaluation
+- Tool errors
+- Validation results
+- Regression results
+- Release decision
+- Timestamps
 
-## 🔁 Regression Security
+The reporting layer is intended to preserve the reasoning behind the final security decision.
 
-* Important confirmed vulnerabilities can become repeatable regression tests.
-* Example regression tests:
-
-  * `BOLA-001`
-  * `SQLI-001`
-  * `XSS-001`
-  * `AUTHZ-001`
-  * `SECRET-001`
-  * `MISCONFIG-001`
-* Future releases can execute these tests automatically.
-* This turns security fixes into permanent security controls rather than one-time fixes.
-
-## 📊 Security Reports
-
-* SecureForge can generate machine-readable and human-readable security reports.
-* Example outputs:
-
-  * `security-report.json`
-  * `security-report.html`
-* Reports can contain:
-
-  * Release ID
-  * Commit SHA
-  * Application version
-  * Environment
-  * Verification profile
-  * Security tools
-  * Findings
-  * Validated findings
-  * Risk
-  * Policy evaluation
-  * Exceptions
-  * Remediation status
-  * Regression results
-  * Final decision
-  * Timestamp
+---
 
 ## 🖥️ CLI
 
-* SecureForge provides a command-line interface for security verification workflows.
+SecureForge provides a command-line interface for security verification.
 
 ### Scan
 
 ```bash
-secureforge scan
+python -m secureforge.cli.main scan
 ```
 
-### Verification Profiles
+### Scan With a Profile
 
 ```bash
-secureforge scan --profile quick
-secureforge scan --profile standard
-secureforge scan --profile full
+python -m secureforge.cli.main scan --profile quick
+python -m secureforge.cli.main scan --profile standard
+python -m secureforge.cli.main scan --profile full
 ```
 
-### Report
+### Scan With Regression Testing
 
 ```bash
-secureforge report
+python -m secureforge.cli.main scan \
+  --profile standard \
+  --regression \
+  --regression-suite requirements/regression-tests.yaml
 ```
 
-### Policy
+Additional target, source, output, and regression configuration can be supplied through the available CLI options.
 
-```bash
-secureforge policy check
+---
+
+## ⚙️ Configuration
+
+SecureForge separates framework behavior from target configuration.
+
+A target configuration can define information such as:
+
+```yaml
+project:
+  name: securecommerce
+  application: SecureCommerce
+  environment: lab
+  version: "0.1.0"
+
+scan:
+  profile: standard
+
+target:
+  base_url: "http://localhost:5000"
+  api_base_url: "http://localhost:5000/api"
+  openapi_url: "http://localhost:5000/openapi.json"
+  source_path: "./vulnerable-app/securecommerce"
+  container_image: "securecommerce:latest"
 ```
 
-### Regression
+Integrations, policies, requirements, reporting paths, and logging can also be configured.
 
-```bash
-secureforge regression
-```
+This separation allows the same core framework to operate against different targets without embedding target-specific values throughout the application.
 
-### Validation
-
-```bash
-secureforge validate
-```
+---
 
 ## 📁 Project Structure
 
@@ -771,248 +841,246 @@ SecureForge/
     └── workflows/
 ```
 
+---
+
 ## 🧰 Technology Stack
 
-### Application
+### Core
 
-* Python
-* Flask or FastAPI
-* REST/OpenAPI
-* SQLite or PostgreSQL
+- Python
+- Pydantic
+- Typer
+- Pytest
+- YAML-based configuration
+
+### Target Application
+
+- Python
+- Flask
+- REST/OpenAPI
+- Database-backed application
 
 ### Infrastructure
 
-* Docker
-* Terraform
-* GitHub Actions
-* Linux
-* Git
+- Docker
+- Terraform
+- GitHub Actions
+- Linux
+- Git
 
 ### Security Tooling
 
-* Burp Suite Professional
-* Nmap
-* Nessus
-* Wireshark
-* Metasploit
-* Appropriate SAST, SCA, DAST, secret, container, API, and IaC security tools
+SecureForge is designed to integrate with security tooling such as:
+
+- Burp Suite Professional
+- Nmap
+- Nessus
+- Wireshark
+- Metasploit
+- SAST tools
+- SCA tools
+- DAST tools
+- Secret scanners
+- Container security tools
+- API security tools
+- IaC security tools
+
+The availability and execution state of external tools depends on the local environment.
+
+---
 
 ## 🧪 Testing Strategy
 
+SecureForge uses multiple levels of testing.
+
 ### Unit Testing
 
-* Test individual components such as:
+Individual components are tested independently, including areas such as:
 
-  * Finding normalization
-  * Correlation
-  * Risk evaluation
-  * Policy evaluation
-  * Requirement mapping
+- Finding models
+- Normalization
+- Policy evaluation
+- Requirement loading
+- Configuration
+- Release-gate behavior
 
 ### Integration Testing
 
-* Test interactions between:
+Integration tests verify interactions between components such as:
 
-  * Security tools
-  * Evidence processors
-  * Finding storage
-  * Policy engine
-  * Reporting
-  * Regression system
+- Security integrations
+- Evidence processing
+- Normalization
+- Runtime configuration
+- Policy evaluation
+- Reporting
+- Regression execution
 
-### Security Testing
+### End-to-End Testing
 
-* Test SecureCommerce against controlled vulnerabilities.
-* Verify that SecureForge correctly detects, processes, validates, and reports them.
+End-to-end verification tests the framework against SecureCommerce as a real local target.
+
+This validates the interaction between the application, SecureForge runtime, regression framework, policy engine, reporting, and release gate.
 
 ### Regression Testing
 
-* Verify that previously fixed vulnerabilities remain fixed.
-* Confirm that regression failures can influence the release decision.
+Security regression tests verify that previously addressed security weaknesses remain addressed.
+
+Regression failures can influence the release decision according to policy.
+
+---
+
+## ✅ Verified End-to-End Result
+
+SecureForge has been exercised against the local SecureCommerce application using the standard verification profile and regression suite.
+
+The verified regression result was:
+
+```text
+Regression Tests: 6
+Passed:           6
+Failed:           0
+Errors:           0
+Skipped:          0
+
+Regression Gate:  PASS
+```
+
+The six regression tests all passed.
+
+The overall release decision was nevertheless:
+
+```text
+Overall Decision: BLOCK
+Release Allowed:  False
+```
+
+The reason was that several configured external security integrations were unavailable in the local environment.
+
+The configured policy requires security integrations to execute successfully.
+
+Therefore, SecureForge correctly distinguished:
+
+```text
+Regression Tests
+      ↓
+      PASS
+      ↓
+Policy Evaluation
+      ↓
+Required Tool Errors
+      ↓
+Overall Release
+      ↓
+     BLOCK
+```
+
+This is an important demonstration of the release-gating model:
+
+> **A successful regression suite does not automatically mean that the release is allowed. The final decision considers the complete configured security-verification state.**
+
+---
 
 ## 🧾 Evidence and Reproducibility
 
-* Security decisions should be supported by evidence.
-* Reports should make it possible to understand:
+Security decisions should be supported by evidence.
 
-  * What was tested
-  * Which tools were used
-  * What evidence was collected
-  * Which findings were validated
-  * How risk was evaluated
-  * Which policy was applied
-  * Why the release received its final decision
-* SecureForge should avoid fabricated findings, unsupported conclusions, and unverifiable security claims.
+SecureForge is designed to make the reasoning behind a release decision traceable.
 
-## 📈 Security Metrics
+A verification result should make it possible to understand:
 
-* SecureForge can track useful security metrics such as:
+- What was tested
+- Which integrations were configured
+- Which tools executed
+- Which tools failed
+- What findings were produced
+- Which findings were validated
+- Which requirements were affected
+- How risk was evaluated
+- Which policy was applied
+- Which regression tests passed or failed
+- Why the final release decision was produced
 
-  * Findings by severity
-  * Confirmed versus unconfirmed findings
-  * False-positive rate
-  * Mean time to remediation
-  * Regression failures
-  * Security requirements satisfied
-  * Security requirements violated
-  * Releases blocked
-  * Releases reviewed
-  * Releases passed
-  * Recurring vulnerabilities
+SecureForge is intentionally designed around evidence rather than fabricated or unsupported security conclusions.
 
-## 🗺️ Roadmap
-
-### Foundation
-
-* Core project structure
-* Finding model
-* Configuration
-* CLI
-* Security requirements
-
-### Evidence Processing
-
-* Tool adapters
-* Normalization
-* Evidence storage
-* Finding lifecycle
-
-### Security Intelligence
-
-* Correlation
-* Requirement mapping
-* Contextual risk
-* Confidence handling
-
-### Release Security
-
-* Policy engine
-* PASS / REVIEW / BLOCK
-* Exceptions
-* Release reporting
-
-### Validation
-
-* Manual validation
-* Burp evidence
-* API validation
-* Regression framework
-
-### DevSecOps
-
-* GitHub Actions
-* Pull-request checks
-* CI/CD security gates
-* Developer feedback
-
-### Advanced Verification
-
-* Expanded tool integrations
-* Improved correlation
-* Advanced regression capabilities
-* Additional security requirements
-
-## 🎬 End-to-End Demonstration
-
-* SecureForge should demonstrate a complete vulnerable-to-secure lifecycle.
-
-### Vulnerable Release
-
-* SecureCommerce contains controlled vulnerabilities such as:
-
-  * SQL injection
-  * BOLA
-  * Vulnerable dependency
-  * Fake secret
-  * Root container configuration
-
-* Security tools produce evidence.
-
-* SecureForge:
-
-  * Normalizes the evidence.
-  * Correlates related results.
-  * Maps findings to requirements.
-  * Evaluates contextual risk.
-  * Applies policy.
-  * Produces `BLOCK`.
-
-### Remediation
-
-* Vulnerabilities are fixed.
-* Security controls are strengthened.
-* Dependencies are updated.
-* Secrets are removed.
-* Container configuration is corrected.
-
-### Retest and Regression
-
-* Security testing is executed again.
-* Important vulnerabilities are manually validated where required.
-* Regression tests confirm that previous weaknesses remain fixed.
-* SecureForge produces:
-
-  * `PASS`
+---
 
 ## 📐 Design Principles
 
 ### Evidence Over Assumption
 
-* Security decisions should be based on evidence rather than assumptions.
+Security decisions should be based on available evidence rather than assumptions.
 
 ### Validation Over Blind Trust
 
-* Important findings should be validated before they are treated as confirmed vulnerabilities.
+Important findings should be validated before being treated as confirmed vulnerabilities.
 
 ### Correlate Before Prioritizing
 
-* Related evidence should be combined before security risk is evaluated.
+Related evidence should be correlated before security risk is evaluated.
 
 ### Context Over Severity Alone
 
-* Severity is important, but practical risk also depends on application and environment context.
+Severity matters, but practical risk also depends on application and environment context.
 
 ### Policies Must Be Explicit
 
-* Release decisions should be based on understandable and reviewable policy.
+Release decisions should be based on understandable and reviewable policy.
 
 ### Fixes Must Be Verified
 
-* A vulnerability is not considered successfully remediated until the fix has been verified.
+A security fix should be verified rather than assumed to be effective.
 
-### Important Vulnerabilities Should Become Regression Tests
+### Security Fixes Should Become Regression Controls
 
-* Security fixes should protect future releases from regression.
+Important vulnerabilities should be converted into repeatable regression tests where appropriate.
 
 ### Mature Tools Should Be Reused
 
-* SecureForge should integrate established security tools instead of rebuilding their capabilities unnecessarily.
+SecureForge integrates established security tools instead of unnecessarily rebuilding their specialized capabilities.
 
 ### Security Decisions Should Be Explainable
 
-* Every release decision should be traceable to evidence, risk, policy, and requirements.
+A release decision should be traceable to evidence, requirements, risk, policy, validation, and regression results.
 
-## 🚧 Scope Boundaries
+---
 
-* SecureForge intentionally focuses on continuous security verification and release gating for web and API applications.
-* It does not attempt to become:
+## 🚫 Scope Boundaries
 
-  * A full enterprise vulnerability-management platform
-  * A SIEM
-  * A SOC platform
-  * A complete cloud-security platform
-  * A replacement for Burp Suite
-  * A replacement for Nessus
-  * A replacement for Nmap
-  * A replacement for Metasploit
-  * A replacement for mature SAST/SCA/DAST tooling
-  * A generic automated exploitation framework
+SecureForge intentionally focuses on security verification and release gating for web and API applications.
+
+It is not intended to become:
+
+- A full enterprise vulnerability-management platform
+- A SIEM
+- A SOC platform
+- A complete cloud-security platform
+- A replacement for Burp Suite
+- A replacement for Nessus
+- A replacement for Nmap
+- A replacement for Metasploit
+- A replacement for mature SAST/SCA/DAST tooling
+- A generic automated exploitation framework
+
+This deliberate scope keeps SecureForge focused on its primary problem:
+
+> **Turning security evidence into an explainable release decision.**
+
+---
 
 ## 🔒 Authorized Use
 
-* SecureForge and SecureCommerce are intended for authorized security testing, controlled laboratory environments, defensive security research, and legitimate application-security validation.
-* Do not use the project against systems or applications without explicit authorization.
+SecureForge and SecureCommerce are intended for:
+
+- Authorized security testing
+- Controlled laboratory environments
+- Defensive security research
+- Legitimate application-security validation
+
+Do not use SecureForge, SecureCommerce, or integrated security tools against systems or applications without explicit authorization.
+
+---
 
 ## 📄 License
 
-* This project is licensed under the MIT License.
+This project is licensed under the MIT License.
